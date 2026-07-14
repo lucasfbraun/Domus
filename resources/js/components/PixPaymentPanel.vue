@@ -67,16 +67,21 @@ async function copyCode(): Promise<void> {
         >
             <div
                 v-if="qrCodeBase64"
-                class="mx-auto h-[7.5rem] w-[7.5rem] shrink-0 overflow-hidden rounded-lg border border-border/60 bg-white p-1.5 sm:mx-0"
+                class="0 mx-auto overflow-hidden rounded-lg border border-border/60 bg-white"
             >
                 <img
                     :src="qrImageSrc(qrCodeBase64)"
                     alt="QR Code Pix"
-                    class="h-full w-full max-h-full max-w-full object-contain"
+                    class="h-full max-h-full w-full max-w-full object-contain"
                     width="120"
                     height="120"
                     decoding="async"
-                    style="width: 120px; height: 120px; max-width: 120px; max-height: 120px;"
+                    style="
+                        width: 120px;
+                        height: 120px;
+                        max-width: 120px;
+                        max-height: 120px;
+                    "
                 />
             </div>
 
@@ -85,10 +90,7 @@ async function copyCode(): Promise<void> {
                     <p class="text-sm text-muted-foreground">
                         Escaneie o QR no app do banco ou copie o código.
                     </p>
-                    <p
-                        v-if="expiresAt"
-                        class="text-xs text-muted-foreground"
-                    >
+                    <p v-if="expiresAt" class="text-xs text-muted-foreground">
                         Válido até {{ formatDateTime(expiresAt) }}
                     </p>
                 </div>
@@ -106,14 +108,8 @@ async function copyCode(): Promise<void> {
                         class="h-auto shrink-0 px-3"
                         @click="copyCode"
                     >
-                        <Check
-                            v-if="copied"
-                            class="size-4"
-                        />
-                        <Copy
-                            v-else
-                            class="size-4"
-                        />
+                        <Check v-if="copied" class="size-4" />
+                        <Copy v-else class="size-4" />
                         <span class="sr-only sm:not-sr-only sm:ml-1.5">
                             {{ copied ? 'Copiado' : 'Copiar' }}
                         </span>

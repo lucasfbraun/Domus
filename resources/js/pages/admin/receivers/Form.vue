@@ -213,9 +213,22 @@ defineOptions({
                         id="password"
                         type="password"
                         name="password"
+                        autocomplete="new-password"
                         placeholder="Senha para acesso ao portal"
                     />
                     <InputError :message="errors.password" />
+                </div>
+
+                <div class="grid gap-2">
+                    <Label for="password_confirmation">Confirmar senha</Label>
+                    <Input
+                        id="password_confirmation"
+                        type="password"
+                        name="password_confirmation"
+                        autocomplete="new-password"
+                        placeholder="Confirmar senha do portal"
+                    />
+                    <InputError :message="errors.password_confirmation" />
                 </div>
             </div>
 

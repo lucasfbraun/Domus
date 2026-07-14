@@ -77,10 +77,24 @@ defineOptions({
                     id="password"
                     type="password"
                     name="password"
+                    autocomplete="new-password"
                     :required="!isEditing"
                     placeholder="Senha de acesso"
                 />
                 <InputError :message="errors.password" />
+            </div>
+
+            <div class="grid gap-2">
+                <Label for="password_confirmation">Confirmar senha</Label>
+                <Input
+                    id="password_confirmation"
+                    type="password"
+                    name="password_confirmation"
+                    autocomplete="new-password"
+                    :required="!isEditing"
+                    placeholder="Confirmar senha"
+                />
+                <InputError :message="errors.password_confirmation" />
             </div>
 
             <div class="flex items-center gap-4">

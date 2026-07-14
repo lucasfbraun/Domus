@@ -14,10 +14,10 @@ Sistema de gestão imobiliária com painel administrativo, portais para inquilin
 - [Desenvolvimento](#desenvolvimento)
 - [Dados de demonstração](#dados-de-demonstração)
 - [Mercado Pago (Pix)](#mercado-pago-pix)
-  - [Modo local com token de teste](#modo-local-com-token-de-teste)
-  - [OAuth por recebedor (produção)](#oauth-por-recebedor-produção)
-  - [Webhooks](#webhooks)
-  - [Testar pagamento Pix no sandbox](#testar-pagamento-pix-no-sandbox)
+    - [Modo local com token de teste](#modo-local-com-token-de-teste)
+    - [OAuth por recebedor (produção)](#oauth-por-recebedor-produção)
+    - [Webhooks](#webhooks)
+    - [Testar pagamento Pix no sandbox](#testar-pagamento-pix-no-sandbox)
 - [Integrações opcionais](#integrações-opcionais)
 - [Agendamentos e filas](#agendamentos-e-filas)
 - [Testes](#testes)
@@ -28,12 +28,12 @@ Sistema de gestão imobiliária com painel administrativo, portais para inquilin
 
 ## Requisitos
 
-| Ferramenta | Versão mínima |
-|------------|---------------|
+| Ferramenta | Versão mínima          |
+| ---------- | ---------------------- |
 | PHP        | 8.3+ (recomendado 8.5) |
-| Composer   | 2.x           |
-| Node.js    | 20+           |
-| npm        | 10+           |
+| Composer   | 2.x                    |
+| Node.js    | 20+                    |
+| npm        | 10+                    |
 
 **Extensões PHP:** `pdo`, `sqlite3` (padrão), `mbstring`, `openssl`, `tokenizer`, `xml`, `ctype`, `json`, `fileinfo`, `gd` ou `imagick` (conversões WebP da Media Library).
 
@@ -177,21 +177,21 @@ npm run dev
 
 O `DatabaseSeeder` cria roles, permissões e um cenário completo via `DemoSeeder`.
 
-| Papel      | E-mail                  | Senha      |
-|------------|-------------------------|------------|
-| Admin      | `admin@example.com`     | `password` |
-| Inquilino  | `tenant@example.com`    | `password` |
-| Recebedor  | `receiver@example.com`| `password` |
+| Papel     | E-mail                 | Senha      |
+| --------- | ---------------------- | ---------- |
+| Admin     | `admin@example.com`    | `password` |
+| Inquilino | `tenant@example.com`   | `password` |
+| Recebedor | `receiver@example.com` | `password` |
 
 O cenário inclui proprietário, imóveis, contrato ativo, cobranças (paga, vencida, em aberto) e tentativa de gerar Pix sandbox na cobrança do mês atual.
 
 **Contas de acesso após login:**
 
-| Papel     | Rota principal        |
-|-----------|-----------------------|
-| Admin     | `/dashboard`          |
-| Inquilino | `/inquilino`          |
-| Recebedor | `/recebedor`          |
+| Papel     | Rota principal |
+| --------- | -------------- |
+| Admin     | `/dashboard`   |
+| Inquilino | `/inquilino`   |
+| Recebedor | `/recebedor`   |
 
 ---
 
@@ -201,9 +201,9 @@ O sistema usa a **Orders API** do Mercado Pago para gerar cobranças Pix. Cada c
 
 Há dois modos de operação:
 
-| Modo | Quando usar | Variáveis |
-|------|-------------|-----------|
-| **Atalho local** | Desenvolvimento / testes rápidos | `MP_ACCESS_TOKEN` |
+| Modo                    | Quando usar                                       | Variáveis                           |
+| ----------------------- | ------------------------------------------------- | ----------------------------------- |
+| **Atalho local**        | Desenvolvimento / testes rápidos                  | `MP_ACCESS_TOKEN`                   |
 | **OAuth por recebedor** | Produção (cada recebedor conecta a própria conta) | `MP_CLIENT_ID` + `MP_CLIENT_SECRET` |
 
 O status das integrações aparece em **Admin → Integrações** (`/integracoes`).
@@ -213,8 +213,8 @@ O status das integrações aparece em **Admin → Integrações** (`/integracoes
 1. Acesse [Mercado Pago Developers](https://www.mercadopago.com.br/developers/panel/app).
 2. Crie uma aplicação (tipo **Checkout / Pagamentos online**).
 3. Anote:
-   - **Client ID** → `MP_CLIENT_ID`
-   - **Client Secret** → `MP_CLIENT_SECRET`
+    - **Client ID** → `MP_CLIENT_ID`
+    - **Client Secret** → `MP_CLIENT_SECRET`
 4. Em **Credenciais de producao**, copie o **Access Token** (`APP_USR-...`) → `MP_ACCESS_TOKEN` (atalho local; a Orders API nao aceita `TEST-`).
 
 ### Modo local com token de producao
@@ -252,6 +252,7 @@ php artisan db:seed   # ou migrate:fresh --seed para recriar o Pix demo
   O seed demo ja usa `tenant.demo@testuser.com` no cadastro do inquilino (login continua `tenant@example.com`)
 - O aluguel demo e **R$ 900** para caber dentro do limite mesmo com multa/juros
 - Nao use `MP_SANDBOX_CONNECT=true` nem tokens `TEST-` — a API responde `invalid_credentials`
+
 ### OAuth por recebedor (produção)
 
 Em produção, **não** use `MP_ACCESS_TOKEN` como atalho — cada recebedor conecta a própria conta Mercado Pago.
@@ -372,10 +373,10 @@ Sem WAHA configurado, mensagens são apenas logadas (não quebram o fluxo).
 
 Tarefas agendadas (`routes/console.php`):
 
-| Horário (America/Sao_Paulo) | Job | Função |
-|-----------------------------|-----|--------|
-| 09:00 | `GenerateMonthlyChargesJob` | Marca cobranças vencidas + gera cobranças mensais (5 dias antes do vencimento) |
-| 10:00 | `RunReminderSweepJob` | Envia lembretes de cobrança |
+| Horário (America/Sao_Paulo) | Job                         | Função                                                                         |
+| --------------------------- | --------------------------- | ------------------------------------------------------------------------------ |
+| 09:00                       | `GenerateMonthlyChargesJob` | Marca cobranças vencidas + gera cobranças mensais (5 dias antes do vencimento) |
+| 10:00                       | `RunReminderSweepJob`       | Envia lembretes de cobrança                                                    |
 
 **Em desenvolvimento**, `composer dev` já sobe o queue worker.
 
@@ -414,12 +415,12 @@ Testes de Mercado Pago usam `Http::fake()` — não chamam a API real.
 
 ## Papéis de usuário
 
-| Papel | Acesso |
-|-------|--------|
-| **Admin** | Painel completo: cadastros, contratos, cobranças, rateios, integrações |
-| **Inquilino** | Portal: cobranças, Pix, contrato, ocorrências |
-| **Recebedor** | Portal de leitura: cobranças e contratos vinculados |
-| **Proprietário** | Cadastro administrativo (sem login próprio) |
+| Papel            | Acesso                                                                 |
+| ---------------- | ---------------------------------------------------------------------- |
+| **Admin**        | Painel completo: cadastros, contratos, cobranças, rateios, integrações |
+| **Inquilino**    | Portal: cobranças, Pix, contrato, ocorrências                          |
+| **Recebedor**    | Portal de leitura: cobranças e contratos vinculados                    |
+| **Proprietário** | Cadastro administrativo (sem login próprio)                            |
 
 ---
 
@@ -427,21 +428,21 @@ Testes de Mercado Pago usam `Http::fake()` — não chamam a API real.
 
 Referência completa em `.env.example`. Principais:
 
-| Variável | Descrição |
-|----------|-----------|
-| `APP_NAME` | Nome exibido na UI (padrão: Domus) |
-| `APP_URL` | URL base da aplicação |
-| `APP_BASE_URL` | URL pública (webhooks, links externos); padrão = `APP_URL` |
-| `DB_*` | Conexão do banco |
-| `MP_CLIENT_ID` | Client ID da aplicação MP |
-| `MP_CLIENT_SECRET` | Client Secret da aplicação MP |
-| `MP_ACCESS_TOKEN` | Atalho local com token de teste (não usar em produção) |
-| `MP_PUBLIC_KEY` | Chave pública (reservado para futuras integrações frontend) |
-| `MP_WEBHOOK_SECRET` | Segredo para validar assinatura dos webhooks |
-| `MP_SANDBOX_CONNECT` | `true` = OAuth gera tokens de teste |
-| `WAHA_*` | Integração WhatsApp |
-| `MAIL_*` | Envio de e-mail |
-| `MEDIA_DISK` | Disco da Media Library (padrão: `public`) |
+| Variável             | Descrição                                                   |
+| -------------------- | ----------------------------------------------------------- |
+| `APP_NAME`           | Nome exibido na UI (padrão: Domus)                          |
+| `APP_URL`            | URL base da aplicação                                       |
+| `APP_BASE_URL`       | URL pública (webhooks, links externos); padrão = `APP_URL`  |
+| `DB_*`               | Conexão do banco                                            |
+| `MP_CLIENT_ID`       | Client ID da aplicação MP                                   |
+| `MP_CLIENT_SECRET`   | Client Secret da aplicação MP                               |
+| `MP_ACCESS_TOKEN`    | Atalho local com token de teste (não usar em produção)      |
+| `MP_PUBLIC_KEY`      | Chave pública (reservado para futuras integrações frontend) |
+| `MP_WEBHOOK_SECRET`  | Segredo para validar assinatura dos webhooks                |
+| `MP_SANDBOX_CONNECT` | `true` = OAuth gera tokens de teste                         |
+| `WAHA_*`             | Integração WhatsApp                                         |
+| `MAIL_*`             | Envio de e-mail                                             |
+| `MEDIA_DISK`         | Disco da Media Library (padrão: `public`)                   |
 
 ---
 

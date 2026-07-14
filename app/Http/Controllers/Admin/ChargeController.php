@@ -120,6 +120,10 @@ class ChargeController extends Controller
             return 'O Mercado Pago rejeitou as credenciais de teste. A Orders API exige token de produção (APP_USR-): defina MP_SANDBOX_CONNECT=false no servidor e reconecte o recebedor.';
         }
 
+        if (str_contains($raw, 'PA_UNAUTHORIZED_RESULT_FROM_POLICIES') || str_contains($raw, 'PolicyAgent')) {
+            return 'O Mercado Pago bloqueou a criação do Pix (conta/credencial sem permissão). Use o recebedor com OAuth de produção conectado e chave Pix cadastrada na conta MP.';
+        }
+
         if (str_contains($raw, 'invalid_email_for_sandbox')) {
             return 'No sandbox o e-mail do pagador precisa terminar com @testuser.com.';
         }
@@ -135,7 +139,23 @@ class ChargeController extends Controller
     {
         $this->authorize('update', $charge);
 
-        $result = $mercadoPago->syncChargePayment($charge);
+        try {
+            $result = $mercadoPago->syncChargePayment($charge);
+        } catch (\InvalidArgumentException|\RuntimeException $exception) {
+            report($exception);
+
+            $message = $exception instanceof \InvalidArgumentException
+                ? $exception->getMessage()
+                : 'Não foi possível verificar o pagamento agora. Tente novamente em instantes.';
+
+            if ($request->expectsJson() || $request->header('X-Inertia-HTTP') || $request->wantsJson()) {
+                return response()->json(['message' => $message], $exception instanceof \InvalidArgumentException ? 422 : 502);
+            }
+
+            Inertia::flash('toast', ['type' => 'error', 'message' => $message]);
+
+            return back();
+        }
 
         if ($result['updated']) {
             $reminderService->sendPaymentConfirmedReminder($charge->fresh());
