@@ -48,6 +48,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->name('receivers.mercadopago.connect');
         Route::get('receivers/mercadopago/callback', [ReceiverController::class, 'mercadoPagoCallback'])
             ->name('receivers.mercadopago.callback');
+        Route::post('receivers/{receiver}/mercadopago/disconnect', [ReceiverController::class, 'disconnectMercadoPago'])
+            ->name('receivers.mercadopago.disconnect');
         Route::resource('admins', AdminUserController::class)->except(['show']);
         Route::resource('contracts', ContractController::class);
         Route::post('contracts/{contract}/witnesses', [ContractController::class, 'attachWitness'])

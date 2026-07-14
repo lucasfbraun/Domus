@@ -73,7 +73,7 @@ function visitPage(page: number): void {
                 >
                     {{ item.value }}
                 </PaginationItem>
-                <PaginationEllipsis v-else :index="index" />
+                <PaginationEllipsis v-else />
             </template>
 
             <PaginationNext>

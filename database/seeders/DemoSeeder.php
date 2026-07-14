@@ -31,7 +31,8 @@ class DemoSeeder extends Seeder
      *
      * Pix real só é gerado quando:
      * - APP_ENV !== testing
-     * - MP_ACCESS_TOKEN (ou token OAuth do recebedor) está configurado
+     * - MP_ACCESS_TOKEN (atalho local) ou token OAuth do recebedor está configurado
+     * - em producao, cada recebedor precisa OAuth (MP_ACCESS_TOKEN nao e usado)
      * - valor da cobrança (com juros/multa) ≤ R$ 1.000 (limite do sandbox Orders API)
      * - por isso o aluguel demo é R$ 900 (vencida com multa/juros fica ~R$ 927)
      *

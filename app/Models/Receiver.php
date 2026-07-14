@@ -5,6 +5,7 @@ namespace App\Models;
 use Database\Factories\ReceiverFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -32,6 +33,13 @@ class Receiver extends Model
     use HasFactory, Notifiable;
 
     /**
+     * @var list<string>
+     */
+    protected $appends = [
+        'mp_connected',
+    ];
+
+    /**
      * @return array<string, string>
      */
     protected function casts(): array
@@ -44,6 +52,14 @@ class Receiver extends Model
             'mp_token_expires_at' => 'datetime',
             'mp_connected_at' => 'datetime',
         ];
+    }
+
+    /**
+     * @return Attribute<bool, never>
+     */
+    protected function mpConnected(): Attribute
+    {
+        return Attribute::get(fn (): bool => $this->mp_connected_at !== null);
     }
 
     /**

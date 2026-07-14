@@ -1,19 +1,33 @@
 <script setup lang="ts">
-import { Form, Head, Link } from '@inertiajs/vue3';
+import { Form, Head, router } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import BrazilianMaskedInput from '@/components/BrazilianMaskedInput.vue';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { dashboard } from '@/routes';
 import { create, index, store, update } from '@/routes/admin/receivers';
-import { connect as connectMercadoPago } from '@/routes/admin/receivers/mercadopago';
+import {
+    connect as connectMercadoPago,
+    disconnect as disconnectMercadoPago,
+} from '@/routes/admin/receivers/mercadopago';
 
 const props = defineProps<{
-    receiver?: any | null;
+    receiver?: {
+        id: number;
+        name?: string;
+        document?: string;
+        email?: string;
+        active?: boolean;
+        mp_connected?: boolean;
+        mp_user_id?: string | null;
+        mp_connected_at?: string | null;
+        mp_live_mode?: boolean | null;
+    } | null;
 }>();
 
 const isEditing = computed(() => !!props.receiver?.id);
@@ -21,6 +35,40 @@ const isEditing = computed(() => !!props.receiver?.id);
 const form = computed(() =>
     isEditing.value ? update.form(props.receiver) : store.form(),
 );
+
+const mpConnected = computed(() => props.receiver?.mp_connected ?? false);
+
+const mpModeLabel = computed(() => {
+    if (!mpConnected.value) {
+        return null;
+    }
+
+    return props.receiver?.mp_live_mode ? 'Produção' : 'Teste';
+});
+
+const mpConnectedAtLabel = computed(() => {
+    if (!props.receiver?.mp_connected_at) {
+        return null;
+    }
+
+    return new Date(props.receiver.mp_connected_at).toLocaleString('pt-BR');
+});
+
+function confirmDisconnect(): void {
+    if (!window.confirm(
+        'Desconectar a conta Mercado Pago deste recebedor? Novos Pix exigirão reconexão.',
+    )) {
+        return;
+    }
+
+    if (!props.receiver) {
+        return;
+    }
+
+    router.post(disconnectMercadoPago.url(props.receiver), {}, {
+        preserveScroll: true,
+    });
+}
 
 defineOptions({
     layout: {
@@ -44,16 +92,58 @@ defineOptions({
 
         <div
             v-if="isEditing"
-            class="rounded-lg border border-dashed p-4 text-sm"
+            class="max-w-xl space-y-4 rounded-lg border border-dashed p-4 text-sm"
         >
-            <p class="mb-2 text-muted-foreground">
-                Conecte a conta Mercado Pago para receber pagamentos.
+            <div class="flex flex-wrap items-center gap-2">
+                <p class="font-medium">Mercado Pago</p>
+                <Badge :variant="mpConnected ? 'default' : 'outline'">
+                    {{ mpConnected ? 'Conectado' : 'Desconectado' }}
+                </Badge>
+                <Badge v-if="mpModeLabel" variant="secondary">
+                    {{ mpModeLabel }}
+                </Badge>
+            </div>
+
+            <p class="text-muted-foreground">
+                Conecte a conta Mercado Pago para receber pagamentos Pix neste
+                recebedor.
             </p>
-            <Button as-child variant="outline">
-                <Link :href="connectMercadoPago(receiver)">
-                    Conectar Mercado Pago
-                </Link>
-            </Button>
+
+            <dl
+                v-if="mpConnected"
+                class="grid gap-1 text-muted-foreground"
+            >
+                <div v-if="receiver?.mp_user_id">
+                    <dt class="inline font-medium text-foreground">
+                        ID Mercado Pago:
+                    </dt>
+                    <dd class="inline">{{ receiver.mp_user_id }}</dd>
+                </div>
+                <div v-if="mpConnectedAtLabel">
+                    <dt class="inline font-medium text-foreground">
+                        Conectado em:
+                    </dt>
+                    <dd class="inline">{{ mpConnectedAtLabel }}</dd>
+                </div>
+            </dl>
+
+            <div class="flex flex-wrap items-center gap-2">
+                <Button as-child variant="outline">
+                    <a :href="connectMercadoPago.url(receiver)">
+                        {{ mpConnected ? 'Reconectar' : 'Conectar' }}
+                        Mercado Pago
+                    </a>
+                </Button>
+
+                <Button
+                    v-if="mpConnected"
+                    type="button"
+                    variant="destructive"
+                    @click="confirmDisconnect"
+                >
+                    Desconectar
+                </Button>
+            </div>
         </div>
 
         <Form

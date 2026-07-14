@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Receiver;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -15,11 +16,17 @@ class IntegrationController extends Controller
             && filled(config('mail.mailers.smtp.host'))
             && filled(config('mail.from.address'));
 
+        $appConfigured = filled(config('services.mercadopago.client_id'))
+            && filled(config('services.mercadopago.client_secret'));
+
         return Inertia::render('admin/Integrations', [
             'mercadoPago' => [
-                'connected' => filled(config('services.mercadopago.access_token'))
-                    || filled(config('services.mercadopago.client_id')),
-                'account' => config('services.mercadopago.sandbox_connect') ? 'Sandbox / Orders API' : 'Produção / Orders API',
+                'appConfigured' => $appConfigured,
+                'connectedReceiversCount' => Receiver::query()
+                    ->whereNotNull('mp_connected_at')
+                    ->count(),
+                'sandbox' => (bool) config('services.mercadopago.sandbox_connect'),
+                'platformTokenConfigured' => filled(config('services.mercadopago.access_token')),
             ],
             'waha' => [
                 'connected' => (bool) config('services.waha.url') && (bool) config('services.waha.api_key'),

@@ -28,8 +28,8 @@ test('tenant portal only sees own contracts and charges', function () {
         ->get(route('tenant.portal'))
         ->assertSuccessful();
 
-    $contracts = collect($response->viewData('page')['props']['contracts']);
-    $charges = collect($response->viewData('page')['props']['charges']);
+    $contracts = collect($response->viewData('page')['props']['contracts']['data']);
+    $charges = collect($response->viewData('page')['props']['charges']['data']);
 
     expect($contracts)->toHaveCount(1)
         ->and($contracts->first()['id'])->toBe($ownContract->id)
@@ -56,7 +56,7 @@ test('tenant portal inclui dados do pix quando a cobranca ja tem qr code', funct
         ->get(route('tenant.portal'))
         ->assertSuccessful();
 
-    $charges = collect($response->viewData('page')['props']['charges']);
+    $charges = collect($response->viewData('page')['props']['charges']['data']);
 
     expect($charges->first()['id'])->toBe($charge->id)
         ->and($charges->first()['has_pix'])->toBeTrue()
@@ -87,7 +87,7 @@ test('tenant portal mostra valor com juros e multa em cobranca vencida', functio
         ->get(route('tenant.portal'))
         ->assertSuccessful();
 
-    $charges = collect($response->viewData('page')['props']['charges']);
+    $charges = collect($response->viewData('page')['props']['charges']['data']);
     $payload = $charges->firstWhere('id', $charge->id);
 
     expect($payload['amount'])->toBe(1000.0)

@@ -13,7 +13,12 @@ import { dashboard } from '@/routes';
 import { index } from '@/routes/admin/integrations';
 
 defineProps<{
-    mercadoPago?: { connected: boolean; account?: string };
+    mercadoPago?: {
+        appConfigured?: boolean;
+        connectedReceiversCount?: number;
+        sandbox?: boolean;
+        platformTokenConfigured?: boolean;
+    };
     waha?: { connected: boolean; status?: string };
     mail?: { configured: boolean; mailer?: string; from?: string };
     cron?: { enabled: boolean; last_run?: string };
@@ -45,11 +50,27 @@ defineOptions({
                     <CardDescription>Pagamentos via PIX</CardDescription>
                 </CardHeader>
                 <CardContent class="space-y-2 text-sm">
-                    <Badge :variant="mercadoPago?.connected ? 'default' : 'outline'">
-                        {{ mercadoPago?.connected ? 'Conectado' : 'Desconectado' }}
+                    <Badge :variant="mercadoPago?.appConfigured ? 'default' : 'outline'">
+                        {{
+                            mercadoPago?.appConfigured
+                                ? 'App configurada'
+                                : 'App não configurada'
+                        }}
                     </Badge>
-                    <p v-if="mercadoPago?.account" class="text-muted-foreground">
-                        Conta: {{ mercadoPago.account }}
+                    <p class="text-muted-foreground">
+                        Recebedores com OAuth:
+                        {{ mercadoPago?.connectedReceiversCount ?? 0 }}
+                    </p>
+                    <p class="text-muted-foreground">
+                        Modo:
+                        {{ mercadoPago?.sandbox ? 'Sandbox' : 'Produção' }}
+                        · Orders API (Pix)
+                    </p>
+                    <p
+                        v-if="mercadoPago?.platformTokenConfigured"
+                        class="text-muted-foreground"
+                    >
+                        MP_ACCESS_TOKEN definido (atalho local/testes).
                     </p>
                 </CardContent>
             </Card>

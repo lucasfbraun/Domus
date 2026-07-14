@@ -32,8 +32,8 @@ test('receiver portal only sees own contracts and charges', function () {
         ->get(route('receiver.portal'))
         ->assertSuccessful();
 
-    $contracts = collect($response->viewData('page')['props']['contracts']);
-    $charges = collect($response->viewData('page')['props']['charges']);
+    $contracts = collect($response->viewData('page')['props']['contracts']['data']);
+    $charges = collect($response->viewData('page')['props']['charges']['data']);
 
     expect($contracts)->toHaveCount(1)
         ->and($contracts->first()['id'])->toBe($ownContract->id)

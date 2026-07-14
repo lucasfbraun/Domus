@@ -36,7 +36,7 @@ class HelpContent
             'id' => 'pix',
             'title' => 'Como funciona a cobranca via Pix?',
             'keywords' => ['pix', 'mercado pago', 'qr code'],
-            'answer' => 'Cada cobranca gera uma order Pix (Orders API) na conta Mercado Pago do recebedor (ou na conta da plataforma em testes). Pagamentos sao confirmados via webhook order.processed ou verificacao manual.',
+            'answer' => 'Cada cobranca gera uma order Pix (Orders API) na conta Mercado Pago do recebedor via OAuth. O admin conecta cada recebedor em Cadastros > Recebedores. Em local/testes, MP_ACCESS_TOKEN pode substituir o OAuth. Pagamentos sao confirmados via webhook order.processed ou verificacao manual.',
         ],
     ];
 

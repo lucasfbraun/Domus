@@ -15,6 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 class ReceiverController extends Controller
 {
@@ -110,14 +111,14 @@ class ReceiverController extends Controller
         return to_route('admin.receivers.index');
     }
 
-    public function connectMercadoPago(Request $request, Receiver $receiver, MercadoPagoService $mercadoPago): RedirectResponse
+    public function connectMercadoPago(Request $request, Receiver $receiver, MercadoPagoService $mercadoPago): SymfonyResponse
     {
         $this->authorize('update', $receiver);
 
         $redirectUri = route('admin.receivers.mercadopago.callback');
         $url = $mercadoPago->getAuthorizationUrl($receiver, $redirectUri);
 
-        return redirect()->away($url);
+        return Inertia::location($url);
     }
 
     public function mercadoPagoCallback(Request $request, MercadoPagoService $mercadoPago): RedirectResponse
@@ -134,6 +135,17 @@ class ReceiverController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Mercado Pago conectado.']);
 
-        return to_route('admin.receivers.index');
+        return to_route('admin.receivers.edit', $receiver);
+    }
+
+    public function disconnectMercadoPago(Request $request, Receiver $receiver, MercadoPagoService $mercadoPago): RedirectResponse
+    {
+        $this->authorize('update', $receiver);
+
+        $mercadoPago->clearReceiverConnection($receiver);
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Mercado Pago desconectado.']);
+
+        return to_route('admin.receivers.edit', $receiver);
     }
 }

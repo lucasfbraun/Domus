@@ -71,6 +71,7 @@ defineOptions({
                                 <DataTableHeadCell>Nome</DataTableHeadCell>
                                 <DataTableHeadCell>Documento</DataTableHeadCell>
                                 <DataTableHeadCell>E-mail</DataTableHeadCell>
+                                <DataTableHeadCell>Mercado Pago</DataTableHeadCell>
                                 <DataTableHeadCell>Ativo</DataTableHeadCell>
                                 <DataTableActionsHeader />
                             </DataTableRow>
@@ -92,6 +93,33 @@ defineOptions({
                                 </DataTableCell>
                                 <DataTableCell>
                                     {{ receiver.email ?? '—' }}
+                                </DataTableCell>
+                                <DataTableCell>
+                                    <div class="flex flex-wrap gap-1">
+                                        <Badge
+                                            :variant="
+                                                receiver.mp_connected
+                                                    ? 'default'
+                                                    : 'outline'
+                                            "
+                                        >
+                                            {{
+                                                receiver.mp_connected
+                                                    ? 'Conectado'
+                                                    : 'Desconectado'
+                                            }}
+                                        </Badge>
+                                        <Badge
+                                            v-if="receiver.mp_connected"
+                                            variant="secondary"
+                                        >
+                                            {{
+                                                receiver.mp_live_mode
+                                                    ? 'Produção'
+                                                    : 'Teste'
+                                            }}
+                                        </Badge>
+                                    </div>
                                 </DataTableCell>
                                 <DataTableCell>
                                     <Badge

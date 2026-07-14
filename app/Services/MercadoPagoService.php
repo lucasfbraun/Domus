@@ -45,6 +45,8 @@ class MercadoPagoService
      */
     public function exchangeCodeForTokens(string $code, string $redirectUri): array
     {
+        $this->assertOAuthCredentialsConfigured();
+
         $body = [
             'client_id' => config('services.mercadopago.client_id'),
             'client_secret' => config('services.mercadopago.client_secret'),
@@ -72,6 +74,18 @@ class MercadoPagoService
             'mp_token_expires_at' => now()->addSeconds($token['expires_in']),
             'mp_connected_at' => now(),
             'mp_live_mode' => $this->isLiveToken($token),
+        ]);
+    }
+
+    public function clearReceiverConnection(Receiver $receiver): void
+    {
+        $receiver->update([
+            'mp_user_id' => null,
+            'mp_access_token' => null,
+            'mp_refresh_token' => null,
+            'mp_token_expires_at' => null,
+            'mp_connected_at' => null,
+            'mp_live_mode' => null,
         ]);
     }
 
@@ -423,13 +437,18 @@ class MercadoPagoService
 
         $platformToken = config('services.mercadopago.access_token');
 
-        if (filled($platformToken)) {
+        if (filled($platformToken) && $this->allowsPlatformTokenFallback()) {
             return (string) $platformToken;
         }
 
         throw new \InvalidArgumentException(
-            'Este recebedor ainda nao conectou a conta Mercado Pago e nao ha MP_ACCESS_TOKEN configurado.',
+            'Este recebedor ainda nao conectou a conta Mercado Pago.',
         );
+    }
+
+    private function allowsPlatformTokenFallback(): bool
+    {
+        return in_array((string) config('app.env'), ['local', 'testing'], true);
     }
 
     /**
@@ -439,6 +458,8 @@ class MercadoPagoService
     {
         $response = Http::timeout(15)
             ->connectTimeout(5)
+            ->acceptJson()
+            ->asJson()
             ->post(self::OAUTH_TOKEN_URL, $body);
 
         if (! $response->successful()) {
@@ -448,6 +469,16 @@ class MercadoPagoService
         }
 
         return $response->json();
+    }
+
+    private function assertOAuthCredentialsConfigured(): void
+    {
+        if (! filled(config('services.mercadopago.client_id'))
+            || ! filled(config('services.mercadopago.client_secret'))) {
+            throw new \InvalidArgumentException(
+                'Configure MP_CLIENT_ID e MP_CLIENT_SECRET no .env (Client Secret da aplicacao no painel do Mercado Pago).',
+            );
+        }
     }
 
     private function getPlatformAccessToken(): string
