@@ -1,0 +1,25 @@
+---
+description: Use Auth facade instead of auth() helper for static analysis
+globs: **/*.php
+alwaysApply: false
+---
+
+# Authentication: use the Auth facade
+
+Do not use the `auth()` helper. Use `Illuminate\Support\Facades\Auth` so Larastan/PHPStan can resolve the user type correctly.
+
+```php
+// ❌ Avoid — generic return type, breaks static analysis
+$user = auth()->user();
+if (auth()->check()) { ... }
+auth()->logout();
+
+// ✅ Prefer — Larastan infers the User model
+use Illuminate\Support\Facades\Auth;
+
+$user = Auth::user();
+if (Auth::check()) { ... }
+Auth::logout();
+```
+
+In controllers and Form Requests with access to the request, prefer `$request->user()` when possible.

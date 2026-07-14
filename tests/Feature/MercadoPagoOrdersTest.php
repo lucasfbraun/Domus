@@ -1,0 +1,213 @@
+<?php
+
+use App\Enums\ChargeStatus;
+use App\Enums\PaymentMethod;
+use App\Enums\PaymentStatus;
+use App\Models\Charge;
+use App\Models\Contract;
+use App\Models\Payment;
+use App\Models\Receiver;
+use App\Models\Tenant;
+use App\Services\MercadoPagoService;
+use Database\Seeders\RolesAndPermissionsSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
+
+uses(RefreshDatabase::class);
+
+beforeEach(function () {
+    $this->seed(RolesAndPermissionsSeeder::class);
+
+    config([
+        'services.mercadopago.access_token' => 'APP_USR-test-access-token',
+        'services.mercadopago.public_key' => 'APP_USR-test-public-key',
+        'services.mercadopago.webhook_secret' => 'test-webhook-secret',
+        'services.mercadopago.client_id' => '123456',
+        'services.mercadopago.client_secret' => 'client-secret',
+        'services.mercadopago.sandbox_connect' => true,
+    ]);
+});
+
+function makeOpenCharge(): Charge
+{
+    $tenant = Tenant::factory()->create([
+        'email' => 'tenant@example.com',
+        'document' => '52998224725',
+        'name' => 'Joao Silva',
+    ]);
+
+    $receiver = Receiver::factory()->create();
+
+    $contract = Contract::factory()
+        ->for($tenant)
+        ->for($receiver)
+        ->active()
+        ->create([
+            'grace_days' => 0,
+            'fine_rate' => 0,
+            'monthly_interest_rate' => 0,
+        ]);
+
+    return Charge::factory()
+        ->open()
+        ->for($contract)
+        ->for($receiver)
+        ->create([
+            'original_amount' => 1500.50,
+        ]);
+}
+
+test('createPixCharge cria order na Orders API e grava dados do Pix', function () {
+    $charge = makeOpenCharge();
+
+    Http::fake([
+        'https://api.mercadopago.com/v1/orders' => Http::response([
+            'id' => 'ORD01TESTORDER123',
+            'status' => 'action_required',
+            'status_detail' => 'waiting_transfer',
+            'external_reference' => (string) $charge->id,
+            'transactions' => [
+                'payments' => [
+                    [
+                        'id' => 'PAY01TESTPAYMENT123',
+                        'status' => 'action_required',
+                        'payment_method' => [
+                            'id' => 'pix',
+                            'type' => 'bank_transfer',
+                            'qr_code' => '00020126pix-copy-paste',
+                            'qr_code_base64' => 'base64qr',
+                            'ticket_url' => 'https://www.mercadopago.com.br/sandbox/payments/ticket',
+                        ],
+                    ],
+                ],
+            ],
+        ], 201),
+    ]);
+
+    $result = app(MercadoPagoService::class)->createPixCharge($charge);
+
+    expect($result['orderId'])->toBe('ORD01TESTORDER123')
+        ->and($result['transactionId'])->toBe('PAY01TESTPAYMENT123')
+        ->and($result['qrCode'])->toBe('00020126pix-copy-paste')
+        ->and($charge->fresh()->status)->toBe(ChargeStatus::WaitingPayment)
+        ->and($charge->fresh()->mercado_pago_order_id)->toBe('ORD01TESTORDER123')
+        ->and($charge->fresh()->mercado_pago_transaction_id)->toBe('PAY01TESTPAYMENT123')
+        ->and($charge->fresh()->payment_url)->toContain('ticket');
+
+    Http::assertSent(function ($request) use ($charge) {
+        return $request->url() === 'https://api.mercadopago.com/v1/orders'
+            && $request['type'] === 'online'
+            && $request['processing_mode'] === 'automatic'
+            && $request['external_reference'] === (string) $charge->id
+            && $request['transactions']['payments'][0]['payment_method']['id'] === 'pix'
+            && $request['transactions']['payments'][0]['expiration_time'] === 'PT1H'
+            && $request->hasHeader('X-Idempotency-Key');
+    });
+});
+
+test('syncChargePayment marca cobranca como paga quando order esta processed', function () {
+    $charge = makeOpenCharge();
+    $charge->update([
+        'status' => ChargeStatus::WaitingPayment,
+        'mercado_pago_order_id' => 'ORD01TESTORDER123',
+    ]);
+
+    Http::fake([
+        'https://api.mercadopago.com/v1/orders/ORD01TESTORDER123' => Http::response([
+            'id' => 'ORD01TESTORDER123',
+            'status' => 'processed',
+            'status_detail' => 'accredited',
+            'external_reference' => (string) $charge->id,
+            'total_amount' => '1500.50',
+            'total_paid_amount' => '1500.50',
+            'updated_date' => '2026-07-13T20:00:00Z',
+            'transactions' => [
+                'payments' => [
+                    [
+                        'id' => 'PAY01TESTPAYMENT123',
+                        'paid_amount' => '1500.50',
+                        'status' => 'processed',
+                        'payment_method' => [
+                            'id' => 'pix',
+                            'type' => 'bank_transfer',
+                        ],
+                    ],
+                ],
+            ],
+        ]),
+    ]);
+
+    $result = app(MercadoPagoService::class)->syncChargePayment($charge);
+
+    expect($result['updated'])->toBeTrue()
+        ->and($result['status'])->toBe('processed')
+        ->and($charge->fresh()->status)->toBe(ChargeStatus::Paid)
+        ->and(Payment::query()->where('external_id', 'ORD01TESTORDER123')->exists())->toBeTrue()
+        ->and(Payment::query()->first()->method)->toBe(PaymentMethod::Pix)
+        ->and(Payment::query()->first()->status)->toBe(PaymentStatus::Approved);
+});
+
+test('webhook order.processed registra pagamento e responde ok', function () {
+    $charge = makeOpenCharge();
+    $charge->update([
+        'status' => ChargeStatus::WaitingPayment,
+        'mercado_pago_order_id' => 'ORD01TESTORDER123',
+    ]);
+
+    Http::fake([
+        'https://api.mercadopago.com/v1/orders/ORD01TESTORDER123' => Http::response([
+            'id' => 'ORD01TESTORDER123',
+            'status' => 'processed',
+            'status_detail' => 'accredited',
+            'external_reference' => (string) $charge->id,
+            'total_paid_amount' => '1500.50',
+            'updated_date' => '2026-07-13T20:00:00Z',
+            'transactions' => [
+                'payments' => [
+                    [
+                        'id' => 'PAY01TESTPAYMENT123',
+                        'paid_amount' => '1500.50',
+                        'payment_method' => [
+                            'id' => 'pix',
+                            'type' => 'bank_transfer',
+                        ],
+                    ],
+                ],
+            ],
+        ]),
+    ]);
+
+    $dataId = 'ORD01TESTORDER123';
+    $requestId = 'req-123';
+    $ts = (string) now()->timestamp;
+    $manifest = "id:{$dataId};request-id:{$requestId};ts:{$ts};";
+    $signature = 'ts='.$ts.',v1='.hash_hmac('sha256', $manifest, 'test-webhook-secret');
+
+    $response = $this->postJson('/webhooks/mercadopago?data.id='.$dataId.'&type=order', [
+        'action' => 'order.processed',
+        'api_version' => 'v1',
+        'type' => 'order',
+        'data' => ['id' => $dataId],
+    ], [
+        'x-signature' => $signature,
+        'x-request-id' => $requestId,
+    ]);
+
+    $response->assertSuccessful()
+        ->assertJson(['handled' => true, 'status' => 'processed']);
+
+    expect($charge->fresh()->status)->toBe(ChargeStatus::Paid);
+});
+
+test('webhook rejeita assinatura invalida', function () {
+    $response = $this->postJson('/webhooks/mercadopago', [
+        'action' => 'order.processed',
+        'type' => 'order',
+        'data' => ['id' => 'ORD01TESTORDER123'],
+    ], [
+        'x-signature' => 'ts=1,v1=invalid',
+        'x-request-id' => 'req-1',
+    ]);
+
+    $response->assertUnauthorized();
+});
