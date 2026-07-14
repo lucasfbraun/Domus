@@ -3,8 +3,10 @@
 namespace App\Services;
 
 use App\Enums\SignatureStatus;
+use App\Models\Charge;
 use App\Models\Contract;
 use App\Models\ContractTemplate;
+use App\Support\Money;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -100,7 +102,7 @@ class ContractDocumentService
         return $contract->fresh();
     }
 
-    public function generateReceiptPdf(Contract $contract, \App\Models\Charge $charge): string
+    public function generateReceiptPdf(Contract $contract, Charge $charge): string
     {
         $charge->loadMissing(['contract.tenant', 'contract.property', 'contract.receiver', 'payments']);
 
@@ -131,7 +133,7 @@ class ContractDocumentService
             'imovel_tipo' => $contract->property->type,
             'recebedor_nome' => $contract->receiver->name,
             'recebedor_documento' => $contract->receiver->document,
-            'valor_aluguel' => 'R$ '.number_format((float) $contract->monthly_rent, 2, ',', '.'),
+            'valor_aluguel' => Money::format((float) $contract->monthly_rent),
             'dia_vencimento' => (string) $contract->due_day,
             'data_inicio' => $contract->starts_at->format('d/m/Y'),
             'data_fim' => $contract->ends_at->format('d/m/Y'),

@@ -1,10 +1,5 @@
 <script setup lang="ts">
-import {
-    DateFormatter,
-    getLocalTimeZone,
-    parseDate,
-    today,
-} from '@internationalized/date';
+import { getLocalTimeZone, parseDate, today } from '@internationalized/date';
 import { CalendarIcon } from '@lucide/vue';
 import type { DateValue } from 'reka-ui';
 import { computed, ref, watch } from 'vue';
@@ -15,6 +10,7 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from '@/components/ui/popover';
+import { formatDateMedium } from '@/lib/dates';
 import { cn } from '@/lib/utils';
 
 const props = withDefaults(
@@ -46,10 +42,6 @@ function parseValue(value?: string | null): DateValue | undefined {
 const date = ref<DateValue | undefined>(parseValue(props.defaultValue));
 const open = ref(false);
 const defaultPlaceholder = today(getLocalTimeZone());
-
-const df = new DateFormatter('pt-BR', {
-    dateStyle: 'medium',
-});
 
 const isoValue = computed(() => date.value?.toString() ?? '');
 
@@ -91,7 +83,7 @@ function onDateSelect(value: DateValue | DateValue[] | null | undefined): void {
                     <CalendarIcon class="size-4 opacity-70" />
                     {{
                         date
-                            ? df.format(date.toDate(getLocalTimeZone()))
+                            ? formatDateMedium(isoValue)
                             : placeholder
                     }}
                 </Button>

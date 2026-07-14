@@ -4,6 +4,7 @@ import { CircleHelp, X } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { search as helpSearch } from '@/routes/admin/help';
 
 const page = usePage();
 
@@ -29,7 +30,7 @@ async function search(): Promise<void> {
 
     try {
         const response = await fetch(
-            `/help/search?q=${encodeURIComponent(query.value)}`,
+            helpSearch.url({ query: { q: query.value } }),
             {
                 headers: {
                     Accept: 'application/json',

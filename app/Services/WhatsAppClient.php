@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Support\Money;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -52,7 +53,7 @@ class WhatsAppClient
      */
     public function buildReminderText(array $reminder): string
     {
-        $formattedAmount = 'R$ '.number_format($reminder['amount'], 2, ',', '.');
+        $formattedAmount = Money::format($reminder['amount']);
 
         return match ($reminder['event']) {
             'payment_confirmed' => "Ola, {$reminder['tenantName']}. Seu pagamento de {$formattedAmount} foi confirmado. Obrigado!",

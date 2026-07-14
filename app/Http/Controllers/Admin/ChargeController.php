@@ -9,6 +9,7 @@ use App\Services\ChargeScheduler;
 use App\Services\ContractDocumentService;
 use App\Services\MercadoPagoService;
 use App\Services\ReminderService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -61,11 +62,25 @@ class ChargeController extends Controller
         return back();
     }
 
-    public function createPix(Request $request, Charge $charge, MercadoPagoService $mercadoPago): RedirectResponse|\Illuminate\Http\JsonResponse
+    public function createPix(Request $request, Charge $charge, MercadoPagoService $mercadoPago): RedirectResponse|JsonResponse
     {
         $this->authorize('update', $charge);
 
-        $result = $mercadoPago->createPixCharge($charge);
+        try {
+            $result = $mercadoPago->createPixCharge($charge);
+        } catch (\InvalidArgumentException|\RuntimeException $exception) {
+            report($exception);
+
+            $message = $this->friendlyPixErrorMessage($exception);
+
+            if ($request->expectsJson() || $request->header('X-Inertia-HTTP') || $request->wantsJson()) {
+                return response()->json(['message' => $message], 502);
+            }
+
+            Inertia::flash('toast', ['type' => 'error', 'message' => $message]);
+
+            return back();
+        }
 
         if ($request->expectsJson() || $request->header('X-Inertia-HTTP') || $request->wantsJson()) {
             return response()->json([
@@ -76,6 +91,7 @@ class ChargeController extends Controller
                 'order_id' => $result['orderId'] ?? $charge->fresh()->mercado_pago_order_id,
                 'transaction_id' => $result['transactionId'] ?? $charge->fresh()->mercado_pago_transaction_id,
                 'ticket_url' => $result['ticketUrl'] ?? $charge->fresh()->payment_url,
+                'amount_due' => $mercadoPago->computeCurrentAmountDue($charge->fresh(['contract'])),
             ]);
         }
 
@@ -84,7 +100,26 @@ class ChargeController extends Controller
         return back();
     }
 
-    public function syncPayment(Request $request, Charge $charge, MercadoPagoService $mercadoPago, ReminderService $reminderService): RedirectResponse|\Illuminate\Http\JsonResponse
+    private function friendlyPixErrorMessage(\Throwable $exception): string
+    {
+        $raw = $exception->getMessage();
+
+        if (str_contains($raw, 'processing_error') || str_contains($raw, '(402)')) {
+            return 'O Mercado Pago recusou gerar este Pix (erro de processamento). No sandbox, valores acima de R$ 1.000 costumam falhar — em produção o valor com juros/multa deve funcionar normalmente.';
+        }
+
+        if (str_contains($raw, 'invalid_email_for_sandbox')) {
+            return 'No sandbox o e-mail do pagador precisa terminar com @testuser.com.';
+        }
+
+        if ($exception instanceof \InvalidArgumentException) {
+            return $raw;
+        }
+
+        return 'Não foi possível gerar o Pix agora. Tente novamente em instantes.';
+    }
+
+    public function syncPayment(Request $request, Charge $charge, MercadoPagoService $mercadoPago, ReminderService $reminderService): RedirectResponse|JsonResponse
     {
         $this->authorize('update', $charge);
 

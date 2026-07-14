@@ -1,14 +1,27 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
+import { Eye } from '@lucide/vue';
 import Heading from '@/components/Heading.vue';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import TableActionButton from '@/components/TableActionButton.vue';
+import StatusBadge from '@/components/StatusBadge.vue';
 import {
     Card,
     CardContent,
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import {
+    DataTable,
+    DataTableActionsCell,
+    DataTableActionsHeader,
+    DataTableCell,
+    DataTableHeadCell,
+    DataTableRow,
+} from '@/components/ui/data-table';
+import { formatDate } from '@/lib/dates';
+import { useMoney } from '@/composables/useMoney';
+import { show } from '@/routes/contracts';
+import { portal } from '@/routes/receiver';
 
 defineProps<{
     contracts: any[];
@@ -18,21 +31,12 @@ defineProps<{
 defineOptions({
     layout: {
         breadcrumbs: [
-            { title: 'Portal Recebedor', href: '/recebedor' },
+            { title: 'Portal Recebedor', href: portal() },
         ],
     },
 });
 
-function formatCurrency(value?: number): string {
-    if (value === undefined || value === null) {
-        return '—';
-    }
-
-    return new Intl.NumberFormat('pt-BR', {
-        style: 'currency',
-        currency: 'BRL',
-    }).format(value);
-}
+const { formatCurrency } = useMoney();
 </script>
 
 <template>
@@ -44,111 +48,111 @@ function formatCurrency(value?: number): string {
             description="Contratos e cobranças vinculados a você"
         />
 
-        <Card>
+        <Card class="border-border/80 shadow-sm">
             <CardHeader>
                 <CardTitle>Contratos</CardTitle>
             </CardHeader>
             <CardContent>
                 <div
                     v-if="contracts.length === 0"
-                    class="text-sm text-muted-foreground"
+                    class="rounded-xl bg-muted/50 px-6 py-12 text-center text-sm text-muted-foreground"
                 >
                     Nenhum contrato encontrado.
                 </div>
-                <div v-else class="overflow-x-auto">
-                    <table class="w-full text-sm">
-                        <thead>
-                            <tr class="border-b text-left text-muted-foreground">
-                                <th class="pb-2 pr-4 font-medium">Imóvel</th>
-                                <th class="pb-2 pr-4 font-medium">Inquilino</th>
-                                <th class="pb-2 pr-4 font-medium">Valor</th>
-                                <th class="pb-2 pr-4 font-medium">Status</th>
-                                <th class="pb-2 font-medium">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr
-                                v-for="contract in contracts"
-                                :key="contract.id"
-                                class="border-b last:border-0"
-                            >
-                                <td class="py-3 pr-4">
-                                    {{ contract.property?.name ?? '—' }}
-                                </td>
-                                <td class="py-3 pr-4">
-                                    {{ contract.tenant?.name ?? '—' }}
-                                </td>
-                                <td class="py-3 pr-4">
-                                    {{ formatCurrency(contract.monthly_rent) }}
-                                </td>
-                                <td class="py-3 pr-4">
-                                    <Badge variant="outline">
-                                        {{ contract.status ?? '—' }}
-                                    </Badge>
-                                </td>
-                                <td class="py-3">
-                                    <Button as-child size="sm" variant="outline">
-                                        <Link :href="`/contrato/${contract.id}`">
-                                            Ver contrato
-                                        </Link>
-                                    </Button>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+                <DataTable v-else>
+                    <thead>
+                        <DataTableRow variant="header">
+                            <DataTableHeadCell>Imóvel</DataTableHeadCell>
+                            <DataTableHeadCell>Inquilino</DataTableHeadCell>
+                            <DataTableHeadCell>Valor</DataTableHeadCell>
+                            <DataTableHeadCell>Status</DataTableHeadCell>
+                            <DataTableActionsHeader />
+                        </DataTableRow>
+                    </thead>
+                    <tbody>
+                        <DataTableRow
+                            v-for="contract in contracts"
+                            :key="contract.id"
+                        >
+                            <DataTableCell>
+                                {{ contract.property?.name ?? '—' }}
+                            </DataTableCell>
+                            <DataTableCell>
+                                {{ contract.tenant?.name ?? '—' }}
+                            </DataTableCell>
+                            <DataTableCell class="tabular-nums">
+                                {{ formatCurrency(contract.monthly_rent) }}
+                            </DataTableCell>
+                            <DataTableCell>
+                                <StatusBadge
+                                    type="contract"
+                                    :status="contract.status"
+                                />
+                            </DataTableCell>
+                            <DataTableActionsCell>
+                                <TableActionButton
+                                    label="Ver contrato"
+                                    as-child
+                                >
+                                    <Link :href="show(contract)">
+                                        <Eye />
+                                        <span class="sr-only">Ver contrato</span>
+                                    </Link>
+                                </TableActionButton>
+                            </DataTableActionsCell>
+                        </DataTableRow>
+                    </tbody>
+                </DataTable>
             </CardContent>
         </Card>
 
-        <Card>
+        <Card class="border-border/80 shadow-sm">
             <CardHeader>
                 <CardTitle>Cobranças</CardTitle>
             </CardHeader>
             <CardContent>
                 <div
                     v-if="charges.length === 0"
-                    class="text-sm text-muted-foreground"
+                    class="rounded-xl bg-muted/50 px-6 py-12 text-center text-sm text-muted-foreground"
                 >
                     Nenhuma cobrança encontrada.
                 </div>
-                <div v-else class="overflow-x-auto">
-                    <table class="w-full text-sm">
-                        <thead>
-                            <tr class="border-b text-left text-muted-foreground">
-                                <th class="pb-2 pr-4 font-medium">Descrição</th>
-                                <th class="pb-2 pr-4 font-medium">Inquilino</th>
-                                <th class="pb-2 pr-4 font-medium">Valor</th>
-                                <th class="pb-2 pr-4 font-medium">Vencimento</th>
-                                <th class="pb-2 font-medium">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr
-                                v-for="charge in charges"
-                                :key="charge.id"
-                                class="border-b last:border-0"
-                            >
-                                <td class="py-3 pr-4">
-                                    {{ charge.description ?? '—' }}
-                                </td>
-                                <td class="py-3 pr-4">
-                                    {{ charge.tenant?.name ?? '—' }}
-                                </td>
-                                <td class="py-3 pr-4">
-                                    {{ formatCurrency(charge.amount) }}
-                                </td>
-                                <td class="py-3 pr-4">
-                                    {{ charge.due_date ?? '—' }}
-                                </td>
-                                <td class="py-3">
-                                    <Badge variant="outline">
-                                        {{ charge.status ?? '—' }}
-                                    </Badge>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+                <DataTable v-else>
+                    <thead>
+                        <DataTableRow variant="header">
+                            <DataTableHeadCell>Descrição</DataTableHeadCell>
+                            <DataTableHeadCell>Inquilino</DataTableHeadCell>
+                            <DataTableHeadCell>Valor</DataTableHeadCell>
+                            <DataTableHeadCell>Vencimento</DataTableHeadCell>
+                            <DataTableHeadCell>Status</DataTableHeadCell>
+                        </DataTableRow>
+                    </thead>
+                    <tbody>
+                        <DataTableRow
+                            v-for="charge in charges"
+                            :key="charge.id"
+                        >
+                            <DataTableCell>
+                                {{ charge.description ?? '—' }}
+                            </DataTableCell>
+                            <DataTableCell>
+                                {{ charge.tenant?.name ?? '—' }}
+                            </DataTableCell>
+                            <DataTableCell class="tabular-nums">
+                                {{ formatCurrency(charge.amount) }}
+                            </DataTableCell>
+                            <DataTableCell>
+                                {{ formatDate(charge.due_date) }}
+                            </DataTableCell>
+                            <DataTableCell>
+                                <StatusBadge
+                                    type="charge"
+                                    :status="charge.status"
+                                />
+                            </DataTableCell>
+                        </DataTableRow>
+                    </tbody>
+                </DataTable>
             </CardContent>
         </Card>
     </div>

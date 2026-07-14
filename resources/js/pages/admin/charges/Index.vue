@@ -1,16 +1,30 @@
 <script setup lang="ts">
-import { Form, Head, router } from '@inertiajs/vue3';
-import { useHttp } from '@inertiajs/vue3';
+import { Form, Head, router, useHttp } from '@inertiajs/vue3';
+import { Bell, FileText, QrCode, RefreshCw } from '@lucide/vue';
 import { ref } from 'vue';
+import { toast } from 'vue-sonner';
 import Heading from '@/components/Heading.vue';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import TableActionButton from '@/components/TableActionButton.vue';
+import StatusBadge from '@/components/StatusBadge.vue';
 import {
     Card,
     CardContent,
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import {
+    DataTable,
+    DataTableActionsCell,
+    DataTableActionsHeader,
+    DataTableCell,
+    DataTableHeadCell,
+    DataTableRow,
+} from '@/components/ui/data-table';
+import { formatDate } from '@/lib/dates';
+import { useMoney } from '@/composables/useMoney';
+import { dashboard } from '@/routes';
+import { index, reminder } from '@/routes/admin/charges';
+import { pix, receipt, sync } from '@/routes/charges';
 
 defineProps<{
     charges: any[];
@@ -19,46 +33,66 @@ defineProps<{
 defineOptions({
     layout: {
         breadcrumbs: [
-            { title: 'Painel', href: '/dashboard' },
-            { title: 'Cobranças', href: '/charges' },
+            { title: 'Painel', href: dashboard() },
+            { title: 'Cobranças', href: index() },
         ],
     },
 });
 
+const { formatCurrency } = useMoney();
+
 const http = useHttp();
-const processingIds = ref<Record<number, 'pix' | 'sync' | 'reminder' | null>>({});
+const processingIds = ref<Record<number, 'pix' | 'sync' | 'reminder' | null>>(
+    {},
+);
 
-function formatCurrency(value?: number): string {
-    if (value === undefined || value === null) {
-        return '—';
-    }
+function createPix(charge: { id: number }): void {
+    processingIds.value[charge.id] = 'pix';
 
-    return new Intl.NumberFormat('pt-BR', {
-        style: 'currency',
-        currency: 'BRL',
-    }).format(value);
+    http.post(pix.url(charge), {
+        onSuccess: () => {
+            router.reload({ only: ['charges'] });
+        },
+        onHttpException: (response) => {
+            let message = 'Não foi possível gerar o Pix.';
+
+            try {
+                const body =
+                    typeof response.data === 'string'
+                        ? JSON.parse(response.data)
+                        : response.data;
+
+                if (
+                    body &&
+                    typeof body === 'object' &&
+                    'message' in body &&
+                    typeof body.message === 'string'
+                ) {
+                    message = body.message;
+                }
+            } catch {
+                // ignore
+            }
+
+            toast.error(message, { richColors: true });
+        },
+        onFinish: () => {
+            processingIds.value[charge.id] = null;
+        },
+    });
 }
 
-async function createPix(id: number): Promise<void> {
-    processingIds.value[id] = 'pix';
+function syncPayment(charge: { id: number }): void {
+    processingIds.value[charge.id] = 'sync';
 
-    try {
-        await http.post(`/charges/${id}/pix`);
-        router.reload({ only: ['charges'] });
-    } finally {
-        processingIds.value[id] = null;
-    }
-}
-
-async function syncPayment(id: number): Promise<void> {
-    processingIds.value[id] = 'sync';
-
-    try {
-        await http.post(`/charges/${id}/sync`);
-        router.reload({ only: ['charges'] });
-    } finally {
-        processingIds.value[id] = null;
-    }
+    http.post(sync.url(charge), {
+        onSuccess: () => {
+            router.reload({ only: ['charges'] });
+        },
+        onFinish: () => {
+            processingIds.value[charge.id] = null;
+        },
+    });
 }
 </script>
 
@@ -71,111 +105,92 @@ async function syncPayment(id: number): Promise<void> {
             description="Gerencie as cobranças e pagamentos"
         />
 
-        <Card>
+        <Card class="border-border/80 shadow-sm">
             <CardHeader>
                 <CardTitle>Lista de cobranças</CardTitle>
             </CardHeader>
             <CardContent>
                 <div
                     v-if="charges.length === 0"
-                    class="text-sm text-muted-foreground"
+                    class="rounded-xl bg-muted/50 px-6 py-12 text-center text-sm text-muted-foreground"
                 >
                     Nenhuma cobrança cadastrada.
                 </div>
-                <div v-else class="overflow-x-auto">
-                    <table class="w-full text-sm">
-                        <thead>
-                            <tr class="border-b text-left text-muted-foreground">
-                                <th class="pb-2 pr-4 font-medium">Descrição</th>
-                                <th class="pb-2 pr-4 font-medium">Inquilino</th>
-                                <th class="pb-2 pr-4 font-medium">Valor</th>
-                                <th class="pb-2 pr-4 font-medium">Vencimento</th>
-                                <th class="pb-2 pr-4 font-medium">Status</th>
-                                <th class="pb-2 font-medium">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr
-                                v-for="charge in charges"
-                                :key="charge.id"
-                                class="border-b last:border-0"
-                            >
-                                <td class="py-3 pr-4">
-                                    {{ charge.description ?? '—' }}
-                                </td>
-                                <td class="py-3 pr-4">
-                                    {{ charge.tenant?.name ?? '—' }}
-                                </td>
-                                <td class="py-3 pr-4">
-                                    {{ formatCurrency(charge.amount) }}
-                                </td>
-                                <td class="py-3 pr-4">
-                                    {{ charge.due_date ?? '—' }}
-                                </td>
-                                <td class="py-3 pr-4">
-                                    <Badge variant="outline">
-                                        {{ charge.status ?? '—' }}
-                                    </Badge>
-                                </td>
-                                <td class="py-3">
-                                    <div class="flex flex-wrap items-center gap-2">
-                                        <Button
-                                            v-if="charge.status !== 'paid'"
-                                            size="sm"
-                                            variant="outline"
-                                            :disabled="!!processingIds[charge.id]"
-                                            @click="createPix(charge.id)"
-                                        >
-                                            {{
-                                                processingIds[charge.id] === 'pix'
-                                                    ? 'Gerando...'
-                                                    : 'Gerar PIX'
-                                            }}
-                                        </Button>
-                                        <Button
-                                            v-if="charge.status !== 'paid'"
-                                            size="sm"
-                                            variant="outline"
-                                            :disabled="!!processingIds[charge.id]"
-                                            @click="syncPayment(charge.id)"
-                                        >
-                                            {{
-                                                processingIds[charge.id] === 'sync'
-                                                    ? 'Sincronizando...'
-                                                    : 'Sincronizar'
-                                            }}
-                                        </Button>
-                                        <Form
-                                            v-if="charge.status !== 'paid'"
-                                            :action="`/charges/${charge.id}/reminder`"
-                                            method="post"
-                                            #default="{ processing }"
-                                        >
-                                            <Button
-                                                type="submit"
-                                                size="sm"
-                                                variant="outline"
-                                                :disabled="processing"
-                                            >
-                                                Lembrete
-                                            </Button>
-                                        </Form>
-                                        <Button
-                                            v-if="charge.status === 'paid'"
-                                            as-child
-                                            size="sm"
-                                            variant="outline"
-                                        >
-                                            <a :href="`/charges/${charge.id}/receipt`">
-                                                Recibo
-                                            </a>
-                                        </Button>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+                <DataTable v-else>
+                    <thead>
+                        <DataTableRow variant="header">
+                            <DataTableHeadCell>Descrição</DataTableHeadCell>
+                            <DataTableHeadCell>Inquilino</DataTableHeadCell>
+                            <DataTableHeadCell>Valor</DataTableHeadCell>
+                            <DataTableHeadCell>Vencimento</DataTableHeadCell>
+                            <DataTableHeadCell>Status</DataTableHeadCell>
+                            <DataTableActionsHeader />
+                        </DataTableRow>
+                    </thead>
+                    <tbody>
+                        <DataTableRow
+                            v-for="charge in charges"
+                            :key="charge.id"
+                        >
+                            <DataTableCell>
+                                {{ charge.description ?? '—' }}
+                            </DataTableCell>
+                            <DataTableCell>
+                                {{ charge.tenant?.name ?? '—' }}
+                            </DataTableCell>
+                            <DataTableCell class="tabular-nums">
+                                {{ formatCurrency(charge.amount) }}
+                            </DataTableCell>
+                            <DataTableCell>
+                                {{ formatDate(charge.due_date) }}
+                            </DataTableCell>
+                            <DataTableCell>
+                                <StatusBadge
+                                    type="charge"
+                                    :status="charge.status"
+                                />
+                            </DataTableCell>
+                            <DataTableActionsCell>
+                                <TableActionButton
+                                    v-if="charge.status !== 'paid'"
+                                    label="Gerar PIX"
+                                    :icon="QrCode"
+                                    :disabled="!!processingIds[charge.id]"
+                                    @click="createPix(charge)"
+                                />
+                                <TableActionButton
+                                    v-if="charge.status !== 'paid'"
+                                    label="Sincronizar"
+                                    :icon="RefreshCw"
+                                    :disabled="!!processingIds[charge.id]"
+                                    @click="syncPayment(charge)"
+                                />
+                                <Form
+                                    v-if="charge.status !== 'paid'"
+                                    v-bind="reminder.form(charge)"
+                                    #default="{ processing }"
+                                >
+                                    <TableActionButton
+                                        label="Lembrete"
+                                        :icon="Bell"
+                                        type="submit"
+                                        :disabled="processing"
+                                    />
+                                </Form>
+                                <TableActionButton
+                                    v-if="charge.status === 'paid'"
+                                    label="Recibo"
+                                    as-child
+                                >
+                                    <a :href="receipt(charge).url">
+                                        <FileText />
+                                        <span class="sr-only">Recibo</span>
+                                    </a>
+                                </TableActionButton>
+                            </DataTableActionsCell>
+                        </DataTableRow>
+                    </tbody>
+                </DataTable>
             </CardContent>
         </Card>
     </div>

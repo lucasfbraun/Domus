@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { Form, Head, Link } from '@inertiajs/vue3';
+import { Pencil, Trash2 } from '@lucide/vue';
 import Heading from '@/components/Heading.vue';
-import { Badge } from '@/components/ui/badge';
+import TableActionButton from '@/components/TableActionButton.vue';
+import StatusBadge from '@/components/StatusBadge.vue';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -9,7 +11,17 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import {
+    DataTable,
+    DataTableActionsCell,
+    DataTableActionsHeader,
+    DataTableCell,
+    DataTableHeadCell,
+    DataTableRow,
+} from '@/components/ui/data-table';
 import { formatCpfCnpj, formatPhone } from '@/lib/brazilian-masks';
+import { dashboard } from '@/routes';
+import { create, destroy, edit, index } from '@/routes/admin/tenants';
 
 defineProps<{
     tenants: any[];
@@ -18,8 +30,8 @@ defineProps<{
 defineOptions({
     layout: {
         breadcrumbs: [
-            { title: 'Painel', href: '/dashboard' },
-            { title: 'Inquilinos', href: '/tenants' },
+            { title: 'Painel', href: dashboard() },
+            { title: 'Inquilinos', href: index() },
         ],
     },
 });
@@ -35,91 +47,88 @@ defineOptions({
                 description="Gerencie os inquilinos cadastrados"
             />
             <Button as-child>
-                <Link href="/tenants/create">Novo inquilino</Link>
+                <Link :href="create()">Novo inquilino</Link>
             </Button>
         </div>
 
-        <Card>
+        <Card class="border-border/80 shadow-sm">
             <CardHeader>
                 <CardTitle>Lista de inquilinos</CardTitle>
             </CardHeader>
             <CardContent>
                 <div
                     v-if="tenants.length === 0"
-                    class="text-sm text-muted-foreground"
+                    class="rounded-xl bg-muted/50 px-6 py-12 text-center text-sm text-muted-foreground"
                 >
                     Nenhum inquilino cadastrado.
                 </div>
-                <div v-else class="overflow-x-auto">
-                    <table class="w-full text-sm">
-                        <thead>
-                            <tr class="border-b text-left text-muted-foreground">
-                                <th class="pb-2 pr-4 font-medium">Nome</th>
-                                <th class="pb-2 pr-4 font-medium">Documento</th>
-                                <th class="pb-2 pr-4 font-medium">E-mail</th>
-                                <th class="pb-2 pr-4 font-medium">WhatsApp</th>
-                                <th class="pb-2 pr-4 font-medium">Status</th>
-                                <th class="pb-2 pr-4 font-medium">Moradores</th>
-                                <th class="pb-2 font-medium">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr
-                                v-for="tenant in tenants"
-                                :key="tenant.id"
-                                class="border-b last:border-0"
-                            >
-                                <td class="py-3 pr-4">{{ tenant.name }}</td>
-                                <td class="py-3 pr-4">
-                                    {{
-                                        tenant.document
-                                            ? formatCpfCnpj(tenant.document)
-                                            : '—'
-                                    }}
-                                </td>
-                                <td class="py-3 pr-4">{{ tenant.email ?? '—' }}</td>
-                                <td class="py-3 pr-4">
-                                    {{
-                                        tenant.whatsapp
-                                            ? formatPhone(tenant.whatsapp)
-                                            : '—'
-                                    }}
-                                </td>
-                                <td class="py-3 pr-4">
-                                    <Badge variant="outline">
-                                        {{ tenant.status ?? '—' }}
-                                    </Badge>
-                                </td>
-                                <td class="py-3 pr-4">
-                                    {{ tenant.resident_count ?? '—' }}
-                                </td>
-                                <td class="py-3">
-                                    <div class="flex items-center gap-2">
-                                        <Button as-child size="sm" variant="outline">
-                                            <Link :href="`/tenants/${tenant.id}/edit`">
-                                                Editar
-                                            </Link>
-                                        </Button>
-                                        <Form
-                                            :action="`/tenants/${tenant.id}`"
-                                            method="delete"
-                                            #default="{ processing }"
-                                        >
-                                            <Button
-                                                type="submit"
-                                                size="sm"
-                                                variant="destructive"
-                                                :disabled="processing"
-                                            >
-                                                Excluir
-                                            </Button>
-                                        </Form>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+                <DataTable v-else>
+                    <thead>
+                        <DataTableRow variant="header">
+                            <DataTableHeadCell>Nome</DataTableHeadCell>
+                            <DataTableHeadCell>Documento</DataTableHeadCell>
+                            <DataTableHeadCell>E-mail</DataTableHeadCell>
+                            <DataTableHeadCell>WhatsApp</DataTableHeadCell>
+                            <DataTableHeadCell>Status</DataTableHeadCell>
+                            <DataTableHeadCell>Moradores</DataTableHeadCell>
+                            <DataTableActionsHeader />
+                        </DataTableRow>
+                    </thead>
+                    <tbody>
+                        <DataTableRow
+                            v-for="tenant in tenants"
+                            :key="tenant.id"
+                        >
+                            <DataTableCell>{{ tenant.name }}</DataTableCell>
+                            <DataTableCell>
+                                {{
+                                    tenant.document
+                                        ? formatCpfCnpj(tenant.document)
+                                        : '—'
+                                }}
+                            </DataTableCell>
+                            <DataTableCell>
+                                {{ tenant.email ?? '—' }}
+                            </DataTableCell>
+                            <DataTableCell>
+                                {{
+                                    tenant.whatsapp
+                                        ? formatPhone(tenant.whatsapp)
+                                        : '—'
+                                }}
+                            </DataTableCell>
+                            <DataTableCell>
+                                <StatusBadge
+                                    type="tenant"
+                                    :status="tenant.status"
+                                />
+                            </DataTableCell>
+                            <DataTableCell class="tabular-nums">
+                                {{ tenant.resident_count ?? '—' }}
+                            </DataTableCell>
+                            <DataTableActionsCell>
+                                <TableActionButton label="Editar" as-child>
+                                    <Link :href="edit(tenant)">
+                                        <Pencil />
+                                        <span class="sr-only">Editar</span>
+                                    </Link>
+                                </TableActionButton>
+                                <Form
+                                    v-bind="destroy.form(tenant)"
+                                    #default="{ processing }"
+                                >
+                                    <TableActionButton
+                                        label="Excluir"
+                                        :icon="Trash2"
+                                        type="submit"
+                                        variant="destructive"
+                                        :disabled="processing"
+                                    />
+                                </Form>
+                            </DataTableActionsCell>
+                        </DataTableRow>
+                    </tbody>
+                </DataTable>
             </CardContent>
         </Card>
     </div>

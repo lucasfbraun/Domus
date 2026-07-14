@@ -9,6 +9,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { dashboard } from '@/routes';
+import { create, index, store, update } from '@/routes/admin/tenants';
 
 const props = defineProps<{
     tenant?: any | null;
@@ -16,18 +18,16 @@ const props = defineProps<{
 
 const isEditing = computed(() => !!props.tenant?.id);
 
-const formAction = computed(() =>
-    isEditing.value ? `/tenants/${props.tenant.id}` : '/tenants',
+const form = computed(() =>
+    isEditing.value ? update.form(props.tenant) : store.form(),
 );
-
-const formMethod = computed(() => (isEditing.value ? 'put' : 'post'));
 
 defineOptions({
     layout: {
         breadcrumbs: [
-            { title: 'Painel', href: '/dashboard' },
-            { title: 'Inquilinos', href: '/tenants' },
-            { title: 'Formulário', href: '/tenants/create' },
+            { title: 'Painel', href: dashboard() },
+            { title: 'Inquilinos', href: index() },
+            { title: 'Formulário', href: create() },
         ],
     },
 });
@@ -43,8 +43,7 @@ defineOptions({
         />
 
         <Form
-            :action="formAction"
-            :method="formMethod"
+            v-bind="form"
             class="max-w-xl space-y-6"
             #default="{ errors, processing }"
         >

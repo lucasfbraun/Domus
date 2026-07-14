@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { Form, Head, Link } from '@inertiajs/vue3';
+import { Pencil, Trash2 } from '@lucide/vue';
 import Heading from '@/components/Heading.vue';
+import TableActionButton from '@/components/TableActionButton.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -9,7 +11,17 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import {
+    DataTable,
+    DataTableActionsCell,
+    DataTableActionsHeader,
+    DataTableCell,
+    DataTableHeadCell,
+    DataTableRow,
+} from '@/components/ui/data-table';
 import { formatCpfCnpj } from '@/lib/brazilian-masks';
+import { dashboard } from '@/routes';
+import { create, destroy, edit, index } from '@/routes/admin/receivers';
 
 defineProps<{
     receivers: any[];
@@ -18,8 +30,8 @@ defineProps<{
 defineOptions({
     layout: {
         breadcrumbs: [
-            { title: 'Painel', href: '/dashboard' },
-            { title: 'Recebedores', href: '/receivers' },
+            { title: 'Painel', href: dashboard() },
+            { title: 'Recebedores', href: index() },
         ],
     },
 });
@@ -35,85 +47,79 @@ defineOptions({
                 description="Gerencie os recebedores de pagamentos"
             />
             <Button as-child>
-                <Link href="/receivers/create">Novo recebedor</Link>
+                <Link :href="create()">Novo recebedor</Link>
             </Button>
         </div>
 
-        <Card>
+        <Card class="border-border/80 shadow-sm">
             <CardHeader>
                 <CardTitle>Lista de recebedores</CardTitle>
             </CardHeader>
             <CardContent>
                 <div
                     v-if="receivers.length === 0"
-                    class="text-sm text-muted-foreground"
+                    class="rounded-xl bg-muted/50 px-6 py-12 text-center text-sm text-muted-foreground"
                 >
                     Nenhum recebedor cadastrado.
                 </div>
-                <div v-else class="overflow-x-auto">
-                    <table class="w-full text-sm">
-                        <thead>
-                            <tr class="border-b text-left text-muted-foreground">
-                                <th class="pb-2 pr-4 font-medium">Nome</th>
-                                <th class="pb-2 pr-4 font-medium">Documento</th>
-                                <th class="pb-2 pr-4 font-medium">E-mail</th>
-                                <th class="pb-2 pr-4 font-medium">Ativo</th>
-                                <th class="pb-2 font-medium">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr
-                                v-for="receiver in receivers"
-                                :key="receiver.id"
-                                class="border-b last:border-0"
-                            >
-                                <td class="py-3 pr-4">{{ receiver.name }}</td>
-                                <td class="py-3 pr-4">
-                                    {{
-                                        receiver.document
-                                            ? formatCpfCnpj(receiver.document)
-                                            : '—'
-                                    }}
-                                </td>
-                                <td class="py-3 pr-4">{{ receiver.email ?? '—' }}</td>
-                                <td class="py-3 pr-4">
-                                    <Badge
-                                        :variant="
-                                            receiver.active ? 'default' : 'outline'
-                                        "
-                                    >
-                                        {{ receiver.active ? 'Sim' : 'Não' }}
-                                    </Badge>
-                                </td>
-                                <td class="py-3">
-                                    <div class="flex items-center gap-2">
-                                        <Button as-child size="sm" variant="outline">
-                                            <Link
-                                                :href="`/receivers/${receiver.id}/edit`"
-                                            >
-                                                Editar
-                                            </Link>
-                                        </Button>
-                                        <Form
-                                            :action="`/receivers/${receiver.id}`"
-                                            method="delete"
-                                            #default="{ processing }"
-                                        >
-                                            <Button
-                                                type="submit"
-                                                size="sm"
-                                                variant="destructive"
-                                                :disabled="processing"
-                                            >
-                                                Excluir
-                                            </Button>
-                                        </Form>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+                <DataTable v-else>
+                    <thead>
+                        <DataTableRow variant="header">
+                            <DataTableHeadCell>Nome</DataTableHeadCell>
+                            <DataTableHeadCell>Documento</DataTableHeadCell>
+                            <DataTableHeadCell>E-mail</DataTableHeadCell>
+                            <DataTableHeadCell>Ativo</DataTableHeadCell>
+                            <DataTableActionsHeader />
+                        </DataTableRow>
+                    </thead>
+                    <tbody>
+                        <DataTableRow
+                            v-for="receiver in receivers"
+                            :key="receiver.id"
+                        >
+                            <DataTableCell>{{ receiver.name }}</DataTableCell>
+                            <DataTableCell>
+                                {{
+                                    receiver.document
+                                        ? formatCpfCnpj(receiver.document)
+                                        : '—'
+                                }}
+                            </DataTableCell>
+                            <DataTableCell>
+                                {{ receiver.email ?? '—' }}
+                            </DataTableCell>
+                            <DataTableCell>
+                                <Badge
+                                    :variant="
+                                        receiver.active ? 'default' : 'outline'
+                                    "
+                                >
+                                    {{ receiver.active ? 'Sim' : 'Não' }}
+                                </Badge>
+                            </DataTableCell>
+                            <DataTableActionsCell>
+                                <TableActionButton label="Editar" as-child>
+                                    <Link :href="edit(receiver)">
+                                        <Pencil />
+                                        <span class="sr-only">Editar</span>
+                                    </Link>
+                                </TableActionButton>
+                                <Form
+                                    v-bind="destroy.form(receiver)"
+                                    #default="{ processing }"
+                                >
+                                    <TableActionButton
+                                        label="Excluir"
+                                        :icon="Trash2"
+                                        type="submit"
+                                        variant="destructive"
+                                        :disabled="processing"
+                                    />
+                                </Form>
+                            </DataTableActionsCell>
+                        </DataTableRow>
+                    </tbody>
+                </DataTable>
             </CardContent>
         </Card>
     </div>

@@ -3,6 +3,7 @@ import { Form, Head, Link } from '@inertiajs/vue3';
 import FormSelect from '@/components/FormSelect.vue';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
+import StatusBadge from '@/components/StatusBadge.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -14,6 +15,29 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { formatDate } from '@/lib/dates';
+import { useMoney } from '@/composables/useMoney';
+import { dashboard } from '@/routes';
+import {
+    edit,
+    index,
+    ownerSign,
+    show,
+} from '@/routes/admin/contracts';
+import {
+    generate as generateDocument,
+    review,
+} from '@/routes/admin/contracts/document';
+import {
+    destroy as destroyPhoto,
+    store as storePhoto,
+} from '@/routes/admin/contracts/inspection-photos';
+import { sign as signWitness } from '@/routes/admin/contracts/witnesses';
+import { generate as generateCharges } from '@/routes/admin/charges';
+import {
+    generated as downloadGenerated,
+    signed as downloadSigned,
+} from '@/routes/contracts/document';
 
 const props = defineProps<{
     contract: any;
@@ -22,13 +46,13 @@ const props = defineProps<{
 }>();
 
 defineOptions({
-    layout: (pageProps: { contract: { id: number | string } }) => ({
+    layout: (pageProps: { contract: { id: number } }) => ({
         breadcrumbs: [
-            { title: 'Painel', href: '/dashboard' },
-            { title: 'Contratos', href: '/contracts' },
+            { title: 'Painel', href: dashboard() },
+            { title: 'Contratos', href: index() },
             {
                 title: 'Detalhes',
-                href: `/contracts/${pageProps.contract.id}`,
+                href: show(pageProps.contract),
             },
         ],
     }),
@@ -39,16 +63,7 @@ const templateOptions = (props.templates ?? []).map((template) => ({
     label: template.name,
 }));
 
-function formatCurrency(value?: number | string | null): string {
-    if (value === undefined || value === null || value === '') {
-        return '—';
-    }
-
-    return new Intl.NumberFormat('pt-BR', {
-        style: 'currency',
-        currency: 'BRL',
-    }).format(Number(value));
-}
+const { formatCurrency } = useMoney();
 
 function formatPercent(value?: number | string | null): string {
     if (value === undefined || value === null || value === '') {
@@ -70,10 +85,10 @@ function formatPercent(value?: number | string | null): string {
             />
             <div class="flex items-center gap-2">
                 <Button as-child variant="outline">
-                    <Link :href="`/contracts/${contract.id}/edit`">Editar</Link>
+                    <Link :href="edit(contract)">Editar</Link>
                 </Button>
                 <Button as-child variant="outline">
-                    <Link href="/contracts">Voltar</Link>
+                    <Link :href="index()">Voltar</Link>
                 </Button>
             </div>
         </div>
@@ -86,13 +101,14 @@ function formatPercent(value?: number | string | null): string {
                 <CardContent class="space-y-3 text-sm">
                     <div class="flex justify-between gap-4">
                         <span class="text-muted-foreground">Status</span>
-                        <Badge variant="outline">{{ contract.status ?? '—' }}</Badge>
+                        <StatusBadge type="contract" :status="contract.status" />
                     </div>
                     <div class="flex justify-between gap-4">
                         <span class="text-muted-foreground">Assinatura</span>
-                        <Badge variant="outline">
-                            {{ contract.signature_status ?? '—' }}
-                        </Badge>
+                        <StatusBadge
+                            type="signature"
+                            :status="contract.signature_status"
+                        />
                     </div>
                     <div class="flex justify-between gap-4">
                         <span class="text-muted-foreground">Valor do aluguel</span>
@@ -104,11 +120,11 @@ function formatPercent(value?: number | string | null): string {
                     </div>
                     <div class="flex justify-between gap-4">
                         <span class="text-muted-foreground">Início</span>
-                        <span>{{ contract.starts_at ?? '—' }}</span>
+                        <span>{{ formatDate(contract.starts_at) }}</span>
                     </div>
                     <div class="flex justify-between gap-4">
                         <span class="text-muted-foreground">Término</span>
-                        <span>{{ contract.ends_at ?? '—' }}</span>
+                        <span>{{ formatDate(contract.ends_at) }}</span>
                     </div>
                     <div class="flex justify-between gap-4">
                         <span class="text-muted-foreground">Multa / Juros / Carência</span>
@@ -163,8 +179,7 @@ function formatPercent(value?: number | string | null): string {
             <CardContent class="space-y-4">
                 <div class="flex flex-wrap items-center gap-3">
                     <Form
-                        :action="`/contracts/${contract.id}/owner-sign`"
-                        method="post"
+                        v-bind="ownerSign.form(contract)"
                         #default="{ processing }"
                     >
                         <Button
@@ -195,8 +210,7 @@ function formatPercent(value?: number | string | null): string {
                     >
                         <span>{{ witness.receiver?.name ?? `Testemunha #${witness.id}` }}</span>
                         <Form
-                            :action="`/contracts/${contract.id}/witnesses/${witness.id}/sign`"
-                            method="post"
+                            v-bind="signWitness.form({ contract, witness })"
                             #default="{ processing }"
                         >
                             <Button
@@ -219,8 +233,7 @@ function formatPercent(value?: number | string | null): string {
             </CardHeader>
             <CardContent class="space-y-4">
                 <Form
-                    :action="`/contracts/${contract.id}/document/generate`"
-                    method="post"
+                    v-bind="generateDocument.form(contract)"
                     class="grid max-w-xl gap-3 sm:grid-cols-[1fr_auto] sm:items-end"
                     #default="{ errors, processing }"
                 >
@@ -247,7 +260,7 @@ function formatPercent(value?: number | string | null): string {
                         as-child
                         variant="outline"
                     >
-                        <a :href="`/contracts/${contract.id}/document/generated`">
+                        <a :href="downloadGenerated.url(contract)">
                             Baixar gerado
                         </a>
                     </Button>
@@ -256,7 +269,7 @@ function formatPercent(value?: number | string | null): string {
                         as-child
                         variant="outline"
                     >
-                        <a :href="`/contracts/${contract.id}/document/signed`">
+                        <a :href="downloadSigned.url(contract)">
                             Baixar assinado
                         </a>
                     </Button>
@@ -268,8 +281,7 @@ function formatPercent(value?: number | string | null): string {
                 >
                     <p class="text-sm font-medium">Contrato assinado aguardando revisão</p>
                     <Form
-                        :action="`/contracts/${contract.id}/document/review`"
-                        method="post"
+                        v-bind="review.form(contract)"
                         class="space-y-3"
                         #default="{ errors, processing }"
                     >
@@ -308,8 +320,7 @@ function formatPercent(value?: number | string | null): string {
             </CardHeader>
             <CardContent class="space-y-4">
                 <Form
-                    :action="`/contracts/${contract.id}/inspection-photos`"
-                    method="post"
+                    v-bind="storePhoto.form(contract)"
                     enctype="multipart/form-data"
                     class="grid max-w-xl gap-3 sm:grid-cols-2"
                     #default="{ errors, processing }"
@@ -359,8 +370,7 @@ function formatPercent(value?: number | string | null): string {
                             </span>
                         </span>
                         <Form
-                            :action="`/contracts/${contract.id}/inspection-photos/${photo.id}`"
-                            method="delete"
+                            v-bind="destroyPhoto.form({ contract, photo })"
                             #default="{ processing }"
                         >
                             <Button type="submit" size="sm" variant="outline" :disabled="processing">
@@ -378,8 +388,7 @@ function formatPercent(value?: number | string | null): string {
             </CardHeader>
             <CardContent class="space-y-4">
                 <Form
-                    :action="`/contracts/${contract.id}/charges/generate`"
-                    method="post"
+                    v-bind="generateCharges.form(contract)"
                     #default="{ processing }"
                 >
                     <Button type="submit" variant="outline" :disabled="processing">
@@ -413,9 +422,12 @@ function formatPercent(value?: number | string | null): string {
                                 <td class="py-3 pr-4">
                                     {{ formatCurrency(charge.original_amount) }}
                                 </td>
-                                <td class="py-3 pr-4">{{ charge.due_date }}</td>
+                                <td class="py-3 pr-4">{{ formatDate(charge.due_date) }}</td>
                                 <td class="py-3">
-                                    <Badge variant="outline">{{ charge.status }}</Badge>
+                                    <StatusBadge
+                                        type="charge"
+                                        :status="charge.status"
+                                    />
                                 </td>
                             </tr>
                         </tbody>

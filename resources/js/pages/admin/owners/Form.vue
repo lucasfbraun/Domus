@@ -7,6 +7,8 @@ import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { dashboard } from '@/routes';
+import { create, index, store, update } from '@/routes/admin/owners';
 
 const props = defineProps<{
     owner?: any | null;
@@ -14,18 +16,16 @@ const props = defineProps<{
 
 const isEditing = computed(() => !!props.owner?.id);
 
-const formAction = computed(() =>
-    isEditing.value ? `/owners/${props.owner.id}` : '/owners',
+const form = computed(() =>
+    isEditing.value ? update.form(props.owner) : store.form(),
 );
-
-const formMethod = computed(() => (isEditing.value ? 'put' : 'post'));
 
 defineOptions({
     layout: {
         breadcrumbs: [
-            { title: 'Painel', href: '/dashboard' },
-            { title: 'Proprietários', href: '/owners' },
-            { title: 'Formulário', href: '/owners/create' },
+            { title: 'Painel', href: dashboard() },
+            { title: 'Proprietários', href: index() },
+            { title: 'Formulário', href: create() },
         ],
     },
 });
@@ -41,8 +41,7 @@ defineOptions({
         />
 
         <Form
-            :action="formAction"
-            :method="formMethod"
+            v-bind="form"
             class="max-w-xl space-y-6"
             #default="{ errors, processing }"
         >

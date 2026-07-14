@@ -9,6 +9,8 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import { dashboard } from '@/routes';
+import { index } from '@/routes/admin/integrations';
 
 defineProps<{
     mercadoPago?: { connected: boolean; account?: string };
@@ -20,8 +22,8 @@ defineProps<{
 defineOptions({
     layout: {
         breadcrumbs: [
-            { title: 'Painel', href: '/dashboard' },
-            { title: 'Integrações', href: '/integracoes' },
+            { title: 'Painel', href: dashboard() },
+            { title: 'Integrações', href: index() },
         ],
     },
 });

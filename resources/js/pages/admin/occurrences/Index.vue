@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
 import Heading from '@/components/Heading.vue';
-import { Badge } from '@/components/ui/badge';
+import StatusBadge from '@/components/StatusBadge.vue';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -9,6 +9,8 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import { dashboard } from '@/routes';
+import { index, update } from '@/routes/admin/occurrences';
 
 defineProps<{
     occurrences: any[];
@@ -17,8 +19,8 @@ defineProps<{
 defineOptions({
     layout: {
         breadcrumbs: [
-            { title: 'Painel', href: '/dashboard' },
-            { title: 'Ocorrências', href: '/occurrences' },
+            { title: 'Painel', href: dashboard() },
+            { title: 'Ocorrências', href: index() },
         ],
     },
 });
@@ -59,9 +61,10 @@ defineOptions({
                                 {{ occurrence.tenant?.name ?? 'Inquilino' }}
                             </p>
                         </div>
-                        <Badge variant="outline">
-                            {{ occurrence.status_label ?? occurrence.status }}
-                        </Badge>
+                        <StatusBadge
+                            type="occurrence"
+                            :status="occurrence.status"
+                        />
                     </div>
 
                     <p class="text-sm">{{ occurrence.description }}</p>
@@ -85,11 +88,9 @@ defineOptions({
                     <div class="flex flex-wrap gap-2">
                         <Form
                             v-if="occurrence.status !== 'in_review'"
-                            :action="`/occurrences/${occurrence.id}`"
-                            method="post"
+                            v-bind="update.form(occurrence)"
                             #default="{ processing }"
                         >
-                            <input type="hidden" name="_method" value="patch" />
                             <input type="hidden" name="status" value="in_review" />
                             <Button type="submit" size="sm" variant="outline" :disabled="processing">
                                 Marcar em análise
@@ -98,12 +99,10 @@ defineOptions({
 
                         <Form
                             v-if="occurrence.status !== 'resolved'"
-                            :action="`/occurrences/${occurrence.id}`"
-                            method="post"
+                            v-bind="update.form(occurrence)"
                             class="flex flex-wrap items-center gap-2"
                             #default="{ processing }"
                         >
-                            <input type="hidden" name="_method" value="patch" />
                             <input type="hidden" name="status" value="resolved" />
                             <input
                                 type="text"

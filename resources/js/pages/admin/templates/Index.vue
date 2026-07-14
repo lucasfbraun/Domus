@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { Form, Head, Link } from '@inertiajs/vue3';
+import { Pencil, Trash2 } from '@lucide/vue';
 import Heading from '@/components/Heading.vue';
+import TableActionButton from '@/components/TableActionButton.vue';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -8,6 +10,16 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import {
+    DataTable,
+    DataTableActionsCell,
+    DataTableActionsHeader,
+    DataTableCell,
+    DataTableHeadCell,
+    DataTableRow,
+} from '@/components/ui/data-table';
+import { dashboard } from '@/routes';
+import { create, destroy, edit, index } from '@/routes/admin/templates';
 
 defineProps<{
     templates: any[];
@@ -16,8 +28,8 @@ defineProps<{
 defineOptions({
     layout: {
         breadcrumbs: [
-            { title: 'Painel', href: '/dashboard' },
-            { title: 'Modelos', href: '/templates' },
+            { title: 'Painel', href: dashboard() },
+            { title: 'Modelos', href: index() },
         ],
     },
 });
@@ -33,65 +45,57 @@ defineOptions({
                 description="Gerencie os modelos de contrato"
             />
             <Button as-child>
-                <Link href="/templates/create">Novo modelo</Link>
+                <Link :href="create()">Novo modelo</Link>
             </Button>
         </div>
 
-        <Card>
+        <Card class="border-border/80 shadow-sm">
             <CardHeader>
                 <CardTitle>Lista de modelos</CardTitle>
             </CardHeader>
             <CardContent>
                 <div
                     v-if="templates.length === 0"
-                    class="text-sm text-muted-foreground"
+                    class="rounded-xl bg-muted/50 px-6 py-12 text-center text-sm text-muted-foreground"
                 >
                     Nenhum modelo cadastrado.
                 </div>
-                <div v-else class="overflow-x-auto">
-                    <table class="w-full text-sm">
-                        <thead>
-                            <tr class="border-b text-left text-muted-foreground">
-                                <th class="pb-2 pr-4 font-medium">Nome</th>
-                                <th class="pb-2 font-medium">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr
-                                v-for="template in templates"
-                                :key="template.id"
-                                class="border-b last:border-0"
-                            >
-                                <td class="py-3 pr-4">{{ template.name }}</td>
-                                <td class="py-3">
-                                    <div class="flex items-center gap-2">
-                                        <Button as-child size="sm" variant="outline">
-                                            <Link
-                                                :href="`/templates/${template.id}/edit`"
-                                            >
-                                                Editar
-                                            </Link>
-                                        </Button>
-                                        <Form
-                                            :action="`/templates/${template.id}`"
-                                            method="delete"
-                                            #default="{ processing }"
-                                        >
-                                            <Button
-                                                type="submit"
-                                                size="sm"
-                                                variant="destructive"
-                                                :disabled="processing"
-                                            >
-                                                Excluir
-                                            </Button>
-                                        </Form>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+                <DataTable v-else>
+                    <thead>
+                        <DataTableRow variant="header">
+                            <DataTableHeadCell>Nome</DataTableHeadCell>
+                            <DataTableActionsHeader />
+                        </DataTableRow>
+                    </thead>
+                    <tbody>
+                        <DataTableRow
+                            v-for="template in templates"
+                            :key="template.id"
+                        >
+                            <DataTableCell>{{ template.name }}</DataTableCell>
+                            <DataTableActionsCell>
+                                <TableActionButton label="Editar" as-child>
+                                    <Link :href="edit(template)">
+                                        <Pencil />
+                                        <span class="sr-only">Editar</span>
+                                    </Link>
+                                </TableActionButton>
+                                <Form
+                                    v-bind="destroy.form(template)"
+                                    #default="{ processing }"
+                                >
+                                    <TableActionButton
+                                        label="Excluir"
+                                        :icon="Trash2"
+                                        type="submit"
+                                        variant="destructive"
+                                        :disabled="processing"
+                                    />
+                                </Form>
+                            </DataTableActionsCell>
+                        </DataTableRow>
+                    </tbody>
+                </DataTable>
             </CardContent>
         </Card>
     </div>

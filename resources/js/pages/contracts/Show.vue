@@ -2,7 +2,7 @@
 import { Form, Head } from '@inertiajs/vue3';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
-import { Badge } from '@/components/ui/badge';
+import StatusBadge from '@/components/StatusBadge.vue';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -13,6 +13,17 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { formatDate } from '@/lib/dates';
+import { useMoney } from '@/composables/useMoney';
+import { show } from '@/routes/contracts';
+import {
+    generated,
+    signed,
+    uploadSigned,
+} from '@/routes/contracts/document';
+import { store } from '@/routes/occurrences';
+import { portal as receiverPortal } from '@/routes/receiver';
+import { portal as tenantPortal } from '@/routes/tenant';
 
 defineProps<{
     contract: any;
@@ -23,26 +34,22 @@ defineProps<{
 }>();
 
 defineOptions({
-    layout: {
+    layout: (pageProps: { contract: any; isTenant?: boolean }) => ({
         breadcrumbs: [
             {
                 title: 'Contrato',
-                href: '/contrato',
+                href:
+                    pageProps.isTenant !== undefined
+                        ? pageProps.isTenant
+                            ? tenantPortal()
+                            : receiverPortal()
+                        : show(pageProps.contract),
             },
         ],
-    },
+    }),
 });
 
-function formatCurrency(value?: number | string | null): string {
-    if (value === undefined || value === null || value === '') {
-        return '-';
-    }
-
-    return new Intl.NumberFormat('pt-BR', {
-        style: 'currency',
-        currency: 'BRL',
-    }).format(Number(value));
-}
+const { formatCurrency } = useMoney();
 
 function goBack(): void {
     window.history.back();
@@ -76,13 +83,14 @@ function printContract(): void {
                 <CardContent class="space-y-3 text-sm">
                     <div class="flex justify-between gap-4">
                         <span class="text-muted-foreground">Status</span>
-                        <Badge variant="outline">{{ contract.status ?? '—' }}</Badge>
+                        <StatusBadge type="contract" :status="contract.status" />
                     </div>
                     <div class="flex justify-between gap-4">
                         <span class="text-muted-foreground">Assinatura</span>
-                        <Badge variant="outline">
-                            {{ contract.signature_status ?? '—' }}
-                        </Badge>
+                        <StatusBadge
+                            type="signature"
+                            :status="contract.signature_status"
+                        />
                     </div>
                     <div class="flex justify-between gap-4">
                         <span class="text-muted-foreground">Valor do aluguel</span>
@@ -90,11 +98,11 @@ function printContract(): void {
                     </div>
                     <div class="flex justify-between gap-4">
                         <span class="text-muted-foreground">Início</span>
-                        <span>{{ contract.starts_at ?? '—' }}</span>
+                        <span>{{ formatDate(contract.starts_at) }}</span>
                     </div>
                     <div class="flex justify-between gap-4">
                         <span class="text-muted-foreground">Término</span>
-                        <span>{{ contract.ends_at ?? '—' }}</span>
+                        <span>{{ formatDate(contract.ends_at) }}</span>
                     </div>
                 </CardContent>
             </Card>
@@ -138,7 +146,7 @@ function printContract(): void {
                     as-child
                     variant="outline"
                 >
-                    <a :href="`/contracts/${contract.id}/document/generated`">
+                    <a :href="generated.url(contract)">
                         Baixar contrato gerado
                     </a>
                 </Button>
@@ -147,7 +155,7 @@ function printContract(): void {
                     as-child
                     variant="outline"
                 >
-                    <a :href="`/contracts/${contract.id}/document/signed`">
+                    <a :href="signed.url(contract)">
                         Baixar contrato assinado
                     </a>
                 </Button>
@@ -166,8 +174,7 @@ function printContract(): void {
                     Rejeitado: {{ contract.review_note }}
                 </p>
                 <Form
-                    :action="`/contracts/${contract.id}/document/upload-signed`"
-                    method="post"
+                    v-bind="uploadSigned.form(contract)"
                     enctype="multipart/form-data"
                     class="grid max-w-xl gap-3"
                     #default="{ errors, processing }"
@@ -206,8 +213,7 @@ function printContract(): void {
             </CardHeader>
             <CardContent>
                 <Form
-                    action="/occurrences"
-                    method="post"
+                    v-bind="store.form()"
                     enctype="multipart/form-data"
                     class="grid max-w-xl gap-3"
                     #default="{ errors, processing }"

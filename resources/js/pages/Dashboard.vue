@@ -8,13 +8,17 @@ import {
     Wallet,
 } from '@lucide/vue';
 import Heading from '@/components/Heading.vue';
-import { Badge } from '@/components/ui/badge';
+import StatusBadge from '@/components/StatusBadge.vue';
 import {
     Card,
     CardContent,
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import { formatDate } from '@/lib/dates';
+import { useMoney } from '@/composables/useMoney';
+import { dashboard } from '@/routes';
+import { index as chargesIndex } from '@/routes/admin/charges';
 
 interface Charge {
     id: number;
@@ -62,22 +66,13 @@ defineOptions({
         breadcrumbs: [
             {
                 title: 'Painel',
-                href: '/dashboard',
+                href: dashboard(),
             },
         ],
     },
 });
 
-function formatCurrency(value?: number): string {
-    if (value === undefined || value === null) {
-        return '-';
-    }
-
-    return new Intl.NumberFormat('pt-BR', {
-        style: 'currency',
-        currency: 'BRL',
-    }).format(value);
-}
+const { formatCurrency } = useMoney();
 </script>
 
 <template>
@@ -223,7 +218,10 @@ function formatCurrency(value?: number): string {
                                 </p>
                             </div>
                             <div class="text-right">
-                                <Badge variant="outline">{{ contract.status }}</Badge>
+                                <StatusBadge
+                                    type="contract"
+                                    :status="contract.status"
+                                />
                                 <p class="mt-1 tabular-nums">
                                     {{ formatCurrency(contract.monthly_rent) }}
                                 </p>
@@ -243,7 +241,7 @@ function formatCurrency(value?: number): string {
                     </p>
                 </div>
                 <Link
-                    href="/charges"
+                    :href="chargesIndex()"
                     class="shrink-0 text-sm font-medium text-primary underline-offset-4 hover:underline"
                 >
                     Ver todas
@@ -283,12 +281,13 @@ function formatCurrency(value?: number): string {
                                     {{ formatCurrency(charge.amount) }}
                                 </td>
                                 <td class="py-4 pr-6 text-muted-foreground tabular-nums">
-                                    {{ charge.due_date ?? '-' }}
+                                    {{ formatDate(charge.due_date, '-') }}
                                 </td>
                                 <td class="py-4">
-                                    <Badge variant="outline">
-                                        {{ charge.status ?? '-' }}
-                                    </Badge>
+                                    <StatusBadge
+                                        type="charge"
+                                        :status="charge.status"
+                                    />
                                 </td>
                             </tr>
                         </tbody>

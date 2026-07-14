@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { Form, Head, Link } from '@inertiajs/vue3';
+import { Pencil, Trash2 } from '@lucide/vue';
 import Heading from '@/components/Heading.vue';
+import TableActionButton from '@/components/TableActionButton.vue';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -8,6 +10,16 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import {
+    DataTable,
+    DataTableActionsCell,
+    DataTableActionsHeader,
+    DataTableCell,
+    DataTableHeadCell,
+    DataTableRow,
+} from '@/components/ui/data-table';
+import { dashboard } from '@/routes';
+import { create, destroy, edit, index } from '@/routes/admin/admins';
 
 defineProps<{
     admins: any[];
@@ -16,8 +28,8 @@ defineProps<{
 defineOptions({
     layout: {
         breadcrumbs: [
-            { title: 'Painel', href: '/dashboard' },
-            { title: 'Administradores', href: '/admins' },
+            { title: 'Painel', href: dashboard() },
+            { title: 'Administradores', href: index() },
         ],
     },
 });
@@ -33,65 +45,56 @@ defineOptions({
                 description="Gerencie os usuários administradores"
             />
             <Button as-child>
-                <Link href="/admins/create">Novo admin</Link>
+                <Link :href="create()">Novo admin</Link>
             </Button>
         </div>
 
-        <Card>
+        <Card class="border-border/80 shadow-sm">
             <CardHeader>
                 <CardTitle>Lista de administradores</CardTitle>
             </CardHeader>
             <CardContent>
                 <div
                     v-if="admins.length === 0"
-                    class="text-sm text-muted-foreground"
+                    class="rounded-xl bg-muted/50 px-6 py-12 text-center text-sm text-muted-foreground"
                 >
                     Nenhum administrador cadastrado.
                 </div>
-                <div v-else class="overflow-x-auto">
-                    <table class="w-full text-sm">
-                        <thead>
-                            <tr class="border-b text-left text-muted-foreground">
-                                <th class="pb-2 pr-4 font-medium">Nome</th>
-                                <th class="pb-2 pr-4 font-medium">E-mail</th>
-                                <th class="pb-2 font-medium">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr
-                                v-for="admin in admins"
-                                :key="admin.id"
-                                class="border-b last:border-0"
-                            >
-                                <td class="py-3 pr-4">{{ admin.name }}</td>
-                                <td class="py-3 pr-4">{{ admin.email }}</td>
-                                <td class="py-3">
-                                    <div class="flex items-center gap-2">
-                                        <Button as-child size="sm" variant="outline">
-                                            <Link :href="`/admins/${admin.id}/edit`">
-                                                Editar
-                                            </Link>
-                                        </Button>
-                                        <Form
-                                            :action="`/admins/${admin.id}`"
-                                            method="delete"
-                                            #default="{ processing }"
-                                        >
-                                            <Button
-                                                type="submit"
-                                                size="sm"
-                                                variant="destructive"
-                                                :disabled="processing"
-                                            >
-                                                Excluir
-                                            </Button>
-                                        </Form>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+                <DataTable v-else>
+                    <thead>
+                        <DataTableRow variant="header">
+                            <DataTableHeadCell>Nome</DataTableHeadCell>
+                            <DataTableHeadCell>E-mail</DataTableHeadCell>
+                            <DataTableActionsHeader />
+                        </DataTableRow>
+                    </thead>
+                    <tbody>
+                        <DataTableRow v-for="admin in admins" :key="admin.id">
+                            <DataTableCell>{{ admin.name }}</DataTableCell>
+                            <DataTableCell>{{ admin.email }}</DataTableCell>
+                            <DataTableActionsCell>
+                                <TableActionButton label="Editar" as-child>
+                                    <Link :href="edit(admin)">
+                                        <Pencil />
+                                        <span class="sr-only">Editar</span>
+                                    </Link>
+                                </TableActionButton>
+                                <Form
+                                    v-bind="destroy.form(admin)"
+                                    #default="{ processing }"
+                                >
+                                    <TableActionButton
+                                        label="Excluir"
+                                        :icon="Trash2"
+                                        type="submit"
+                                        variant="destructive"
+                                        :disabled="processing"
+                                    />
+                                </Form>
+                            </DataTableActionsCell>
+                        </DataTableRow>
+                    </tbody>
+                </DataTable>
             </CardContent>
         </Card>
     </div>

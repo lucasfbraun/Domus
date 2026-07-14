@@ -8,19 +8,20 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { dashboard } from '@/routes';
+import { create, index, store, update } from '@/routes/admin/properties';
 
 const props = defineProps<{
     property?: any | null;
     owners: any[];
+    types: { value: string; label: string }[];
 }>();
 
 const isEditing = computed(() => !!props.property?.id);
 
-const formAction = computed(() =>
-    isEditing.value ? `/properties/${props.property.id}` : '/properties',
+const form = computed(() =>
+    isEditing.value ? update.form(props.property) : store.form(),
 );
-
-const formMethod = computed(() => (isEditing.value ? 'put' : 'post'));
 
 const ownerOptions = computed(() =>
     props.owners.map((owner) => ({
@@ -32,9 +33,9 @@ const ownerOptions = computed(() =>
 defineOptions({
     layout: {
         breadcrumbs: [
-            { title: 'Painel', href: '/dashboard' },
-            { title: 'Imóveis', href: '/properties' },
-            { title: 'Formulário', href: '/properties/create' },
+            { title: 'Painel', href: dashboard() },
+            { title: 'Imóveis', href: index() },
+            { title: 'Formulário', href: create() },
         ],
     },
 });
@@ -50,8 +51,7 @@ defineOptions({
         />
 
         <Form
-            :action="formAction"
-            :method="formMethod"
+            v-bind="form"
             class="max-w-xl space-y-6"
             #default="{ errors, processing }"
         >
@@ -80,11 +80,13 @@ defineOptions({
 
             <div class="grid gap-2">
                 <Label for="type">Tipo</Label>
-                <Input
+                <FormSelect
                     id="type"
                     name="type"
-                    :default-value="property?.type"
-                    placeholder="Apartamento, casa, comercial..."
+                    :options="types"
+                    :default-value="property?.type ?? 'apartment'"
+                    placeholder="Selecione o tipo"
+                    required
                 />
                 <InputError :message="errors.type" />
             </div>

@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { Form, Head, Link } from '@inertiajs/vue3';
+import { Pencil, Trash2 } from '@lucide/vue';
 import Heading from '@/components/Heading.vue';
-import { Badge } from '@/components/ui/badge';
+import TableActionButton from '@/components/TableActionButton.vue';
+import StatusBadge from '@/components/StatusBadge.vue';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -9,6 +11,16 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import {
+    DataTable,
+    DataTableActionsCell,
+    DataTableActionsHeader,
+    DataTableCell,
+    DataTableHeadCell,
+    DataTableRow,
+} from '@/components/ui/data-table';
+import { dashboard } from '@/routes';
+import { create, destroy, edit, index } from '@/routes/admin/properties';
 
 defineProps<{
     properties: any[];
@@ -17,8 +29,8 @@ defineProps<{
 defineOptions({
     layout: {
         breadcrumbs: [
-            { title: 'Painel', href: '/dashboard' },
-            { title: 'Imóveis', href: '/properties' },
+            { title: 'Painel', href: dashboard() },
+            { title: 'Imóveis', href: index() },
         ],
     },
 });
@@ -34,79 +46,76 @@ defineOptions({
                 description="Gerencie os imóveis cadastrados"
             />
             <Button as-child>
-                <Link href="/properties/create">Novo imóvel</Link>
+                <Link :href="create()">Novo imóvel</Link>
             </Button>
         </div>
 
-        <Card>
+        <Card class="border-border/80 shadow-sm">
             <CardHeader>
                 <CardTitle>Lista de imóveis</CardTitle>
             </CardHeader>
             <CardContent>
                 <div
                     v-if="properties.length === 0"
-                    class="text-sm text-muted-foreground"
+                    class="rounded-xl bg-muted/50 px-6 py-12 text-center text-sm text-muted-foreground"
                 >
                     Nenhum imóvel cadastrado.
                 </div>
-                <div v-else class="overflow-x-auto">
-                    <table class="w-full text-sm">
-                        <thead>
-                            <tr class="border-b text-left text-muted-foreground">
-                                <th class="pb-2 pr-4 font-medium">Nome</th>
-                                <th class="pb-2 pr-4 font-medium">Endereço</th>
-                                <th class="pb-2 pr-4 font-medium">Tipo</th>
-                                <th class="pb-2 pr-4 font-medium">Status</th>
-                                <th class="pb-2 pr-4 font-medium">Proprietário</th>
-                                <th class="pb-2 font-medium">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr
-                                v-for="property in properties"
-                                :key="property.id"
-                                class="border-b last:border-0"
-                            >
-                                <td class="py-3 pr-4">{{ property.name }}</td>
-                                <td class="py-3 pr-4">{{ property.address ?? '—' }}</td>
-                                <td class="py-3 pr-4">{{ property.type ?? '—' }}</td>
-                                <td class="py-3 pr-4">
-                                    <Badge variant="outline">
-                                        {{ property.status ?? '—' }}
-                                    </Badge>
-                                </td>
-                                <td class="py-3 pr-4">
-                                    {{ property.owner?.name ?? '—' }}
-                                </td>
-                                <td class="py-3">
-                                    <div class="flex items-center gap-2">
-                                        <Button as-child size="sm" variant="outline">
-                                            <Link
-                                                :href="`/properties/${property.id}/edit`"
-                                            >
-                                                Editar
-                                            </Link>
-                                        </Button>
-                                        <Form
-                                            :action="`/properties/${property.id}`"
-                                            method="delete"
-                                            #default="{ processing }"
-                                        >
-                                            <Button
-                                                type="submit"
-                                                size="sm"
-                                                variant="destructive"
-                                                :disabled="processing"
-                                            >
-                                                Excluir
-                                            </Button>
-                                        </Form>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+                <DataTable v-else>
+                    <thead>
+                        <DataTableRow variant="header">
+                            <DataTableHeadCell>Nome</DataTableHeadCell>
+                            <DataTableHeadCell>Endereço</DataTableHeadCell>
+                            <DataTableHeadCell>Tipo</DataTableHeadCell>
+                            <DataTableHeadCell>Status</DataTableHeadCell>
+                            <DataTableHeadCell>Proprietário</DataTableHeadCell>
+                            <DataTableActionsHeader />
+                        </DataTableRow>
+                    </thead>
+                    <tbody>
+                        <DataTableRow
+                            v-for="property in properties"
+                            :key="property.id"
+                        >
+                            <DataTableCell>{{ property.name }}</DataTableCell>
+                            <DataTableCell>
+                                {{ property.address ?? '—' }}
+                            </DataTableCell>
+                            <DataTableCell>
+                                {{ property.type ?? '—' }}
+                            </DataTableCell>
+                            <DataTableCell>
+                                <StatusBadge
+                                    type="property"
+                                    :status="property.status"
+                                />
+                            </DataTableCell>
+                            <DataTableCell>
+                                {{ property.owner?.name ?? '—' }}
+                            </DataTableCell>
+                            <DataTableActionsCell>
+                                <TableActionButton label="Editar" as-child>
+                                    <Link :href="edit(property)">
+                                        <Pencil />
+                                        <span class="sr-only">Editar</span>
+                                    </Link>
+                                </TableActionButton>
+                                <Form
+                                    v-bind="destroy.form(property)"
+                                    #default="{ processing }"
+                                >
+                                    <TableActionButton
+                                        label="Excluir"
+                                        :icon="Trash2"
+                                        type="submit"
+                                        variant="destructive"
+                                        :disabled="processing"
+                                    />
+                                </Form>
+                            </DataTableActionsCell>
+                        </DataTableRow>
+                    </tbody>
+                </DataTable>
             </CardContent>
         </Card>
     </div>

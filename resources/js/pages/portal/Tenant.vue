@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import { Head, Link } from '@inertiajs/vue3';
-import { useHttp } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { Head, Link, useHttp } from '@inertiajs/vue3';
+import { Eye } from '@lucide/vue';
+import { computed, ref } from 'vue';
+import { toast } from 'vue-sonner';
 import Heading from '@/components/Heading.vue';
-import { Badge } from '@/components/ui/badge';
+import PixPaymentPanel from '@/components/PixPaymentPanel.vue';
+import TableActionButton from '@/components/TableActionButton.vue';
+import StatusBadge from '@/components/StatusBadge.vue';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -11,46 +14,134 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import {
+    DataTable,
+    DataTableActionsCell,
+    DataTableActionsHeader,
+    DataTableCell,
+    DataTableHeadCell,
+    DataTableRow,
+} from '@/components/ui/data-table';
+import { formatDate } from '@/lib/dates';
+import { useMoney } from '@/composables/useMoney';
+import { pix, receipt } from '@/routes/charges';
+import { show } from '@/routes/contracts';
+import { portal } from '@/routes/tenant';
 
-defineProps<{
+type PortalCharge = {
+    id: number;
+    description?: string | null;
+    amount: number;
+    amount_due: number;
+    has_penalties?: boolean;
+    status: string;
+    due_date: string;
+    is_paid: boolean;
+    property?: string | null;
+    pix_qr_code?: string | null;
+    pix_qr_code_base64?: string | null;
+    pix_expires_at?: string | null;
+    has_pix?: boolean;
+};
+
+type PixPayload = {
+    copyPaste: string;
+    qrCodeBase64: string | null;
+    expiresAt: string | null;
+};
+
+type PixResponse = {
+    qr_code?: string;
+    copy_paste?: string;
+    qr_code_base64?: string;
+    expires_at?: string;
+};
+
+const props = defineProps<{
     contracts: any[];
-    charges: any[];
+    charges: PortalCharge[];
 }>();
 
 defineOptions({
     layout: {
         breadcrumbs: [
-            { title: 'Portal Inquilino', href: '/inquilino' },
+            { title: 'Portal Inquilino', href: portal() },
         ],
     },
 });
 
-const http = useHttp();
-const payingId = ref<number | null>(null);
-const pixData = ref<Record<number, string>>({});
+const { formatCurrency } = useMoney();
 
-function formatCurrency(value?: number): string {
-    if (value === undefined || value === null) {
-        return '—';
+const http = useHttp<Record<string, never>, PixResponse>();
+const payingId = ref<number | null>(null);
+const generatedPix = ref<Record<number, PixPayload>>({});
+
+const pixByCharge = computed<Record<number, PixPayload>>(() => {
+    const merged: Record<number, PixPayload> = { ...generatedPix.value };
+
+    for (const charge of props.charges) {
+        if (merged[charge.id] || !charge.pix_qr_code) {
+            continue;
+        }
+
+        merged[charge.id] = {
+            copyPaste: charge.pix_qr_code,
+            qrCodeBase64: charge.pix_qr_code_base64 ?? null,
+            expiresAt: charge.pix_expires_at ?? null,
+        };
     }
 
-    return new Intl.NumberFormat('pt-BR', {
-        style: 'currency',
-        currency: 'BRL',
-    }).format(value);
+    return merged;
+});
+
+function pixErrorMessage(response: { data?: unknown }): string {
+    try {
+        const body =
+            typeof response.data === 'string'
+                ? JSON.parse(response.data)
+                : response.data;
+
+        if (
+            body &&
+            typeof body === 'object' &&
+            'message' in body &&
+            typeof body.message === 'string' &&
+            body.message.length > 0
+        ) {
+            return body.message;
+        }
+    } catch {
+        // ignore parse errors
+    }
+
+    return 'Não foi possível gerar o Pix. Tente novamente.';
 }
 
-async function payPix(id: number): Promise<void> {
+function payPix(id: number): void {
     payingId.value = id;
 
-    try {
-        const response = await http.post(`/charges/${id}/pix`);
-        const data = response as { qr_code?: string; copy_paste?: string };
+    http.post(pix.url(id), {
+        onSuccess: (data) => {
+            if (!data) {
+                return;
+            }
 
-        pixData.value[id] = data.copy_paste ?? data.qr_code ?? 'PIX gerado com sucesso.';
-    } finally {
-        payingId.value = null;
-    }
+            generatedPix.value[id] = {
+                copyPaste:
+                    data.copy_paste ??
+                    data.qr_code ??
+                    'PIX gerado com sucesso.',
+                qrCodeBase64: data.qr_code_base64 ?? null,
+                expiresAt: data.expires_at ?? null,
+            };
+        },
+        onHttpException: (response) => {
+            toast.error(pixErrorMessage(response), { richColors: true });
+        },
+        onFinish: () => {
+            payingId.value = null;
+        },
+    });
 }
 </script>
 
@@ -63,63 +154,65 @@ async function payPix(id: number): Promise<void> {
             description="Seus contratos e cobranças"
         />
 
-        <Card>
+        <Card class="border-border/80 shadow-sm">
             <CardHeader>
                 <CardTitle>Meus contratos</CardTitle>
             </CardHeader>
             <CardContent>
                 <div
                     v-if="contracts.length === 0"
-                    class="text-sm text-muted-foreground"
+                    class="rounded-xl bg-muted/50 px-6 py-12 text-center text-sm text-muted-foreground"
                 >
                     Nenhum contrato encontrado.
                 </div>
-                <div v-else class="overflow-x-auto">
-                    <table class="w-full text-sm">
-                        <thead>
-                            <tr class="border-b text-left text-muted-foreground">
-                                <th class="pb-2 pr-4 font-medium">Imóvel</th>
-                                <th class="pb-2 pr-4 font-medium">Valor</th>
-                                <th class="pb-2 pr-4 font-medium">Início</th>
-                                <th class="pb-2 pr-4 font-medium">Status</th>
-                                <th class="pb-2 font-medium">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr
-                                v-for="contract in contracts"
-                                :key="contract.id"
-                                class="border-b last:border-0"
-                            >
-                                <td class="py-3 pr-4">
-                                    {{ contract.property?.name ?? '—' }}
-                                </td>
-                                <td class="py-3 pr-4">
-                                    {{ formatCurrency(contract.monthly_rent) }}
-                                </td>
-                                <td class="py-3 pr-4">
-                                    {{ contract.starts_at ?? '—' }}
-                                </td>
-                                <td class="py-3 pr-4">
-                                    <Badge variant="outline">
-                                        {{ contract.status ?? '—' }}
-                                    </Badge>
-                                </td>
-                                <td class="py-3">
-                                    <Button as-child size="sm" variant="outline">
-                                        <Link :href="`/contrato/${contract.id}`">
-                                            Ver contrato
-                                        </Link>
-                                    </Button>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+                <DataTable v-else>
+                    <thead>
+                        <DataTableRow variant="header">
+                            <DataTableHeadCell>Imóvel</DataTableHeadCell>
+                            <DataTableHeadCell>Valor</DataTableHeadCell>
+                            <DataTableHeadCell>Início</DataTableHeadCell>
+                            <DataTableHeadCell>Status</DataTableHeadCell>
+                            <DataTableActionsHeader />
+                        </DataTableRow>
+                    </thead>
+                    <tbody>
+                        <DataTableRow
+                            v-for="contract in contracts"
+                            :key="contract.id"
+                        >
+                            <DataTableCell>
+                                {{ contract.property?.name ?? '—' }}
+                            </DataTableCell>
+                            <DataTableCell class="tabular-nums">
+                                {{ formatCurrency(contract.monthly_rent) }}
+                            </DataTableCell>
+                            <DataTableCell>
+                                {{ formatDate(contract.starts_at) }}
+                            </DataTableCell>
+                            <DataTableCell>
+                                <StatusBadge
+                                    type="contract"
+                                    :status="contract.status"
+                                />
+                            </DataTableCell>
+                            <DataTableActionsCell>
+                                <TableActionButton
+                                    label="Ver contrato"
+                                    as-child
+                                >
+                                    <Link :href="show(contract)">
+                                        <Eye />
+                                        <span class="sr-only">Ver contrato</span>
+                                    </Link>
+                                </TableActionButton>
+                            </DataTableActionsCell>
+                        </DataTableRow>
+                    </tbody>
+                </DataTable>
             </CardContent>
         </Card>
 
-        <Card>
+        <Card class="border-border/80 shadow-sm">
             <CardHeader>
                 <CardTitle>Minhas cobranças</CardTitle>
             </CardHeader>
@@ -130,37 +223,51 @@ async function payPix(id: number): Promise<void> {
                 >
                     Nenhuma cobrança pendente.
                 </div>
-                <div v-else class="space-y-4">
+                <div v-else class="space-y-3">
                     <div
                         v-for="charge in charges"
                         :key="charge.id"
-                        class="rounded-lg border p-4"
+                        class="rounded-xl border border-border/80 p-4"
                     >
-                        <div class="flex flex-wrap items-center justify-between gap-4">
-                            <div>
-                                <p class="font-medium">
-                                    {{ charge.description ?? 'Cobrança' }}
-                                </p>
+                        <div class="flex flex-wrap items-start justify-between gap-3">
+                            <div class="min-w-0 space-y-2">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <p class="font-medium">
+                                        {{ charge.description ?? 'Cobrança' }}
+                                    </p>
+                                    <StatusBadge
+                                        type="charge"
+                                        :status="charge.status"
+                                    />
+                                </div>
                                 <p class="text-sm text-muted-foreground">
-                                    {{ charge.property ?? 'Imóvel' }} ·
-                                    Vencimento: {{ charge.due_date ?? '—' }} ·
-                                    {{ formatCurrency(charge.amount) }}
+                                    {{ charge.property ?? 'Imóvel' }}
                                 </p>
-                                <Badge class="mt-2" variant="outline">
-                                    {{ charge.status ?? '—' }}
-                                </Badge>
+                                <p class="text-sm tabular-nums text-muted-foreground">
+                                    Vencimento {{ formatDate(charge.due_date) }}
+                                    <span class="mx-1.5 text-border">|</span>
+                                    {{ formatCurrency(charge.amount_due) }}
+                                    <span
+                                        v-if="charge.has_penalties"
+                                        class="ms-1 text-xs"
+                                    >
+                                        (com juros/multa; original
+                                        {{ formatCurrency(charge.amount) }})
+                                    </span>
+                                </p>
                             </div>
-                            <div class="flex flex-wrap gap-2">
+
+                            <div class="flex shrink-0 flex-wrap gap-2">
                                 <Button
-                                    v-if="!charge.is_paid"
+                                    v-if="!charge.is_paid && !pixByCharge[charge.id]"
                                     size="sm"
                                     :disabled="payingId === charge.id"
                                     @click="payPix(charge.id)"
                                 >
                                     {{
                                         payingId === charge.id
-                                            ? 'Gerando PIX...'
-                                            : 'Pagar com PIX'
+                                            ? 'Gerando Pix...'
+                                            : 'Pagar com Pix'
                                     }}
                                 </Button>
                                 <Button
@@ -169,18 +276,23 @@ async function payPix(id: number): Promise<void> {
                                     size="sm"
                                     variant="outline"
                                 >
-                                    <a :href="`/charges/${charge.id}/receipt`">
+                                    <a :href="receipt.url(charge.id)">
                                         Baixar recibo
                                     </a>
                                 </Button>
                             </div>
                         </div>
-                        <p
-                            v-if="pixData[charge.id]"
-                            class="mt-3 break-all rounded bg-muted p-3 text-xs"
-                        >
-                            {{ pixData[charge.id] }}
-                        </p>
+
+                        <PixPaymentPanel
+                            v-if="pixByCharge[charge.id]"
+                            :copy-paste="pixByCharge[charge.id].copyPaste"
+                            :qr-code-base64="
+                                pixByCharge[charge.id].qrCodeBase64
+                            "
+                            :expires-at="pixByCharge[charge.id].expiresAt"
+                            :refreshing="payingId === charge.id"
+                            @refresh="payPix(charge.id)"
+                        />
                     </div>
                 </div>
             </CardContent>

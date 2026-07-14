@@ -27,6 +27,20 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
+import { dashboard } from '@/routes';
+import { index as admins } from '@/routes/admin/admins';
+import { index as charges } from '@/routes/admin/charges';
+import { index as contracts } from '@/routes/admin/contracts';
+import { index as integrations } from '@/routes/admin/integrations';
+import { index as occurrences } from '@/routes/admin/occurrences';
+import { index as owners } from '@/routes/admin/owners';
+import { index as properties } from '@/routes/admin/properties';
+import { index as rateios } from '@/routes/admin/rateios';
+import { index as receivers } from '@/routes/admin/receivers';
+import { index as templates } from '@/routes/admin/templates';
+import { index as tenants } from '@/routes/admin/tenants';
+import { portal as receiverPortal } from '@/routes/receiver';
+import { portal as tenantPortal } from '@/routes/tenant';
 import type { NavItem } from '@/types';
 
 const page = usePage();
@@ -48,7 +62,7 @@ const isReceiver = computed(() => roles.value.includes('receiver'));
 const adminMainNavItems = computed<NavItem[]>(() => [
     {
         title: 'Painel',
-        href: '/dashboard',
+        href: dashboard(),
         icon: LayoutGrid,
     },
 ]);
@@ -56,27 +70,27 @@ const adminMainNavItems = computed<NavItem[]>(() => [
 const cadastrosNavItems = computed<NavItem[]>(() => [
     {
         title: 'Proprietários',
-        href: '/owners',
+        href: owners(),
         icon: UserCircle,
     },
     {
         title: 'Imóveis',
-        href: '/properties',
+        href: properties(),
         icon: Building2,
     },
     {
         title: 'Inquilinos',
-        href: '/tenants',
+        href: tenants(),
         icon: Users,
     },
     {
         title: 'Recebedores',
-        href: '/receivers',
+        href: receivers(),
         icon: Wallet,
     },
     {
         title: 'Administradores',
-        href: '/admins',
+        href: admins(),
         icon: Shield,
     },
 ]);
@@ -84,32 +98,32 @@ const cadastrosNavItems = computed<NavItem[]>(() => [
 const adminOperationsNavItems = computed<NavItem[]>(() => [
     {
         title: 'Contratos',
-        href: '/contracts',
+        href: contracts(),
         icon: Handshake,
     },
     {
         title: 'Modelos',
-        href: '/templates',
+        href: templates(),
         icon: FileText,
     },
     {
         title: 'Cobranças',
-        href: '/charges',
+        href: charges(),
         icon: CreditCard,
     },
     {
         title: 'Ocorrências',
-        href: '/occurrences',
+        href: occurrences(),
         icon: MessageSquareWarning,
     },
     {
         title: 'Rateios',
-        href: '/rateios',
+        href: rateios(),
         icon: PieChart,
     },
     {
         title: 'Integrações',
-        href: '/integracoes',
+        href: integrations(),
         icon: Plug,
     },
 ]);
@@ -120,7 +134,7 @@ const portalNavItems = computed<NavItem[]>(() => {
     if (isTenant.value) {
         items.push({
             title: 'Portal Inquilino',
-            href: '/inquilino',
+            href: tenantPortal(),
             icon: Users,
         });
     }
@@ -128,7 +142,7 @@ const portalNavItems = computed<NavItem[]>(() => {
     if (isReceiver.value) {
         items.push({
             title: 'Portal Recebedor',
-            href: '/recebedor',
+            href: receiverPortal(),
             icon: Wallet,
         });
     }
@@ -143,7 +157,7 @@ const portalNavItems = computed<NavItem[]>(() => {
             <SidebarMenu>
                 <SidebarMenuItem>
                     <SidebarMenuButton size="lg" as-child>
-                        <Link href="/dashboard">
+                        <Link :href="dashboard()">
                             <AppLogo />
                         </Link>
                     </SidebarMenuButton>

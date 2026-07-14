@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\PropertyType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StorePropertyRequest;
 use App\Http\Requests\Admin\UpdatePropertyRequest;
@@ -29,6 +30,7 @@ class PropertyController extends Controller
         return Inertia::render('admin/properties/Form', [
             'property' => null,
             'owners' => Owner::query()->orderBy('name')->get(),
+            'types' => $this->typeOptions(),
         ]);
     }
 
@@ -50,6 +52,7 @@ class PropertyController extends Controller
         return Inertia::render('admin/properties/Form', [
             'property' => $property->load('owner'),
             'owners' => Owner::query()->orderBy('name')->get(),
+            'types' => $this->typeOptions(),
         ]);
     }
 
@@ -73,5 +76,19 @@ class PropertyController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Imovel removido.']);
 
         return to_route('admin.properties.index');
+    }
+
+    /**
+     * @return list<array{value: string, label: string}>
+     */
+    private function typeOptions(): array
+    {
+        return array_map(
+            fn (PropertyType $type) => [
+                'value' => $type->value,
+                'label' => $type->label(),
+            ],
+            PropertyType::cases(),
+        );
     }
 }

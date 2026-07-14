@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { computed } from 'vue';
+import { dashboard } from '@/routes';
+import { create, index, store, update } from '@/routes/admin/admins';
 
 const props = defineProps<{
     admin?: any | null;
@@ -13,18 +15,16 @@ const props = defineProps<{
 
 const isEditing = computed(() => !!props.admin?.id);
 
-const formAction = computed(() =>
-    isEditing.value ? `/admins/${props.admin.id}` : '/admins',
+const form = computed(() =>
+    isEditing.value ? update.form(props.admin) : store.form(),
 );
-
-const formMethod = computed(() => (isEditing.value ? 'put' : 'post'));
 
 defineOptions({
     layout: {
         breadcrumbs: [
-            { title: 'Painel', href: '/dashboard' },
-            { title: 'Administradores', href: '/admins' },
-            { title: 'Formulário', href: '/admins/create' },
+            { title: 'Painel', href: dashboard() },
+            { title: 'Administradores', href: index() },
+            { title: 'Formulário', href: create() },
         ],
     },
 });
@@ -40,8 +40,7 @@ defineOptions({
         />
 
         <Form
-            :action="formAction"
-            :method="formMethod"
+            v-bind="form"
             class="max-w-xl space-y-6"
             #default="{ errors, processing }"
         >

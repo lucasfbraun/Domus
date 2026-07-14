@@ -8,6 +8,7 @@ use App\Enums\PaymentStatus;
 use App\Models\Charge;
 use App\Models\Payment;
 use App\Models\Receiver;
+use App\Support\Money;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
@@ -83,6 +84,17 @@ class MercadoPagoService
 
         if (in_array($charge->status, [ChargeStatus::Paid, ChargeStatus::Cancelled], true)) {
             throw new \InvalidArgumentException('Esta cobranca nao esta em aberto.');
+        }
+
+        if ($this->hasReusablePix($charge)) {
+            return [
+                'qrCode' => (string) $charge->pix_qr_code,
+                'qrCodeBase64' => (string) ($charge->pix_qr_code_base64 ?? ''),
+                'expiresAt' => $charge->pix_expires_at?->toIso8601String() ?? now()->addHour()->toIso8601String(),
+                'orderId' => (string) $charge->mercado_pago_order_id,
+                'transactionId' => $charge->mercado_pago_transaction_id,
+                'ticketUrl' => $charge->payment_url,
+            ];
         }
 
         $accessToken = $this->ensureFreshAccessToken($charge->receiver);
@@ -324,14 +336,14 @@ class MercadoPagoService
     {
         $charge->loadMissing('contract');
 
-        return Finance::computeAmountDue([
+        return Money::roundCents(Finance::computeAmountDue([
             'originalAmount' => (float) $charge->original_amount,
             'dueDate' => $charge->due_date->format('Y-m-d'),
             'status' => $charge->status->value,
             'graceDays' => $charge->contract->grace_days,
             'fineRate' => (float) $charge->contract->fine_rate,
             'monthlyInterestRate' => (float) $charge->contract->monthly_interest_rate,
-        ]);
+        ]));
     }
 
     /**
@@ -373,6 +385,14 @@ class MercadoPagoService
             ),
             'transactionId' => isset($payment['id']) ? (string) $payment['id'] : null,
         ];
+    }
+
+    private function hasReusablePix(Charge $charge): bool
+    {
+        return filled($charge->mercado_pago_order_id)
+            && filled($charge->pix_qr_code)
+            && $charge->pix_expires_at !== null
+            && $charge->pix_expires_at->isFuture();
     }
 
     private function ensureFreshAccessToken(Receiver $receiver): string
@@ -493,7 +513,7 @@ class MercadoPagoService
 
     private function formatAmount(float $amount): string
     {
-        return number_format($amount, 2, '.', '');
+        return Money::formatForApi($amount);
     }
 
     /**

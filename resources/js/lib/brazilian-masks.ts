@@ -45,6 +45,12 @@ export function formatPhone(value: string): string {
 
 export type BrazilianMask = 'cpf-cnpj' | 'phone';
 
+/** Max length of the masked display value (including punctuation). */
+export const brazilianMaskMaxLength: Record<BrazilianMask, number> = {
+    phone: 15, // (00) 00000-0000
+    'cpf-cnpj': 18, // 00.000.000/0000-00
+};
+
 export function applyBrazilianMask(value: string, mask: BrazilianMask): string {
     return mask === 'phone' ? formatPhone(value) : formatCpfCnpj(value);
 }

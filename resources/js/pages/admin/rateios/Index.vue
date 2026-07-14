@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
+import { FileDown, Trash2 } from '@lucide/vue';
 import { computed } from 'vue';
 import FormSelect from '@/components/FormSelect.vue';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
+import TableActionButton from '@/components/TableActionButton.vue';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -11,11 +13,22 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import {
+    DataTable,
+    DataTableActionsCell,
+    DataTableActionsHeader,
+    DataTableCell,
+    DataTableHeadCell,
+    DataTableRow,
+} from '@/components/ui/data-table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
+import { dashboard } from '@/routes';
+import { useMoney } from '@/composables/useMoney';
+import { destroy, index, invoice, store } from '@/routes/admin/rateios';
 
 const props = withDefaults(
     defineProps<{
@@ -49,22 +62,13 @@ const categoryOptions = computed(() =>
 defineOptions({
     layout: {
         breadcrumbs: [
-            { title: 'Painel', href: '/dashboard' },
-            { title: 'Rateios', href: '/rateios' },
+            { title: 'Painel', href: dashboard() },
+            { title: 'Rateios', href: index() },
         ],
     },
 });
 
-function formatCurrency(value?: number | string | null): string {
-    if (value === undefined || value === null || value === '') {
-        return '-';
-    }
-
-    return new Intl.NumberFormat('pt-BR', {
-        style: 'currency',
-        currency: 'BRL',
-    }).format(Number(value));
-}
+const { formatCurrency } = useMoney();
 
 function categoryLabel(category?: string | null): string {
     if (!category) {
@@ -117,8 +121,7 @@ function allocationSummary(rateio: any): string {
             </CardHeader>
             <CardContent>
                 <Form
-                    action="/rateios"
-                    method="post"
+                    v-bind="store.form()"
                     enctype="multipart/form-data"
                     class="grid gap-5 md:grid-cols-2"
                     #default="{ errors, processing }"
@@ -259,80 +262,69 @@ function allocationSummary(rateio: any): string {
                 >
                     Nenhum rateio cadastrado.
                 </div>
-                <div v-else class="overflow-x-auto">
-                    <table class="w-full text-sm">
-                        <thead>
-                            <tr
-                                class="border-b border-border/80 text-left text-muted-foreground"
-                            >
-                                <th class="pb-3 pr-6 font-medium">Categoria</th>
-                                <th class="pb-3 pr-6 font-medium">Referência</th>
-                                <th class="pb-3 pr-6 font-medium">Valor</th>
-                                <th class="pb-3 pr-6 font-medium">Divisão</th>
-                                <th class="pb-3 pr-6 font-medium">Imóveis</th>
-                                <th class="pb-3 font-medium">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr
-                                v-for="rateio in rateios"
-                                :key="rateio.id"
-                                class="border-b border-border/60 last:border-0"
-                            >
-                                <td class="py-4 pr-6">
-                                    {{ categoryLabel(rateio.category) }}
-                                </td>
-                                <td class="py-4 pr-6 tabular-nums">
-                                    {{ rateio.reference ?? '-' }}
-                                </td>
-                                <td class="py-4 pr-6 tabular-nums">
-                                    {{ formatCurrency(rateio.total_amount) }}
-                                </td>
-                                <td class="py-4 pr-6">
-                                    {{
-                                        splitModeLabel(
-                                            rateio.split_mode?.value ??
-                                                rateio.split_mode,
-                                        )
-                                    }}
-                                </td>
-                                <td class="py-4 pr-6">
-                                    {{ allocationSummary(rateio) }}
-                                </td>
-                                <td class="py-4">
-                                    <div class="flex items-center gap-2">
-                                        <Button
-                                            v-if="rateio.invoice_path"
-                                            as-child
-                                            size="sm"
-                                            variant="outline"
-                                        >
-                                            <a
-                                                :href="`/rateios/${rateio.id}/invoice`"
-                                            >
-                                                Comprovante
-                                            </a>
-                                        </Button>
-                                        <Form
-                                            :action="`/rateios/${rateio.id}`"
-                                            method="delete"
-                                            #default="{ processing: deleting }"
-                                        >
-                                            <Button
-                                                type="submit"
-                                                size="sm"
-                                                variant="destructive"
-                                                :disabled="deleting"
-                                            >
-                                                Excluir
-                                            </Button>
-                                        </Form>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+                <DataTable v-else>
+                    <thead>
+                        <DataTableRow variant="header">
+                            <DataTableHeadCell>Categoria</DataTableHeadCell>
+                            <DataTableHeadCell>Referência</DataTableHeadCell>
+                            <DataTableHeadCell>Valor</DataTableHeadCell>
+                            <DataTableHeadCell>Divisão</DataTableHeadCell>
+                            <DataTableHeadCell>Imóveis</DataTableHeadCell>
+                            <DataTableActionsHeader />
+                        </DataTableRow>
+                    </thead>
+                    <tbody>
+                        <DataTableRow
+                            v-for="rateio in rateios"
+                            :key="rateio.id"
+                        >
+                            <DataTableCell>
+                                {{ categoryLabel(rateio.category) }}
+                            </DataTableCell>
+                            <DataTableCell class="tabular-nums">
+                                {{ rateio.reference ?? '-' }}
+                            </DataTableCell>
+                            <DataTableCell class="tabular-nums">
+                                {{ formatCurrency(rateio.total_amount) }}
+                            </DataTableCell>
+                            <DataTableCell>
+                                {{
+                                    splitModeLabel(
+                                        rateio.split_mode?.value ??
+                                            rateio.split_mode,
+                                    )
+                                }}
+                            </DataTableCell>
+                            <DataTableCell>
+                                {{ allocationSummary(rateio) }}
+                            </DataTableCell>
+                            <DataTableActionsCell>
+                                <TableActionButton
+                                    v-if="rateio.invoice_path"
+                                    label="Comprovante"
+                                    as-child
+                                >
+                                    <a :href="invoice(rateio).url">
+                                        <FileDown />
+                                        <span class="sr-only">Comprovante</span>
+                                    </a>
+                                </TableActionButton>
+                                <Form
+                                    v-bind="destroy.form(rateio)"
+                                    #default="{ processing: deleting }"
+                                >
+                                    <TableActionButton
+                                        label="Excluir"
+                                        :icon="Trash2"
+                                        type="submit"
+                                        variant="destructive"
+                                        :disabled="deleting"
+                                    />
+                                </Form>
+                            </DataTableActionsCell>
+                        </DataTableRow>
+                    </tbody>
+                </DataTable>
             </CardContent>
         </Card>
     </div>

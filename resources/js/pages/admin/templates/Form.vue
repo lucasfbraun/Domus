@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { dashboard } from '@/routes';
+import { create, index, store, update } from '@/routes/admin/templates';
 
 const props = defineProps<{
     template?: any | null;
@@ -14,18 +16,16 @@ const props = defineProps<{
 
 const isEditing = computed(() => !!props.template?.id);
 
-const formAction = computed(() =>
-    isEditing.value ? `/templates/${props.template.id}` : '/templates',
+const form = computed(() =>
+    isEditing.value ? update.form(props.template) : store.form(),
 );
-
-const formMethod = computed(() => (isEditing.value ? 'put' : 'post'));
 
 defineOptions({
     layout: {
         breadcrumbs: [
-            { title: 'Painel', href: '/dashboard' },
-            { title: 'Modelos', href: '/templates' },
-            { title: 'Formulário', href: '/templates/create' },
+            { title: 'Painel', href: dashboard() },
+            { title: 'Modelos', href: index() },
+            { title: 'Formulário', href: create() },
         ],
     },
 });
@@ -41,8 +41,7 @@ defineOptions({
         />
 
         <Form
-            :action="formAction"
-            :method="formMethod"
+            v-bind="form"
             class="max-w-3xl space-y-6"
             #default="{ errors, processing }"
         >

@@ -10,6 +10,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { dashboard } from '@/routes';
+import { create, index, store, update } from '@/routes/admin/contracts';
 
 const props = defineProps<{
     contract?: any | null;
@@ -21,11 +23,9 @@ const props = defineProps<{
 
 const isEditing = computed(() => !!props.contract?.id);
 
-const formAction = computed(() =>
-    isEditing.value ? `/contracts/${props.contract.id}` : '/contracts',
+const form = computed(() =>
+    isEditing.value ? update.form(props.contract) : store.form(),
 );
-
-const formMethod = computed(() => (isEditing.value ? 'put' : 'post'));
 
 const propertyOptions = computed(() =>
     props.properties.map((property) => ({
@@ -74,9 +74,9 @@ const interestPercent = computed(() =>
 defineOptions({
     layout: {
         breadcrumbs: [
-            { title: 'Painel', href: '/dashboard' },
-            { title: 'Contratos', href: '/contracts' },
-            { title: 'Formulário', href: '/contracts/create' },
+            { title: 'Painel', href: dashboard() },
+            { title: 'Contratos', href: index() },
+            { title: 'Formulário', href: create() },
         ],
     },
 });
@@ -92,8 +92,7 @@ defineOptions({
         />
 
         <Form
-            :action="formAction"
-            :method="formMethod"
+            v-bind="form"
             class="max-w-2xl space-y-6"
             #default="{ errors, processing }"
         >

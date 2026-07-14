@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue';
-import { onMounted, ref, useTemplateRef } from 'vue';
+import { computed, onMounted, ref, useTemplateRef } from 'vue';
 import { Input } from '@/components/ui/input';
 import {
     applyBrazilianMask,
+    brazilianMaskMaxLength,
     type BrazilianMask,
 } from '@/lib/brazilian-masks';
 
@@ -15,6 +16,7 @@ const props = defineProps<{
 
 const displayValue = ref('');
 const inputRef = useTemplateRef<{ focus: () => void }>('inputRef');
+const maxLength = computed(() => brazilianMaskMaxLength[props.mask]);
 
 onMounted(() => {
     if (props.defaultValue != null && props.defaultValue !== '') {
@@ -39,6 +41,7 @@ defineExpose({
         ref="inputRef"
         :model-value="displayValue"
         :class="props.class"
+        :maxlength="maxLength"
         inputmode="numeric"
         autocomplete="off"
         @update:model-value="onUpdate"

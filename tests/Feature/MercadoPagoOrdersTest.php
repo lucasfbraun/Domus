@@ -8,6 +8,7 @@ use App\Models\Contract;
 use App\Models\Payment;
 use App\Models\Receiver;
 use App\Models\Tenant;
+use App\Models\User;
 use App\Services\MercadoPagoService;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -56,6 +57,29 @@ function makeOpenCharge(): Charge
             'original_amount' => 1500.50,
         ]);
 }
+
+test('createPixCharge reutiliza pix valido sem criar nova order', function () {
+    $charge = makeOpenCharge();
+    $charge->update([
+        'status' => ChargeStatus::WaitingPayment,
+        'mercado_pago_order_id' => 'ORD01EXISTING',
+        'mercado_pago_transaction_id' => 'PAY01EXISTING',
+        'pix_qr_code' => '00020126existing-pix',
+        'pix_qr_code_base64' => 'base64existing',
+        'pix_expires_at' => now()->addMinutes(30),
+        'payment_url' => 'https://www.mercadopago.com.br/sandbox/payments/ticket',
+    ]);
+
+    Http::fake();
+
+    $result = app(MercadoPagoService::class)->createPixCharge($charge->fresh());
+
+    expect($result['orderId'])->toBe('ORD01EXISTING')
+        ->and($result['qrCode'])->toBe('00020126existing-pix')
+        ->and($result['qrCodeBase64'])->toBe('base64existing');
+
+    Http::assertNothingSent();
+});
 
 test('createPixCharge cria order na Orders API e grava dados do Pix', function () {
     $charge = makeOpenCharge();
@@ -210,4 +234,27 @@ test('webhook rejeita assinatura invalida', function () {
     ]);
 
     $response->assertUnauthorized();
+});
+
+test('createPix retorna erro amigavel quando Mercado Pago falha', function () {
+    $charge = makeOpenCharge();
+
+    Http::fake([
+        'https://api.mercadopago.com/v1/orders' => Http::response([
+            'errors' => [[
+                'code' => 'failed',
+                'message' => 'The following transactions failed',
+                'details' => ['PAY01TEST: processing_error'],
+            ]],
+        ], 402),
+    ]);
+
+    $admin = User::factory()->admin()->create();
+
+    $this->actingAs($admin)
+        ->postJson(route('charges.pix', $charge))
+        ->assertStatus(502)
+        ->assertJsonFragment([
+            'message' => 'O Mercado Pago recusou gerar este Pix (erro de processamento). No sandbox, valores acima de R$ 1.000 costumam falhar — em produção o valor com juros/multa deve funcionar normalmente.',
+        ]);
 });

@@ -8,26 +8,26 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { dashboard } from '@/routes';
+import { create, index, store, update } from '@/routes/admin/receivers';
+import { connect as connectMercadoPago } from '@/routes/admin/receivers/mercadopago';
 
 const props = defineProps<{
     receiver?: any | null;
-    connectUrl?: string | null;
 }>();
 
 const isEditing = computed(() => !!props.receiver?.id);
 
-const formAction = computed(() =>
-    isEditing.value ? `/receivers/${props.receiver.id}` : '/receivers',
+const form = computed(() =>
+    isEditing.value ? update.form(props.receiver) : store.form(),
 );
-
-const formMethod = computed(() => (isEditing.value ? 'put' : 'post'));
 
 defineOptions({
     layout: {
         breadcrumbs: [
-            { title: 'Painel', href: '/dashboard' },
-            { title: 'Recebedores', href: '/receivers' },
-            { title: 'Formulário', href: '/receivers/create' },
+            { title: 'Painel', href: dashboard() },
+            { title: 'Recebedores', href: index() },
+            { title: 'Formulário', href: create() },
         ],
     },
 });
@@ -43,20 +43,21 @@ defineOptions({
         />
 
         <div
-            v-if="connectUrl"
+            v-if="isEditing"
             class="rounded-lg border border-dashed p-4 text-sm"
         >
             <p class="mb-2 text-muted-foreground">
                 Conecte a conta Mercado Pago para receber pagamentos.
             </p>
             <Button as-child variant="outline">
-                <Link :href="connectUrl">Conectar Mercado Pago</Link>
+                <Link :href="connectMercadoPago(receiver)">
+                    Conectar Mercado Pago
+                </Link>
             </Button>
         </div>
 
         <Form
-            :action="formAction"
-            :method="formMethod"
+            v-bind="form"
             class="max-w-xl space-y-6"
             #default="{ errors, processing }"
         >

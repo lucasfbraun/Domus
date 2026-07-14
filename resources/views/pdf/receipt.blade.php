@@ -15,7 +15,7 @@
 
     <div class="section">
         <div><span class="label">Referencia:</span> {{ $charge->reference }}</div>
-        <div><span class="label">Valor pago:</span> R$ {{ number_format((float) ($payment?->amount_paid ?? $charge->original_amount), 2, ',', '.') }}</div>
+        <div><span class="label">Valor pago:</span> {{ \App\Support\Money::format((float) ($payment?->amount_paid ?? $charge->original_amount)) }}</div>
         <div><span class="label">Vencimento:</span> {{ $charge->due_date->format('d/m/Y') }}</div>
     </div>
 

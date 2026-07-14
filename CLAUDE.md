@@ -1,0 +1,55 @@
+# Project agent instructions (Claude)
+
+## Spatie Media Library (required for media)
+
+All image/media uploads MUST use `spatie/laravel-medialibrary`. Do not store images via raw `Storage::put`, `$file->store()`, or custom path columns when the file is media/image content.
+
+### Required model setup
+
+1. Implement `Spatie\MediaLibrary\HasMedia`
+2. Use `Spatie\MediaLibrary\InteractsWithMedia`
+3. Use `App\Models\Concerns\RegistersOptimizedWebpConversions`
+4. Call `$this->registerOptimizedWebpConversion()` inside `registerMediaConversions()`
+
+```php
+use App\Models\Concerns\RegistersOptimizedWebpConversions;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
+
+class Property extends Model implements HasMedia
+{
+    use InteractsWithMedia;
+    use RegistersOptimizedWebpConversions;
+
+    public function registerMediaConversions(?Media $media = null): void
+    {
+        $this->registerOptimizedWebpConversion();
+    }
+}
+```
+
+### Required conversion
+
+Every media-capable model must register a WebP conversion with optimization:
+
+```php
+$this->addMediaConversion('webp')
+    ->format('webp')
+    ->optimize();
+```
+
+Extra conversions (thumb, cover, etc.) are allowed, but each image conversion must also use `->format('webp')->optimize()` unless there is a documented exception (e.g. SVG icons, non-image files).
+
+### Adding / reading media
+
+```php
+$model->addMediaFromRequest('photo')->toMediaCollection('photos');
+$url = $model->getFirstMediaUrl('photos', 'webp');
+```
+
+### Exceptions
+
+Non-image documents (PDF contracts, invoices) may still use filesystem storage when they are not Media Library collections. Prefer Media Library when the file is an image or belongs to a media gallery.
+
+Also follow Cursor rules in `.cursor/rules/` and `AGENTS.md`.

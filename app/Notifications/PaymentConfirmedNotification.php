@@ -7,6 +7,7 @@ use App\Notifications\Concerns\DeterminesNotificationChannels;
 use App\Notifications\Messages\WhatsAppMessage;
 use App\Services\MercadoPagoService;
 use App\Services\WhatsAppClient;
+use App\Support\Money;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -69,6 +70,6 @@ class PaymentConfirmedNotification extends Notification implements ShouldQueue
 
     private function formattedAmount(): string
     {
-        return 'R$ '.number_format($this->amountDue(), 2, ',', '.');
+        return Money::format($this->amountDue());
     }
 }

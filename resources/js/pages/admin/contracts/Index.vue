@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { Form, Head, Link } from '@inertiajs/vue3';
+import { Eye, Pencil, Trash2 } from '@lucide/vue';
 import Heading from '@/components/Heading.vue';
-import { Badge } from '@/components/ui/badge';
+import TableActionButton from '@/components/TableActionButton.vue';
+import StatusBadge from '@/components/StatusBadge.vue';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -9,6 +11,24 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import {
+    DataTable,
+    DataTableActionsCell,
+    DataTableActionsHeader,
+    DataTableCell,
+    DataTableHeadCell,
+    DataTableRow,
+} from '@/components/ui/data-table';
+import { formatDate } from '@/lib/dates';
+import { useMoney } from '@/composables/useMoney';
+import { dashboard } from '@/routes';
+import {
+    create,
+    destroy,
+    edit,
+    index,
+    show,
+} from '@/routes/admin/contracts';
 
 defineProps<{
     contracts: any[];
@@ -17,22 +37,13 @@ defineProps<{
 defineOptions({
     layout: {
         breadcrumbs: [
-            { title: 'Painel', href: '/dashboard' },
-            { title: 'Contratos', href: '/contracts' },
+            { title: 'Painel', href: dashboard() },
+            { title: 'Contratos', href: index() },
         ],
     },
 });
 
-function formatCurrency(value?: number): string {
-    if (value === undefined || value === null) {
-        return '—';
-    }
-
-    return new Intl.NumberFormat('pt-BR', {
-        style: 'currency',
-        currency: 'BRL',
-    }).format(value);
-}
+const { formatCurrency } = useMoney();
 </script>
 
 <template>
@@ -45,94 +56,88 @@ function formatCurrency(value?: number): string {
                 description="Gerencie os contratos de locação"
             />
             <Button as-child>
-                <Link href="/contracts/create">Novo contrato</Link>
+                <Link :href="create()">Novo contrato</Link>
             </Button>
         </div>
 
-        <Card>
+        <Card class="border-border/80 shadow-sm">
             <CardHeader>
                 <CardTitle>Lista de contratos</CardTitle>
             </CardHeader>
             <CardContent>
                 <div
                     v-if="contracts.length === 0"
-                    class="text-sm text-muted-foreground"
+                    class="rounded-xl bg-muted/50 px-6 py-12 text-center text-sm text-muted-foreground"
                 >
                     Nenhum contrato cadastrado.
                 </div>
-                <div v-else class="overflow-x-auto">
-                    <table class="w-full text-sm">
-                        <thead>
-                            <tr class="border-b text-left text-muted-foreground">
-                                <th class="pb-2 pr-4 font-medium">Imóvel</th>
-                                <th class="pb-2 pr-4 font-medium">Inquilino</th>
-                                <th class="pb-2 pr-4 font-medium">Recebedor</th>
-                                <th class="pb-2 pr-4 font-medium">Valor</th>
-                                <th class="pb-2 pr-4 font-medium">Início</th>
-                                <th class="pb-2 pr-4 font-medium">Status</th>
-                                <th class="pb-2 font-medium">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr
-                                v-for="contract in contracts"
-                                :key="contract.id"
-                                class="border-b last:border-0"
-                            >
-                                <td class="py-3 pr-4">
-                                    {{ contract.property?.name ?? '—' }}
-                                </td>
-                                <td class="py-3 pr-4">
-                                    {{ contract.tenant?.name ?? '—' }}
-                                </td>
-                                <td class="py-3 pr-4">
-                                    {{ contract.receiver?.name ?? '—' }}
-                                </td>
-                                <td class="py-3 pr-4">
-                                    {{ formatCurrency(contract.monthly_rent) }}
-                                </td>
-                                <td class="py-3 pr-4">
-                                    {{ contract.starts_at ?? '—' }}
-                                </td>
-                                <td class="py-3 pr-4">
-                                    <Badge variant="outline">
-                                        {{ contract.status ?? '—' }}
-                                    </Badge>
-                                </td>
-                                <td class="py-3">
-                                    <div class="flex items-center gap-2">
-                                        <Button as-child size="sm" variant="outline">
-                                            <Link :href="`/contracts/${contract.id}`">
-                                                Ver
-                                            </Link>
-                                        </Button>
-                                        <Button as-child size="sm" variant="outline">
-                                            <Link
-                                                :href="`/contracts/${contract.id}/edit`"
-                                            >
-                                                Editar
-                                            </Link>
-                                        </Button>
-                                        <Form
-                                            :action="`/contracts/${contract.id}`"
-                                            method="delete"
-                                            #default="{ processing }"
-                                        >
-                                            <Button
-                                                type="submit"
-                                                size="sm"
-                                                variant="destructive"
-                                                :disabled="processing"
-                                            >
-                                                Excluir
-                                            </Button>
-                                        </Form>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+                <DataTable v-else>
+                    <thead>
+                        <DataTableRow variant="header">
+                            <DataTableHeadCell>Imóvel</DataTableHeadCell>
+                            <DataTableHeadCell>Inquilino</DataTableHeadCell>
+                            <DataTableHeadCell>Recebedor</DataTableHeadCell>
+                            <DataTableHeadCell>Valor</DataTableHeadCell>
+                            <DataTableHeadCell>Início</DataTableHeadCell>
+                            <DataTableHeadCell>Status</DataTableHeadCell>
+                            <DataTableActionsHeader />
+                        </DataTableRow>
+                    </thead>
+                    <tbody>
+                        <DataTableRow
+                            v-for="contract in contracts"
+                            :key="contract.id"
+                        >
+                            <DataTableCell>
+                                {{ contract.property?.name ?? '—' }}
+                            </DataTableCell>
+                            <DataTableCell>
+                                {{ contract.tenant?.name ?? '—' }}
+                            </DataTableCell>
+                            <DataTableCell>
+                                {{ contract.receiver?.name ?? '—' }}
+                            </DataTableCell>
+                            <DataTableCell class="tabular-nums">
+                                {{ formatCurrency(contract.monthly_rent) }}
+                            </DataTableCell>
+                            <DataTableCell>
+                                {{ formatDate(contract.starts_at) }}
+                            </DataTableCell>
+                            <DataTableCell>
+                                <StatusBadge
+                                    type="contract"
+                                    :status="contract.status"
+                                />
+                            </DataTableCell>
+                            <DataTableActionsCell>
+                                <TableActionButton label="Ver" as-child>
+                                    <Link :href="show(contract)">
+                                        <Eye />
+                                        <span class="sr-only">Ver</span>
+                                    </Link>
+                                </TableActionButton>
+                                <TableActionButton label="Editar" as-child>
+                                    <Link :href="edit(contract)">
+                                        <Pencil />
+                                        <span class="sr-only">Editar</span>
+                                    </Link>
+                                </TableActionButton>
+                                <Form
+                                    v-bind="destroy.form(contract)"
+                                    #default="{ processing }"
+                                >
+                                    <TableActionButton
+                                        label="Excluir"
+                                        :icon="Trash2"
+                                        type="submit"
+                                        variant="destructive"
+                                        :disabled="processing"
+                                    />
+                                </Form>
+                            </DataTableActionsCell>
+                        </DataTableRow>
+                    </tbody>
+                </DataTable>
             </CardContent>
         </Card>
     </div>

@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\User;
+use App\Support\Money;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -48,6 +49,7 @@ class HandleInertiaRequests extends Middleware
                 ] : null,
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+            'money' => Money::inertiaConfig(),
         ];
     }
 }

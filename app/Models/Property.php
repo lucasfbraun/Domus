@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\PropertyStatus;
+use App\Enums\PropertyType;
 use Database\Factories\PropertyFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -22,6 +23,7 @@ class Property extends Model
     protected function casts(): array
     {
         return [
+            'type' => PropertyType::class,
             'status' => PropertyStatus::class,
         ];
     }

@@ -6,6 +6,7 @@ use App\Models\Charge;
 use App\Notifications\Concerns\DeterminesNotificationChannels;
 use App\Notifications\Messages\WhatsAppMessage;
 use App\Services\WhatsAppClient;
+use App\Support\Money;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -35,7 +36,7 @@ class ChargeReminderNotification extends Notification implements ShouldQueue
     public function toMail(object $notifiable): MailMessage
     {
         $propertyName = $this->context['propertyName'];
-        $amount = 'R$ '.number_format($this->context['amount'], 2, ',', '.');
+        $amount = Money::format($this->context['amount']);
         $subject = match ($this->context['event']) {
             'after_due' => "Aluguel em atraso: {$propertyName}",
             'due_day' => "Aluguel vence hoje: {$propertyName}",

@@ -8,7 +8,6 @@ use App\Models\Contract;
 use App\Models\Owner;
 use App\Models\Property;
 use App\Models\Receiver;
-use App\Models\Tenant;
 use App\Models\User;
 use Database\Seeders\DemoSeeder;
 use Database\Seeders\RolesAndPermissionsSeeder;
@@ -29,6 +28,9 @@ test('demo seeder creates expected demo data', function () {
         ->and(Owner::count())->toBe(1)
         ->and(Property::count())->toBe(2)
         ->and(Contract::where('status', ContractStatus::Active)->count())->toBe(1)
+        ->and(Charge::count())->toBe(4)
+        ->and(Charge::where('status', ChargeStatus::Paid)->count())->toBe(1)
+        ->and(Charge::where('status', ChargeStatus::Overdue)->count())->toBe(1)
         ->and(Charge::where('status', ChargeStatus::Open)->count())->toBe(2);
 });
 
