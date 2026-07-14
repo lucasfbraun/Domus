@@ -8,6 +8,7 @@ use App\Http\Requests\Admin\UpdateRateioRequest;
 use App\Models\Property;
 use App\Models\Rateio;
 use App\Services\RateioService;
+use App\Support\Pagination;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
@@ -21,7 +22,11 @@ class RateioController extends Controller
         $this->authorize('viewAny', Rateio::class);
 
         return Inertia::render('admin/rateios/Index', [
-            'rateios' => Rateio::query()->with(['allocations.property'])->latest()->get(),
+            'rateios' => Rateio::query()
+                ->with(['allocations.property'])
+                ->latest()
+                ->paginate(Pagination::PER_PAGE)
+                ->withQueryString(),
             'properties' => Property::query()->orderBy('name')->get(),
             'categories' => RateioService::CATEGORIES,
         ]);

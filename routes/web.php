@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\User;
 use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\Admin\ChargeController;
 use App\Http\Controllers\Admin\ContractController;
@@ -20,6 +19,7 @@ use App\Http\Controllers\ContractShowController;
 use App\Http\Controllers\Portal\ReceiverPortalController;
 use App\Http\Controllers\Portal\TenantPortalController;
 use App\Http\Controllers\Webhooks\MercadoPagoWebhookController;
+use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -87,7 +87,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('charges/{charge}/sync', [ChargeController::class, 'syncPayment'])->name('charges.sync');
         Route::post('charges/{charge}/sync-payment', [ChargeController::class, 'syncPayment'])
             ->name('charges.sync-payment');
-        Route::get('charges/{charge}/receipt', [ChargeController::class, 'receipt'])->name('charges.receipt');
         Route::post('contracts/{contract}/document/upload-signed', [ContractDocumentController::class, 'uploadSigned'])
             ->name('contracts.document.upload-signed');
         Route::get('contracts/{contract}/document/generated', [ContractDocumentController::class, 'downloadGenerated'])
@@ -96,6 +95,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->name('contracts.document.signed');
         Route::get('occurrences/photos/{photo}', [ContractOccurrenceController::class, 'showPhoto'])
             ->name('occurrences.photos.show');
+    });
+
+    Route::middleware('role:admin|tenant|receiver')->group(function () {
+        Route::get('charges/{charge}/receipt', [ChargeController::class, 'receipt'])->name('charges.receipt');
     });
 
     Route::middleware('role:tenant')->group(function () {

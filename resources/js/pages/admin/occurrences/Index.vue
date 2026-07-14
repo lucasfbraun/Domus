@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
 import Heading from '@/components/Heading.vue';
+import AppPagination from '@/components/AppPagination.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import { Button } from '@/components/ui/button';
 import {
@@ -11,9 +12,10 @@ import {
 } from '@/components/ui/card';
 import { dashboard } from '@/routes';
 import { index, update } from '@/routes/admin/occurrences';
+import type { Paginated } from '@/types';
 
 defineProps<{
-    occurrences: any[];
+    occurrences: Paginated<any>;
 }>();
 
 defineOptions({
@@ -41,14 +43,15 @@ defineOptions({
             </CardHeader>
             <CardContent class="space-y-4">
                 <div
-                    v-if="occurrences.length === 0"
+                    v-if="occurrences.data.length === 0"
                     class="text-sm text-muted-foreground"
                 >
                     Nenhuma ocorrência registrada.
                 </div>
 
+                <template v-else>
                 <div
-                    v-for="occurrence in occurrences"
+                    v-for="occurrence in occurrences.data"
                     :key="occurrence.id"
                     class="space-y-3 rounded-lg border p-4"
                 >
@@ -116,6 +119,8 @@ defineOptions({
                         </Form>
                     </div>
                 </div>
+                <AppPagination :paginator="occurrences" />
+                </template>
             </CardContent>
         </Card>
     </div>

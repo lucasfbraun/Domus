@@ -9,6 +9,7 @@ use App\Services\ChargeScheduler;
 use App\Services\ContractDocumentService;
 use App\Services\MercadoPagoService;
 use App\Services\ReminderService;
+use App\Support\Pagination;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -27,8 +28,9 @@ class ChargeController extends Controller
             'charges' => Charge::query()
                 ->with(['contract.tenant', 'contract.property', 'receiver'])
                 ->orderByDesc('due_date')
-                ->get()
-                ->map(fn (Charge $charge) => [
+                ->paginate(Pagination::PER_PAGE)
+                ->withQueryString()
+                ->through(fn (Charge $charge) => [
                     'id' => $charge->id,
                     'description' => $charge->reference,
                     'amount' => (float) $charge->original_amount,

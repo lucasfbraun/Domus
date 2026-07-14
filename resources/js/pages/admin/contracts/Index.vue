@@ -2,6 +2,7 @@
 import { Form, Head, Link } from '@inertiajs/vue3';
 import { Eye, Pencil, Trash2 } from '@lucide/vue';
 import Heading from '@/components/Heading.vue';
+import AppPagination from '@/components/AppPagination.vue';
 import TableActionButton from '@/components/TableActionButton.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import { Button } from '@/components/ui/button';
@@ -29,9 +30,10 @@ import {
     index,
     show,
 } from '@/routes/admin/contracts';
+import type { Paginated } from '@/types';
 
 defineProps<{
-    contracts: any[];
+    contracts: Paginated<any>;
 }>();
 
 defineOptions({
@@ -66,12 +68,13 @@ const { formatCurrency } = useMoney();
             </CardHeader>
             <CardContent>
                 <div
-                    v-if="contracts.length === 0"
+                    v-if="contracts.data.length === 0"
                     class="rounded-xl bg-muted/50 px-6 py-12 text-center text-sm text-muted-foreground"
                 >
                     Nenhum contrato cadastrado.
                 </div>
-                <DataTable v-else>
+                <template v-else>
+                <DataTable>
                     <thead>
                         <DataTableRow variant="header">
                             <DataTableHeadCell>Imóvel</DataTableHeadCell>
@@ -85,7 +88,7 @@ const { formatCurrency } = useMoney();
                     </thead>
                     <tbody>
                         <DataTableRow
-                            v-for="contract in contracts"
+                            v-for="contract in contracts.data"
                             :key="contract.id"
                         >
                             <DataTableCell>
@@ -138,6 +141,8 @@ const { formatCurrency } = useMoney();
                         </DataTableRow>
                     </tbody>
                 </DataTable>
+                <AppPagination :paginator="contracts" />
+                </template>
             </CardContent>
         </Card>
     </div>

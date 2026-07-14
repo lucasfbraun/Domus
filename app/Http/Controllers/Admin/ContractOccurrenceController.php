@@ -13,6 +13,7 @@ use App\Models\ContractOccurrencePhoto;
 use App\Mail\OccurrenceReportedMail;
 use App\Mail\OccurrenceUpdatedMail;
 use App\Models\User;
+use App\Support\Pagination;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
@@ -29,8 +30,9 @@ class ContractOccurrenceController extends Controller
             'occurrences' => ContractOccurrence::query()
                 ->with(['contract.property', 'tenant', 'photos'])
                 ->latest()
-                ->get()
-                ->map(fn (ContractOccurrence $occurrence) => [
+                ->paginate(Pagination::PER_PAGE)
+                ->withQueryString()
+                ->through(fn (ContractOccurrence $occurrence) => [
                     'id' => $occurrence->id,
                     'description' => $occurrence->description,
                     'status' => $occurrence->status?->value,

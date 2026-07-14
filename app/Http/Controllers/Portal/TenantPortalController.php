@@ -9,6 +9,7 @@ use App\Models\Contract;
 use App\Models\User;
 use App\Services\MercadoPagoService;
 use App\Support\Money;
+use App\Support\Pagination;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -28,8 +29,9 @@ class TenantPortalController extends Controller
                 ->with(['property', 'receiver'])
                 ->where('tenant_id', $tenant->id)
                 ->orderByDesc('starts_at')
-                ->get()
-                ->map(fn (Contract $contract) => [
+                ->paginate(Pagination::PER_PAGE, pageName: 'contracts')
+                ->withQueryString()
+                ->through(fn (Contract $contract) => [
                     'id' => $contract->id,
                     'status' => $contract->status?->value,
                     'signature_status' => $contract->signature_status?->value,
@@ -45,8 +47,9 @@ class TenantPortalController extends Controller
                 ->with(['contract.property', 'contract', 'receiver'])
                 ->whereHas('contract', fn ($query) => $query->where('tenant_id', $tenant->id))
                 ->orderByDesc('due_date')
-                ->get()
-                ->map(function (Charge $charge) use ($mercadoPago) {
+                ->paginate(Pagination::PER_PAGE, pageName: 'charges')
+                ->withQueryString()
+                ->through(function (Charge $charge) use ($mercadoPago) {
                     $originalAmount = (float) $charge->original_amount;
                     $amountDue = Money::roundCents($mercadoPago->computeCurrentAmountDue($charge));
 

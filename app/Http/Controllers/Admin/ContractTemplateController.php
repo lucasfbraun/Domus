@@ -7,6 +7,7 @@ use App\Http\Requests\Admin\StoreContractTemplateRequest;
 use App\Http\Requests\Admin\UpdateContractTemplateRequest;
 use App\Models\Contract;
 use App\Models\ContractTemplate;
+use App\Support\Pagination;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -16,7 +17,10 @@ class ContractTemplateController extends Controller
     public function index(): Response
     {
         return Inertia::render('admin/templates/Index', [
-            'templates' => ContractTemplate::query()->orderBy('name')->get(),
+            'templates' => ContractTemplate::query()
+                ->orderBy('name')
+                ->paginate(Pagination::PER_PAGE)
+                ->withQueryString(),
         ]);
     }
 

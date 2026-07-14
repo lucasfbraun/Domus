@@ -8,6 +8,7 @@ use App\Http\Requests\Admin\StorePropertyRequest;
 use App\Http\Requests\Admin\UpdatePropertyRequest;
 use App\Models\Owner;
 use App\Models\Property;
+use App\Support\Pagination;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -19,7 +20,11 @@ class PropertyController extends Controller
         $this->authorize('viewAny', Property::class);
 
         return Inertia::render('admin/properties/Index', [
-            'properties' => Property::query()->with('owner')->orderBy('name')->get(),
+            'properties' => Property::query()
+                ->with('owner')
+                ->orderBy('name')
+                ->paginate(Pagination::PER_PAGE)
+                ->withQueryString(),
         ]);
     }
 

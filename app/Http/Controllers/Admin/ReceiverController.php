@@ -9,6 +9,7 @@ use App\Http\Requests\Admin\UpdateReceiverRequest;
 use App\Models\Receiver;
 use App\Models\User;
 use App\Services\MercadoPagoService;
+use App\Support\Pagination;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -22,7 +23,11 @@ class ReceiverController extends Controller
         $this->authorize('viewAny', Receiver::class);
 
         return Inertia::render('admin/receivers/Index', [
-            'receivers' => Receiver::query()->with('user')->orderBy('name')->get(),
+            'receivers' => Receiver::query()
+                ->with('user')
+                ->orderBy('name')
+                ->paginate(Pagination::PER_PAGE)
+                ->withQueryString(),
         ]);
     }
 

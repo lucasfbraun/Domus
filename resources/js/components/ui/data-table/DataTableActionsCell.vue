@@ -11,12 +11,12 @@ const props = defineProps<{
     <td
         :class="
             cn(
-                'w-[1%] whitespace-nowrap py-3.5 pl-6 text-right align-middle',
+                'w-0 whitespace-nowrap py-3.5 pr-0 text-right align-middle',
                 props.class,
             )
         "
     >
-        <div class="flex items-center justify-end gap-1">
+        <div class="inline-flex items-center gap-1 *:shrink-0">
             <slot />
         </div>
     </td>

@@ -8,6 +8,7 @@ use App\Http\Requests\Admin\StoreTenantRequest;
 use App\Http\Requests\Admin\UpdateTenantRequest;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Support\Pagination;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
@@ -20,7 +21,11 @@ class TenantController extends Controller
         $this->authorize('viewAny', Tenant::class);
 
         return Inertia::render('admin/tenants/Index', [
-            'tenants' => Tenant::query()->with('user')->orderBy('name')->get(),
+            'tenants' => Tenant::query()
+                ->with('user')
+                ->orderBy('name')
+                ->paginate(Pagination::PER_PAGE)
+                ->withQueryString(),
         ]);
     }
 

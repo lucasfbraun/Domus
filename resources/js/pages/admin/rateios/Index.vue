@@ -4,6 +4,7 @@ import { FileDown, Trash2 } from '@lucide/vue';
 import { computed } from 'vue';
 import FormSelect from '@/components/FormSelect.vue';
 import Heading from '@/components/Heading.vue';
+import AppPagination from '@/components/AppPagination.vue';
 import InputError from '@/components/InputError.vue';
 import TableActionButton from '@/components/TableActionButton.vue';
 import { Button } from '@/components/ui/button';
@@ -29,15 +30,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { dashboard } from '@/routes';
 import { useMoney } from '@/composables/useMoney';
 import { destroy, index, invoice, store } from '@/routes/admin/rateios';
+import type { Paginated } from '@/types';
 
 const props = withDefaults(
     defineProps<{
-        rateios?: any[];
+        rateios: Paginated<any>;
         properties?: any[];
         categories?: string[];
     }>(),
     {
-        rateios: () => [],
         properties: () => [],
         categories: () => [],
     },
@@ -257,12 +258,13 @@ function allocationSummary(rateio: any): string {
             </CardHeader>
             <CardContent>
                 <div
-                    v-if="rateios.length === 0"
+                    v-if="rateios.data.length === 0"
                     class="rounded-xl bg-muted/50 px-6 py-12 text-center text-sm text-muted-foreground"
                 >
                     Nenhum rateio cadastrado.
                 </div>
-                <DataTable v-else>
+                <template v-else>
+                <DataTable>
                     <thead>
                         <DataTableRow variant="header">
                             <DataTableHeadCell>Categoria</DataTableHeadCell>
@@ -275,7 +277,7 @@ function allocationSummary(rateio: any): string {
                     </thead>
                     <tbody>
                         <DataTableRow
-                            v-for="rateio in rateios"
+                            v-for="rateio in rateios.data"
                             :key="rateio.id"
                         >
                             <DataTableCell>
@@ -325,6 +327,8 @@ function allocationSummary(rateio: any): string {
                         </DataTableRow>
                     </tbody>
                 </DataTable>
+                <AppPagination :paginator="rateios" />
+                </template>
             </CardContent>
         </Card>
     </div>

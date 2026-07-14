@@ -10,9 +10,8 @@ const props = defineProps<{
 <template>
     <div class="overflow-x-auto">
         <table
-            style="table-layout: fixed"
             :class="
-                cn('w-full text-sm', props.class)
+                cn('w-full table-auto text-sm', props.class)
             "
         >
             <slot />

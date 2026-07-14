@@ -7,6 +7,7 @@ use App\Http\Requests\Admin\StoreOwnerRequest;
 use App\Http\Requests\Admin\UpdateOwnerRequest;
 use App\Models\Owner;
 use App\Models\Property;
+use App\Support\Pagination;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -18,7 +19,11 @@ class OwnerController extends Controller
         $this->authorize('viewAny', Owner::class);
 
         return Inertia::render('admin/owners/Index', [
-            'owners' => Owner::query()->withCount('properties')->orderBy('name')->get(),
+            'owners' => Owner::query()
+                ->withCount('properties')
+                ->orderBy('name')
+                ->paginate(Pagination::PER_PAGE)
+                ->withQueryString(),
         ]);
     }
 

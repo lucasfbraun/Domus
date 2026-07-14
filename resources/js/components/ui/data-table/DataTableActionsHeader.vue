@@ -12,7 +12,7 @@ const props = defineProps<{
         scope="col"
         :class="
             cn(
-                'w-[1%] whitespace-nowrap pb-3 pl-6 text-right font-medium text-muted-foreground',
+                'w-0 whitespace-nowrap pb-3 pr-0 text-right font-medium text-muted-foreground',
                 props.class,
             )
         "

@@ -14,6 +14,7 @@ use App\Models\Receiver;
 use App\Models\Tenant;
 use App\Services\ContractSignatureService;
 use App\Services\ReminderService;
+use App\Support\Pagination;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -29,7 +30,8 @@ class ContractController extends Controller
             'contracts' => Contract::query()
                 ->with(['property', 'tenant', 'receiver', 'witnesses.receiver'])
                 ->orderByDesc('starts_at')
-                ->get(),
+                ->paginate(Pagination::PER_PAGE)
+                ->withQueryString(),
         ]);
     }
 

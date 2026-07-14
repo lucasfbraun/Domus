@@ -4,6 +4,7 @@ import { Eye } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import { toast } from 'vue-sonner';
 import Heading from '@/components/Heading.vue';
+import AppPagination from '@/components/AppPagination.vue';
 import PixPaymentPanel from '@/components/PixPaymentPanel.vue';
 import TableActionButton from '@/components/TableActionButton.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
@@ -27,6 +28,7 @@ import { useMoney } from '@/composables/useMoney';
 import { pix, receipt } from '@/routes/charges';
 import { show } from '@/routes/contracts';
 import { portal } from '@/routes/tenant';
+import type { Paginated } from '@/types';
 
 type PortalCharge = {
     id: number;
@@ -58,8 +60,8 @@ type PixResponse = {
 };
 
 const props = defineProps<{
-    contracts: any[];
-    charges: PortalCharge[];
+    contracts: Paginated<any>;
+    charges: Paginated<PortalCharge>;
 }>();
 
 defineOptions({
@@ -79,7 +81,7 @@ const generatedPix = ref<Record<number, PixPayload>>({});
 const pixByCharge = computed<Record<number, PixPayload>>(() => {
     const merged: Record<number, PixPayload> = { ...generatedPix.value };
 
-    for (const charge of props.charges) {
+    for (const charge of props.charges.data) {
         if (merged[charge.id] || !charge.pix_qr_code) {
             continue;
         }
@@ -160,12 +162,13 @@ function payPix(id: number): void {
             </CardHeader>
             <CardContent>
                 <div
-                    v-if="contracts.length === 0"
+                    v-if="contracts.data.length === 0"
                     class="rounded-xl bg-muted/50 px-6 py-12 text-center text-sm text-muted-foreground"
                 >
                     Nenhum contrato encontrado.
                 </div>
-                <DataTable v-else>
+                <template v-else>
+                <DataTable>
                     <thead>
                         <DataTableRow variant="header">
                             <DataTableHeadCell>Imóvel</DataTableHeadCell>
@@ -177,7 +180,7 @@ function payPix(id: number): void {
                     </thead>
                     <tbody>
                         <DataTableRow
-                            v-for="contract in contracts"
+                            v-for="contract in contracts.data"
                             :key="contract.id"
                         >
                             <DataTableCell>
@@ -209,6 +212,12 @@ function payPix(id: number): void {
                         </DataTableRow>
                     </tbody>
                 </DataTable>
+                <AppPagination
+                    :paginator="contracts"
+                    page-name="contracts"
+                    :only="['contracts']"
+                />
+                </template>
             </CardContent>
         </Card>
 
@@ -218,19 +227,20 @@ function payPix(id: number): void {
             </CardHeader>
             <CardContent>
                 <div
-                    v-if="charges.length === 0"
+                    v-if="charges.data.length === 0"
                     class="text-sm text-muted-foreground"
                 >
                     Nenhuma cobrança pendente.
                 </div>
-                <div v-else class="space-y-3">
+                <template v-else>
+                <div class="space-y-3">
                     <div
-                        v-for="charge in charges"
+                        v-for="charge in charges.data"
                         :key="charge.id"
                         class="rounded-xl border border-border/80 p-4"
                     >
-                        <div class="flex flex-wrap items-start justify-between gap-3">
-                            <div class="min-w-0 space-y-2">
+                        <div class="flex flex-wrap items-center justify-between gap-4">
+                            <div class="min-w-0 flex-1 space-y-2">
                                 <div class="flex flex-wrap items-center gap-2">
                                     <p class="font-medium">
                                         {{ charge.description ?? 'Cobrança' }}
@@ -257,7 +267,7 @@ function payPix(id: number): void {
                                 </p>
                             </div>
 
-                            <div class="flex shrink-0 flex-wrap gap-2">
+                            <div class="flex w-full shrink-0 flex-wrap items-center justify-end gap-2 sm:w-auto">
                                 <Button
                                     v-if="!charge.is_paid && !pixByCharge[charge.id]"
                                     size="sm"
@@ -295,6 +305,12 @@ function payPix(id: number): void {
                         />
                     </div>
                 </div>
+                <AppPagination
+                    :paginator="charges"
+                    page-name="charges"
+                    :only="['charges']"
+                />
+                </template>
             </CardContent>
         </Card>
     </div>

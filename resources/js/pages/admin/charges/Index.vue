@@ -4,6 +4,7 @@ import { Bell, FileText, QrCode, RefreshCw } from '@lucide/vue';
 import { ref } from 'vue';
 import { toast } from 'vue-sonner';
 import Heading from '@/components/Heading.vue';
+import AppPagination from '@/components/AppPagination.vue';
 import TableActionButton from '@/components/TableActionButton.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import {
@@ -25,9 +26,10 @@ import { useMoney } from '@/composables/useMoney';
 import { dashboard } from '@/routes';
 import { index, reminder } from '@/routes/admin/charges';
 import { pix, receipt, sync } from '@/routes/charges';
+import type { Paginated } from '@/types';
 
 defineProps<{
-    charges: any[];
+    charges: Paginated<any>;
 }>();
 
 defineOptions({
@@ -111,12 +113,13 @@ function syncPayment(charge: { id: number }): void {
             </CardHeader>
             <CardContent>
                 <div
-                    v-if="charges.length === 0"
+                    v-if="charges.data.length === 0"
                     class="rounded-xl bg-muted/50 px-6 py-12 text-center text-sm text-muted-foreground"
                 >
                     Nenhuma cobrança cadastrada.
                 </div>
-                <DataTable v-else>
+                <template v-else>
+                <DataTable>
                     <thead>
                         <DataTableRow variant="header">
                             <DataTableHeadCell>Descrição</DataTableHeadCell>
@@ -129,7 +132,7 @@ function syncPayment(charge: { id: number }): void {
                     </thead>
                     <tbody>
                         <DataTableRow
-                            v-for="charge in charges"
+                            v-for="charge in charges.data"
                             :key="charge.id"
                         >
                             <DataTableCell>
@@ -191,6 +194,8 @@ function syncPayment(charge: { id: number }): void {
                         </DataTableRow>
                     </tbody>
                 </DataTable>
+                <AppPagination :paginator="charges" />
+                </template>
             </CardContent>
         </Card>
     </div>

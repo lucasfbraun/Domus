@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreAdminUserRequest;
 use App\Http\Requests\Admin\UpdateAdminUserRequest;
 use App\Models\User;
+use App\Support\Pagination;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -18,7 +19,10 @@ class AdminUserController extends Controller
     public function index(): Response
     {
         return Inertia::render('admin/admins/Index', [
-            'admins' => User::role(UserRole::Admin)->orderBy('name')->get(['id', 'name', 'email', 'created_at']),
+            'admins' => User::role(UserRole::Admin)
+                ->orderBy('name')
+                ->paginate(Pagination::PER_PAGE, ['id', 'name', 'email', 'created_at'])
+                ->withQueryString(),
         ]);
     }
 
