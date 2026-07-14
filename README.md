@@ -215,9 +215,11 @@ O status das integrações aparece em **Admin → Integrações** (`/integracoes
 3. Anote:
    - **Client ID** → `MP_CLIENT_ID`
    - **Client Secret** → `MP_CLIENT_SECRET`
-4. Em **Credenciais de teste**, copie o **Access Token de teste** → `MP_ACCESS_TOKEN` (só para local).
+4. Em **Credenciais de producao**, copie o **Access Token** (`APP_USR-...`) → `MP_ACCESS_TOKEN` (atalho local; a Orders API nao aceita `TEST-`).
 
-### Modo local com token de teste
+### Modo local com token de producao
+
+A Orders API **nao aceita** Access Tokens `TEST-`. Use o Access Token de **producao** (`APP_USR-`) mesmo em desenvolvimento. Para testar pagamentos sem cobrar de verdade, use [usuarios de teste](https://www.mercadopago.com.br/developers/pt/docs/your-integrations/test/accounts) do Mercado Pago.
 
 Ideal para rodar o projeto sem configurar OAuth. O token da plataforma substitui a conta do recebedor **apenas** quando `APP_ENV=local` ou `testing`.
 
@@ -225,15 +227,15 @@ Ideal para rodar o projeto sem configurar OAuth. O token da plataforma substitui
 APP_ENV=local
 APP_URL=http://localhost:8000
 
-# Credenciais da aplicação (necessárias para OAuth em produção; recomendadas também no local)
+# Credenciais da aplicacao (necessarias para OAuth em producao; recomendadas tambem no local)
 MP_CLIENT_ID=seu_client_id
 MP_CLIENT_SECRET=seu_client_secret
 
-# Atalho local — Access Token de TESTE do painel MP
-MP_ACCESS_TOKEN=TEST-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+# Atalho local — Access Token de PRODUCAO do painel MP (APP_USR-..., nao TEST-)
+MP_ACCESS_TOKEN=APP_USR-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 
-# Gera tokens OAuth de teste ao conectar recebedores
-MP_SANDBOX_CONNECT=true
+# false = OAuth devolve token de producao (obrigatorio para Orders API / Pix)
+MP_SANDBOX_CONNECT=false
 ```
 
 Depois de configurar o `.env`:
@@ -243,13 +245,13 @@ php artisan config:clear
 php artisan db:seed   # ou migrate:fresh --seed para recriar o Pix demo
 ```
 
-**Limitações do sandbox Orders API:**
+**Limitacoes do sandbox Orders API:**
 
-- Valor máximo por order: **R$ 1.000,00**
-- O e-mail do **inquilino** (payer na API) deve usar domínio `@testuser.com` no sandbox  
-  O seed demo já usa `tenant.demo@testuser.com` no cadastro do inquilino (login continua `tenant@example.com`)
-- O aluguel demo é **R$ 900** para caber dentro do limite mesmo com multa/juros
-
+- Valor maximo por order: **R$ 1.000,00**
+- O e-mail do **inquilino** (payer na API) deve usar dominio `@testuser.com` no sandbox  
+  O seed demo ja usa `tenant.demo@testuser.com` no cadastro do inquilino (login continua `tenant@example.com`)
+- O aluguel demo e **R$ 900** para caber dentro do limite mesmo com multa/juros
+- Nao use `MP_SANDBOX_CONNECT=true` nem tokens `TEST-` — a API responde `invalid_credentials`
 ### OAuth por recebedor (produção)
 
 Em produção, **não** use `MP_ACCESS_TOKEN` como atalho — cada recebedor conecta a própria conta Mercado Pago.

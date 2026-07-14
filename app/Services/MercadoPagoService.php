@@ -412,11 +412,17 @@ class MercadoPagoService
     private function ensureFreshAccessToken(Receiver $receiver): string
     {
         if ($receiver->mp_access_token) {
+            if ($receiver->mp_live_mode === false) {
+                throw new \InvalidArgumentException(
+                    'Este recebedor esta conectado com credenciais de teste do Mercado Pago. A Orders API exige token de producao (APP_USR-): defina MP_SANDBOX_CONNECT=false e reconecte a conta do recebedor.',
+                );
+            }
+
             $expiresAt = $receiver->mp_token_expires_at?->timestamp ?? 0;
             $isExpiringSoon = $expiresAt - now()->timestamp < self::TOKEN_REFRESH_MARGIN_SECONDS;
 
             if (! $isExpiringSoon) {
-                return $receiver->mp_access_token;
+                return $this->assertOrdersApiAccessToken($receiver->mp_access_token);
             }
 
             if ($receiver->mp_refresh_token) {
@@ -429,21 +435,32 @@ class MercadoPagoService
 
                 $this->saveReceiverConnection($receiver, $refreshed);
 
-                return $refreshed['access_token'];
+                return $this->assertOrdersApiAccessToken($refreshed['access_token']);
             }
 
-            return $receiver->mp_access_token;
+            return $this->assertOrdersApiAccessToken($receiver->mp_access_token);
         }
 
         $platformToken = config('services.mercadopago.access_token');
 
         if (filled($platformToken) && $this->allowsPlatformTokenFallback()) {
-            return (string) $platformToken;
+            return $this->assertOrdersApiAccessToken((string) $platformToken);
         }
 
         throw new \InvalidArgumentException(
             'Este recebedor ainda nao conectou a conta Mercado Pago.',
         );
+    }
+
+    private function assertOrdersApiAccessToken(string $accessToken): string
+    {
+        if (str_starts_with($accessToken, 'TEST-')) {
+            throw new \InvalidArgumentException(
+                'A Orders API do Mercado Pago nao aceita Access Tokens de teste (TEST-...). Use credenciais de producao (APP_USR-). Para sandbox, use usuarios de teste com MP_SANDBOX_CONNECT=false.',
+            );
+        }
+
+        return $accessToken;
     }
 
     private function allowsPlatformTokenFallback(): bool

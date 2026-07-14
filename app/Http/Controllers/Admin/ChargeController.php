@@ -74,9 +74,10 @@ class ChargeController extends Controller
             report($exception);
 
             $message = $this->friendlyPixErrorMessage($exception);
+            $status = $exception instanceof \InvalidArgumentException ? 422 : 502;
 
             if ($request->expectsJson() || $request->header('X-Inertia-HTTP') || $request->wantsJson()) {
-                return response()->json(['message' => $message], 502);
+                return response()->json(['message' => $message], $status);
             }
 
             Inertia::flash('toast', ['type' => 'error', 'message' => $message]);
@@ -108,6 +109,15 @@ class ChargeController extends Controller
 
         if (str_contains($raw, 'processing_error') || str_contains($raw, '(402)')) {
             return 'O Mercado Pago recusou gerar este Pix (erro de processamento). No sandbox, valores acima de R$ 1.000 costumam falhar — em produção o valor com juros/multa deve funcionar normalmente.';
+        }
+
+        if (
+            str_contains($raw, 'invalid_credentials')
+            || str_contains($raw, 'Test credentials are not supported')
+            || str_contains($raw, 'credenciais de teste')
+            || str_contains($raw, 'TEST-')
+        ) {
+            return 'O Mercado Pago rejeitou as credenciais de teste. A Orders API exige token de produção (APP_USR-): defina MP_SANDBOX_CONNECT=false no servidor e reconecte o recebedor.';
         }
 
         if (str_contains($raw, 'invalid_email_for_sandbox')) {

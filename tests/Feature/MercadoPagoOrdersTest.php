@@ -236,6 +236,42 @@ test('webhook rejeita assinatura invalida', function () {
     $response->assertUnauthorized();
 });
 
+test('createPixCharge rejeita token TEST da plataforma', function () {
+    $charge = makeOpenCharge();
+
+    config([
+        'app.env' => 'local',
+        'services.mercadopago.access_token' => 'TEST-platform-token',
+    ]);
+
+    $charge->receiver->update([
+        'mp_access_token' => null,
+        'mp_refresh_token' => null,
+        'mp_user_id' => null,
+        'mp_connected_at' => null,
+        'mp_live_mode' => null,
+    ]);
+
+    expect(fn () => app(MercadoPagoService::class)->createPixCharge($charge->fresh(['contract.tenant', 'receiver'])))
+        ->toThrow(InvalidArgumentException::class, 'TEST-');
+});
+
+test('createPixCharge rejeita recebedor conectado em modo teste', function () {
+    $charge = makeOpenCharge();
+
+    $charge->receiver->update([
+        'mp_user_id' => '218971996',
+        'mp_access_token' => 'TEST-receiver-token',
+        'mp_refresh_token' => 'TEST-refresh',
+        'mp_token_expires_at' => now()->addHours(6),
+        'mp_connected_at' => now(),
+        'mp_live_mode' => false,
+    ]);
+
+    expect(fn () => app(MercadoPagoService::class)->createPixCharge($charge->fresh(['contract.tenant', 'receiver'])))
+        ->toThrow(InvalidArgumentException::class, 'credenciais de teste');
+});
+
 test('createPix retorna erro amigavel quando Mercado Pago falha', function () {
     $charge = makeOpenCharge();
 
@@ -256,5 +292,27 @@ test('createPix retorna erro amigavel quando Mercado Pago falha', function () {
         ->assertStatus(502)
         ->assertJsonFragment([
             'message' => 'O Mercado Pago recusou gerar este Pix (erro de processamento). No sandbox, valores acima de R$ 1.000 costumam falhar — em produção o valor com juros/multa deve funcionar normalmente.',
+        ]);
+});
+
+test('createPix retorna 422 quando recebedor usa credenciais de teste', function () {
+    $charge = makeOpenCharge();
+
+    $charge->receiver->update([
+        'mp_user_id' => '218971996',
+        'mp_access_token' => 'TEST-receiver-token',
+        'mp_refresh_token' => 'TEST-refresh',
+        'mp_token_expires_at' => now()->addHours(6),
+        'mp_connected_at' => now(),
+        'mp_live_mode' => false,
+    ]);
+
+    $admin = User::factory()->admin()->create();
+
+    $this->actingAs($admin)
+        ->postJson(route('charges.pix', $charge))
+        ->assertUnprocessable()
+        ->assertJsonFragment([
+            'message' => 'O Mercado Pago rejeitou as credenciais de teste. A Orders API exige token de produção (APP_USR-): defina MP_SANDBOX_CONNECT=false no servidor e reconecte o recebedor.',
         ]);
 });

@@ -24,7 +24,7 @@ return [
         'access_token' => env('MP_ACCESS_TOKEN'),
         'public_key' => env('MP_PUBLIC_KEY'),
         'webhook_secret' => env('MP_WEBHOOK_SECRET'),
-        'sandbox_connect' => env('MP_SANDBOX_CONNECT', true),
+        'sandbox_connect' => (bool) env('MP_SANDBOX_CONNECT', false),
     ],
 
     'waha' => [
