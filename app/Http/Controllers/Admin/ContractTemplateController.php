@@ -7,6 +7,7 @@ use App\Http\Requests\Admin\StoreContractTemplateRequest;
 use App\Http\Requests\Admin\UpdateContractTemplateRequest;
 use App\Models\Contract;
 use App\Models\ContractTemplate;
+use App\Support\ContractTemplateVariables;
 use App\Support\Pagination;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
@@ -28,6 +29,7 @@ class ContractTemplateController extends Controller
     {
         return Inertia::render('admin/templates/Form', [
             'template' => null,
+            'variables' => ContractTemplateVariables::catalog(),
         ]);
     }
 
@@ -44,6 +46,7 @@ class ContractTemplateController extends Controller
     {
         return Inertia::render('admin/templates/Form', [
             'template' => $template,
+            'variables' => ContractTemplateVariables::catalog(),
         ]);
     }
 

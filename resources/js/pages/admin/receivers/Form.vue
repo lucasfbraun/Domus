@@ -192,7 +192,7 @@ defineOptions({
                     id="active"
                     name="active"
                     value="1"
-                    :default-checked="receiver?.active ?? true"
+                    :default-value="receiver?.active ?? true"
                 />
                 <Label for="active">Recebedor ativo</Label>
             </div>

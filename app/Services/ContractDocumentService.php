@@ -149,10 +149,29 @@ class ContractDocumentService
      */
     private function renderTemplate(string $content, array $variables): string
     {
-        return preg_replace_callback(
+        $isHtml = preg_match('/<(p|h[1-3]|ul|ol|div|br|span)\b/i', $content) === 1;
+
+        $rendered = preg_replace_callback(
             '/{{\s*(\w+)\s*}}/u',
-            fn (array $matches) => $variables[$matches[1]] ?? $matches[0],
+            function (array $matches) use ($variables, $isHtml): string {
+                if (! array_key_exists($matches[1], $variables)) {
+                    return $matches[0];
+                }
+
+                return $isHtml
+                    ? e($variables[$matches[1]])
+                    : $variables[$matches[1]];
+            },
             $content,
         ) ?? $content;
+
+        if (! $isHtml) {
+            return nl2br(e($rendered));
+        }
+
+        return strip_tags(
+            $rendered,
+            '<p><br><strong><b><em><i><u><h1><h2><h3><ul><ol><li><span>',
+        );
     }
 }

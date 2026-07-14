@@ -1,24 +1,28 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
+import type { TemplateVariableItem } from '@/components/template-editor/prepareTemplateContent';
+import TemplateEditor from '@/components/template-editor/TemplateEditor.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { dashboard } from '@/routes';
 import { create, index, store, update } from '@/routes/admin/templates';
 
 const props = defineProps<{
-    template?: any | null;
+    template?: { id: number; name: string; content: string } | null;
+    variables: TemplateVariableItem[];
 }>();
 
 const isEditing = computed(() => !!props.template?.id);
 
 const form = computed(() =>
-    isEditing.value ? update.form(props.template) : store.form(),
+    isEditing.value ? update.form(props.template!) : store.form(),
 );
+
+const content = ref(props.template?.content ?? '');
 
 defineOptions({
     layout: {
@@ -37,15 +41,15 @@ defineOptions({
     <div class="flex flex-col gap-8">
         <Heading
             :title="isEditing ? 'Editar modelo' : 'Novo modelo'"
-            description="Defina o conteúdo do modelo de contrato"
+            description="Monte o contrato com formatação e variáveis arrastáveis"
         />
 
         <Form
             v-bind="form"
-            class="max-w-3xl space-y-6"
+            class="space-y-6"
             #default="{ errors, processing }"
         >
-            <div class="grid gap-2">
+            <div class="grid max-w-xl gap-2">
                 <Label for="name">Nome</Label>
                 <Input
                     id="name"
@@ -59,13 +63,11 @@ defineOptions({
 
             <div class="grid gap-2">
                 <Label for="content">Conteúdo</Label>
-                <Textarea
-                    id="content"
+                <TemplateEditor
+                    v-model="content"
                     name="content"
-                    rows="16"
-                    class="min-h-64"
-                    :default-value="template?.content"
-                    placeholder="Conteúdo do contrato com variáveis..."
+                    :variables="variables"
+                    :invalid="!!errors.content"
                 />
                 <InputError :message="errors.content" />
             </div>
