@@ -8,10 +8,10 @@ use Database\Factories\PropertyFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['name', 'address', 'type', 'status', 'owner_id'])]
+#[Fillable(['name', 'address', 'type', 'status'])]
 class Property extends Model
 {
     /** @use HasFactory<PropertyFactory> */
@@ -29,11 +29,11 @@ class Property extends Model
     }
 
     /**
-     * @return BelongsTo<Owner, $this>
+     * @return BelongsToMany<Owner, $this>
      */
-    public function owner(): BelongsTo
+    public function owners(): BelongsToMany
     {
-        return $this->belongsTo(Owner::class);
+        return $this->belongsToMany(Owner::class);
     }
 
     /**

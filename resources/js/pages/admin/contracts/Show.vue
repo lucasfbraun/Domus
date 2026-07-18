@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Form, Head, Link } from '@inertiajs/vue3';
+import { computed } from 'vue';
 import FormSelect from '@/components/FormSelect.vue';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
@@ -62,6 +63,14 @@ const templateOptions = (props.templates ?? []).map((template) => ({
     value: template.id,
     label: template.name,
 }));
+
+const ownerNames = computed(() =>
+    props.contract.property?.owners?.length
+        ? props.contract.property.owners
+              .map((owner: any) => owner.name)
+              .join(', ')
+        : '—',
+);
 
 const { formatCurrency } = useMoney();
 
@@ -156,7 +165,7 @@ function formatPercent(value?: number | string | null): string {
                     </div>
                     <div class="flex justify-between gap-4">
                         <span class="text-muted-foreground">Proprietário</span>
-                        <span>{{ contract.property?.owner?.name ?? '—' }}</span>
+                        <span>{{ ownerNames }}</span>
                     </div>
                     <div class="flex justify-between gap-4">
                         <span class="text-muted-foreground">Modelo</span>

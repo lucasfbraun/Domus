@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
+import { computed } from 'vue';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
 import StatusBadge from '@/components/StatusBadge.vue';
@@ -25,13 +26,21 @@ import { store } from '@/routes/occurrences';
 import { portal as receiverPortal } from '@/routes/receiver';
 import { portal as tenantPortal } from '@/routes/tenant';
 
-defineProps<{
+const props = defineProps<{
     contract: any;
     readyForTenantSignature?: boolean;
     canUploadSigned?: boolean;
     isTenant?: boolean;
     isAdmin?: boolean;
 }>();
+
+const ownerNames = computed(() =>
+    props.contract.property?.owners?.length
+        ? props.contract.property.owners
+              .map((owner: any) => owner.name)
+              .join(', ')
+        : '—',
+);
 
 defineOptions({
     layout: (pageProps: { contract: any; isTenant?: boolean }) => ({
@@ -130,7 +139,7 @@ function printContract(): void {
                     </div>
                     <div class="flex justify-between gap-4">
                         <span class="text-muted-foreground">Proprietário</span>
-                        <span>{{ contract.property?.owner?.name ?? '—' }}</span>
+                        <span>{{ ownerNames }}</span>
                     </div>
                 </CardContent>
             </Card>

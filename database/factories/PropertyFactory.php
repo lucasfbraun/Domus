@@ -23,7 +23,16 @@ class PropertyFactory extends Factory
             'address' => fake()->streetAddress().', '.fake()->city(),
             'type' => fake()->randomElement(PropertyType::cases()),
             'status' => fake()->randomElement(PropertyStatus::cases()),
-            'owner_id' => Owner::factory(),
         ];
+    }
+
+    /**
+     * Vincula o imovel a um unico proprietario recem-criado.
+     */
+    public function withOwner(): static
+    {
+        return $this->afterCreating(function (Property $property): void {
+            $property->owners()->attach(Owner::factory()->create());
+        });
     }
 }

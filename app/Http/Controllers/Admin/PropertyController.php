@@ -21,7 +21,7 @@ class PropertyController extends Controller
 
         return Inertia::render('admin/properties/Index', [
             'properties' => Property::query()
-                ->with('owner')
+                ->with('owners')
                 ->orderBy('name')
                 ->paginate(Pagination::PER_PAGE)
                 ->withQueryString(),
@@ -43,7 +43,8 @@ class PropertyController extends Controller
     {
         $this->authorize('create', Property::class);
 
-        Property::query()->create($request->validated());
+        $property = Property::query()->create($request->safe()->except('owner_ids'));
+        $property->owners()->sync($request->input('owner_ids', []));
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Imovel cadastrado.']);
 
@@ -55,7 +56,7 @@ class PropertyController extends Controller
         $this->authorize('update', $property);
 
         return Inertia::render('admin/properties/Form', [
-            'property' => $property->load('owner'),
+            'property' => $property->load('owners'),
             'owners' => Owner::query()->orderBy('name')->get(),
             'types' => $this->typeOptions(),
         ]);
@@ -65,7 +66,8 @@ class PropertyController extends Controller
     {
         $this->authorize('update', $property);
 
-        $property->update($request->validated());
+        $property->update($request->safe()->except('owner_ids'));
+        $property->owners()->sync($request->input('owner_ids', []));
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Imovel atualizado.']);
 

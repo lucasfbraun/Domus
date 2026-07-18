@@ -13,7 +13,7 @@ beforeEach(function () {
 });
 
 test('contract is ready when no owner and no witnesses', function () {
-    $property = Property::factory()->create(['owner_id' => null]);
+    $property = Property::factory()->create();
     $contract = Contract::factory()->active()->for($property)->create();
 
     $service = app(ContractSignatureService::class);
@@ -23,7 +23,8 @@ test('contract is ready when no owner and no witnesses', function () {
 
 test('contract requires owner signature when property has owner', function () {
     $owner = Owner::factory()->create();
-    $property = Property::factory()->for($owner)->create();
+    $property = Property::factory()->create();
+    $property->owners()->attach($owner);
     $contract = Contract::factory()->active()->for($property)->create(['owner_signed_at' => null]);
 
     $service = app(ContractSignatureService::class);
@@ -36,7 +37,7 @@ test('contract requires owner signature when property has owner', function () {
 });
 
 test('contract requires all witnesses to sign', function () {
-    $property = Property::factory()->create(['owner_id' => null]);
+    $property = Property::factory()->create();
     $contract = Contract::factory()->active()->for($property)->create();
     $receiver = Receiver::factory()->create();
 

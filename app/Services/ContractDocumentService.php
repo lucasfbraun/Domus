@@ -17,7 +17,7 @@ class ContractDocumentService
 
     public function generate(Contract $contract, ContractTemplate $template): Contract
     {
-        $contract->loadMissing(['tenant', 'property', 'receiver', 'inspectionPhotos']);
+        $contract->loadMissing(['tenant', 'property.owners', 'receiver', 'inspectionPhotos']);
 
         $contractText = $this->renderTemplate($template->content, $this->buildVariables($contract));
 
@@ -133,6 +133,8 @@ class ContractDocumentService
             'imovel_tipo' => $contract->property->type,
             'recebedor_nome' => $contract->receiver->name,
             'recebedor_documento' => $contract->receiver->document,
+            'proprietario_nome' => $contract->property->owners->pluck('name')->implode(', '),
+            'proprietario_documento' => $contract->property->owners->pluck('document')->implode(', '),
             'valor_aluguel' => Money::format((float) $contract->monthly_rent),
             'dia_vencimento' => (string) $contract->due_day,
             'data_inicio' => $contract->starts_at->format('d/m/Y'),

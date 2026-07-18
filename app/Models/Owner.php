@@ -6,7 +6,7 @@ use Database\Factories\OwnerFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 #[Fillable(['name', 'document', 'email', 'phone'])]
 class Owner extends Model
@@ -15,10 +15,10 @@ class Owner extends Model
     use HasFactory;
 
     /**
-     * @return HasMany<Property, $this>
+     * @return BelongsToMany<Property, $this>
      */
-    public function properties(): HasMany
+    public function properties(): BelongsToMany
     {
-        return $this->hasMany(Property::class);
+        return $this->belongsToMany(Property::class);
     }
 }

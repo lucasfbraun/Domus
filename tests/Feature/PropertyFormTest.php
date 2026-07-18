@@ -34,14 +34,34 @@ test('admin can create a property with a valid type', function () {
             'address' => 'Rua das Flores, 100',
             'type' => PropertyType::Apartment->value,
             'status' => PropertyStatus::Available->value,
-            'owner_id' => $owner->id,
+            'owner_ids' => [$owner->id],
         ])
         ->assertRedirect(route('admin.properties.index'));
 
     $property = Property::query()->where('name', 'Apartamento Centro')->first();
 
     expect($property)->not->toBeNull()
-        ->and($property->type)->toBe(PropertyType::Apartment);
+        ->and($property->type)->toBe(PropertyType::Apartment)
+        ->and($property->owners->pluck('id')->all())->toBe([$owner->id]);
+});
+
+test('admin can assign more than one owner to a property', function () {
+    $admin = User::factory()->admin()->create();
+    $owners = Owner::factory()->count(2)->create();
+
+    $this->actingAs($admin)
+        ->post(route('admin.properties.store'), [
+            'name' => 'Casa Compartilhada',
+            'address' => 'Rua das Palmeiras, 200',
+            'type' => PropertyType::House->value,
+            'status' => PropertyStatus::Available->value,
+            'owner_ids' => $owners->pluck('id')->all(),
+        ])
+        ->assertRedirect(route('admin.properties.index'));
+
+    $property = Property::query()->where('name', 'Casa Compartilhada')->first();
+
+    expect($property->owners)->toHaveCount(2);
 });
 
 test('admin cannot create a property with an invalid type', function () {

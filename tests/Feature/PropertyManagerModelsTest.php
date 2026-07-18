@@ -68,7 +68,7 @@ test('property manager models expose expected relationships', function () {
         ->create();
 
     expect($owner->properties)->toHaveCount(2)
-        ->and($contract->property->owner->is($owner))->toBeTrue()
+        ->and($contract->property->owners->pluck('id'))->toContain($owner->id)
         ->and($contract->charges)->toHaveCount(2)
         ->and($contract->tenant->user->hasRole(UserRole::Tenant))->toBeTrue();
 });

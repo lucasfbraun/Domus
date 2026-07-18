@@ -5,6 +5,7 @@ import FormSelect from '@/components/FormSelect.vue';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -23,11 +24,8 @@ const form = computed(() =>
     isEditing.value ? update.form(props.property) : store.form(),
 );
 
-const ownerOptions = computed(() =>
-    props.owners.map((owner) => ({
-        value: owner.id,
-        label: owner.name,
-    })),
+const selectedOwnerIds = computed(() =>
+    (props.property?.owners ?? []).map((owner: any) => owner.id),
 );
 
 defineOptions({
@@ -130,15 +128,30 @@ defineOptions({
             </div>
 
             <div class="grid gap-2">
-                <Label for="owner_id">Proprietário</Label>
-                <FormSelect
-                    id="owner_id"
-                    name="owner_id"
-                    :options="ownerOptions"
-                    :default-value="property?.owner_id"
-                    placeholder="Selecione um proprietário"
-                />
-                <InputError :message="errors.owner_id" />
+                <Label>Proprietários</Label>
+                <div class="space-y-2 rounded-lg border border-border/80 p-3">
+                    <Label
+                        v-for="owner in owners"
+                        :key="owner.id"
+                        :for="`owner-${owner.id}`"
+                        class="flex cursor-pointer items-center gap-2 font-normal"
+                    >
+                        <Checkbox
+                            :id="`owner-${owner.id}`"
+                            name="owner_ids[]"
+                            :value="String(owner.id)"
+                            :default-value="selectedOwnerIds.includes(owner.id)"
+                        />
+                        {{ owner.name }}
+                    </Label>
+                    <p
+                        v-if="owners.length === 0"
+                        class="text-sm text-muted-foreground"
+                    >
+                        Cadastre proprietários para vinculá-los a este imóvel.
+                    </p>
+                </div>
+                <InputError :message="errors.owner_ids" />
             </div>
 
             <div class="flex items-center gap-4">
