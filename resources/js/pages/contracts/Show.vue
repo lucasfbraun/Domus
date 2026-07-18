@@ -42,6 +42,19 @@ const ownerNames = computed(() =>
         : '—',
 );
 
+// O inquilino só pode ver/baixar o contrato gerado depois que o admin marcar
+// as assinaturas de proprietário e testemunhas (fica visível na lista do
+// portal antes disso, mas sem essa ação disponível).
+const canDownloadGenerated = computed(
+    () => !props.isTenant || !!props.readyForTenantSignature,
+);
+
+const showDocumentsCard = computed(
+    () =>
+        (canDownloadGenerated.value && !!props.contract.generated_document_path) ||
+        !!props.contract.signed_document_path,
+);
+
 defineOptions({
     layout: (pageProps: { contract: any; isTenant?: boolean }) => ({
         breadcrumbs: [
@@ -145,13 +158,13 @@ function printContract(): void {
             </Card>
         </div>
 
-        <Card v-if="contract.generated_document_path || contract.signed_document_path">
+        <Card v-if="showDocumentsCard">
             <CardHeader>
                 <CardTitle>Documentos</CardTitle>
             </CardHeader>
             <CardContent class="flex flex-wrap gap-2">
                 <Button
-                    v-if="contract.generated_document_path"
+                    v-if="contract.generated_document_path && canDownloadGenerated"
                     as-child
                     variant="outline"
                 >
@@ -168,6 +181,20 @@ function printContract(): void {
                         Baixar contrato assinado
                     </a>
                 </Button>
+            </CardContent>
+        </Card>
+
+        <Card
+            v-else-if="isTenant && !readyForTenantSignature"
+            class="border-dashed"
+        >
+            <CardHeader>
+                <CardTitle>Documentos</CardTitle>
+            </CardHeader>
+            <CardContent class="py-6 text-sm text-muted-foreground">
+                O contrato ainda não está disponível para download. Aguarde o
+                administrador confirmar as assinaturas do proprietário e das
+                testemunhas.
             </CardContent>
         </Card>
 

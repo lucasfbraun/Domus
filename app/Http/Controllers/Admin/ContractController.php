@@ -141,6 +141,12 @@ class ContractController extends Controller
     {
         $this->authorize('update', $contract);
 
+        if (! $contract->owner_signed_document_path) {
+            return back()->withErrors([
+                'owner_signed_document' => 'Envie o documento assinado pelo proprietario antes de marcar a assinatura.',
+            ]);
+        }
+
         $contract->update(['owner_signed_at' => now()]);
 
         return back();

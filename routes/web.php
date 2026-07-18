@@ -82,6 +82,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->name('contracts.document.generate');
         Route::post('contracts/{contract}/document/review', [ContractDocumentController::class, 'review'])
             ->name('contracts.document.review');
+        Route::post('contracts/{contract}/document/upload-owner-signed', [ContractDocumentController::class, 'uploadOwnerSigned'])
+            ->name('contracts.document.upload-owner-signed');
+        Route::get('contracts/{contract}/document/owner-signed', [ContractDocumentController::class, 'downloadOwnerSigned'])
+            ->name('contracts.document.owner-signed');
     });
 
     Route::middleware('role:admin|tenant')->group(function () {

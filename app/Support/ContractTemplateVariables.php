@@ -21,6 +21,8 @@ class ContractTemplateVariables
             ['key' => 'recebedor_documento', 'label' => 'Documento', 'group' => 'Recebedor'],
             ['key' => 'proprietario_nome', 'label' => 'Nome (todos, separados por vírgula)', 'group' => 'Proprietário'],
             ['key' => 'proprietario_documento', 'label' => 'Documento (todos, separados por vírgula)', 'group' => 'Proprietário'],
+            ['key' => 'proprietario_email', 'label' => 'E-mail (todos, separados por vírgula)', 'group' => 'Proprietário'],
+            ['key' => 'proprietario_telefone', 'label' => 'Telefone (todos, separados por vírgula)', 'group' => 'Proprietário'],
             ['key' => 'valor_aluguel', 'label' => 'Valor do aluguel', 'group' => 'Contrato'],
             ['key' => 'dia_vencimento', 'label' => 'Dia de vencimento', 'group' => 'Contrato'],
             ['key' => 'data_inicio', 'label' => 'Data de início', 'group' => 'Contrato'],

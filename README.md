@@ -277,7 +277,9 @@ Em **Admin → Modelos**, o texto do contrato é escrito num editor rico (TipTap
 |                     | `{{imovel_endereco}}`      | Endereço do imóvel                             |
 |                     | `{{imovel_tipo}}`          | Tipo do imóvel (apartamento, casa, etc.)       |
 | **Proprietário**    | `{{proprietario_nome}}`    | Nome de **todos** os proprietários do imóvel, separados por vírgula |
-|                     | `{{proprietario_documento}}` | Documento de **todos** os proprietários, separados por vírgula |
+|                     | `{{proprietario_documento}}` | Documento (CPF/CNPJ) de **todos** os proprietários, separados por vírgula |
+|                     | `{{proprietario_email}}`   | E-mail de **todos** os proprietários, separados por vírgula |
+|                     | `{{proprietario_telefone}}` | Telefone de **todos** os proprietários, separados por vírgula |
 | **Recebedor**       | `{{recebedor_nome}}`       | Nome do recebedor                              |
 |                     | `{{recebedor_documento}}`  | Documento do recebedor                         |
 | **Contrato**        | `{{valor_aluguel}}`        | Valor do aluguel formatado (ex.: `R$ 900,00`)  |

@@ -61,6 +61,26 @@ class ContractDocumentController extends Controller
         return back();
     }
 
+    /**
+     * Documento assinado fisicamente pelo proprietario, colhido e reenviado
+     * pelo admin. Pre-requisito pra ContractController::markOwnerSigned.
+     */
+    public function uploadOwnerSigned(
+        Request $request,
+        Contract $contract,
+        ContractDocumentService $documentService,
+    ): RedirectResponse {
+        $this->authorize('update', $contract);
+
+        $request->validate([
+            'owner_signed_document' => ['required', 'file', 'mimes:pdf', 'max:15360'],
+        ]);
+
+        $documentService->storeOwnerSignedUpload($contract, $request->file('owner_signed_document'));
+
+        return back();
+    }
+
     public function review(
         ReviewContractDocumentRequest $request,
         Contract $contract,
@@ -111,6 +131,17 @@ class ContractDocumentController extends Controller
         return response()->download(
             Storage::disk('local')->path($contract->signed_document_path),
             $contract->signed_file_name ?? 'contrato-assinado.pdf',
+        );
+    }
+
+    public function downloadOwnerSigned(Contract $contract): BinaryFileResponse
+    {
+        $this->authorize('view', $contract);
+        abort_unless($contract->owner_signed_document_path, 404);
+
+        return response()->download(
+            Storage::disk('local')->path($contract->owner_signed_document_path),
+            'contrato-proprietario-assinado-'.$contract->id.'.pdf',
         );
     }
 }
