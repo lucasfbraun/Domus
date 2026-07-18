@@ -10,6 +10,7 @@ import {
     PieChart,
     Plug,
     Shield,
+    ShieldCheck,
     UserCircle,
     Users,
     Wallet,
@@ -31,6 +32,7 @@ import { dashboard } from '@/routes';
 import { index as admins } from '@/routes/admin/admins';
 import { index as charges } from '@/routes/admin/charges';
 import { index as contracts } from '@/routes/admin/contracts';
+import { index as deposits } from '@/routes/admin/deposits';
 import { index as integrations } from '@/routes/admin/integrations';
 import { index as occurrences } from '@/routes/admin/occurrences';
 import { index as owners } from '@/routes/admin/owners';
@@ -110,6 +112,11 @@ const adminOperationsNavItems = computed<NavItem[]>(() => [
         title: 'Cobranças',
         href: charges(),
         icon: CreditCard,
+    },
+    {
+        title: 'Cauções',
+        href: deposits(),
+        icon: ShieldCheck,
     },
     {
         title: 'Ocorrências',

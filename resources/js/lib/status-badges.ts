@@ -1,6 +1,7 @@
 export type StatusType =
     | 'contract'
     | 'charge'
+    | 'deposit'
     | 'property'
     | 'tenant'
     | 'signature'
@@ -40,6 +41,15 @@ const statusMaps: Record<StatusType, Record<string, StatusConfig>> = {
         paid: { label: 'Paga', className: statusColors.success },
         overdue: { label: 'Vencida', className: statusColors.danger },
         cancelled: { label: 'Cancelada', className: statusColors.neutral },
+    },
+    deposit: {
+        pending: { label: 'Pendente', className: statusColors.neutral },
+        waiting_payment: {
+            label: 'Aguardando pagamento',
+            className: statusColors.warning,
+        },
+        paid: { label: 'Paga', className: statusColors.success },
+        refunded: { label: 'Devolvida', className: statusColors.info },
     },
     property: {
         available: { label: 'Disponível', className: statusColors.success },

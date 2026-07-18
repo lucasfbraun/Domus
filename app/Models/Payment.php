@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Fillable([
     'charge_id',
+    'deposit_id',
     'amount_paid',
     'net_amount',
     'fees',
@@ -46,5 +47,13 @@ class Payment extends Model
     public function charge(): BelongsTo
     {
         return $this->belongsTo(Charge::class);
+    }
+
+    /**
+     * @return BelongsTo<Deposit, $this>
+     */
+    public function deposit(): BelongsTo
+    {
+        return $this->belongsTo(Deposit::class);
     }
 }

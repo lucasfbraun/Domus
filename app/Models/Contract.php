@@ -104,6 +104,14 @@ class Contract extends Model
     }
 
     /**
+     * @return HasMany<Deposit, $this>
+     */
+    public function deposits(): HasMany
+    {
+        return $this->hasMany(Deposit::class);
+    }
+
+    /**
      * @return HasMany<ContractWitness, $this>
      */
     public function witnesses(): HasMany
