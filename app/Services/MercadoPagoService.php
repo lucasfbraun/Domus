@@ -3,9 +3,11 @@
 namespace App\Services;
 
 use App\Enums\ChargeStatus;
+use App\Enums\DepositStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use App\Models\Charge;
+use App\Models\Deposit;
 use App\Models\Payment;
 use App\Models\Receiver;
 use App\Support\Money;
@@ -181,6 +183,129 @@ class MercadoPagoService
     }
 
     /**
+     * @return array{qrCode: string, qrCodeBase64: string, expiresAt: string, orderId: string, transactionId: string|null, ticketUrl: string|null}
+     */
+    public function createPixForDeposit(Deposit $deposit): array
+    {
+        $deposit->loadMissing(['contract.tenant', 'receiver']);
+
+        if (in_array($deposit->status, [DepositStatus::Paid, DepositStatus::Refunded], true)) {
+            throw new \InvalidArgumentException('Esta caucao nao esta em aberto.');
+        }
+
+        if ($this->hasReusableDepositPix($deposit)) {
+            return [
+                'qrCode' => (string) $deposit->pix_qr_code,
+                'qrCodeBase64' => (string) ($deposit->pix_qr_code_base64 ?? ''),
+                'expiresAt' => $deposit->pix_expires_at?->toIso8601String() ?? now()->addHour()->toIso8601String(),
+                'orderId' => (string) $deposit->mercado_pago_order_id,
+                'transactionId' => $deposit->mercado_pago_transaction_id,
+                'ticketUrl' => $deposit->payment_url,
+            ];
+        }
+
+        $accessToken = $this->ensureFreshAccessToken($deposit->receiver);
+        $amount = $this->formatAmount((float) $deposit->amount);
+        $expirationDate = now()->addHour();
+
+        $tenant = $deposit->contract->tenant;
+        $nameParts = explode(' ', $tenant->name, 2);
+
+        $response = $this->http($accessToken)
+            ->withHeaders(['X-Idempotency-Key' => (string) Str::uuid()])
+            ->post(self::ORDERS_URL, [
+                'type' => 'online',
+                'processing_mode' => 'automatic',
+                'total_amount' => $amount,
+                'external_reference' => 'deposit:'.$deposit->id,
+                'description' => filled($deposit->description) ? $deposit->description : "Caucao {$deposit->id}",
+                'payer' => [
+                    'email' => $tenant->email,
+                    'first_name' => $nameParts[0] ?: $tenant->name,
+                    'last_name' => $nameParts[1] ?? '-',
+                    'identification' => $this->buildPayerIdentification($tenant->document),
+                ],
+                'transactions' => [
+                    'payments' => [
+                        [
+                            'amount' => $amount,
+                            'payment_method' => [
+                                'id' => 'pix',
+                                'type' => 'bank_transfer',
+                            ],
+                            'expiration_time' => self::PIX_EXPIRATION,
+                        ],
+                    ],
+                ],
+            ]);
+
+        if (! $response->successful()) {
+            throw new \RuntimeException(
+                'Falha ao criar order Pix no Mercado Pago ('.$response->status().'): '.$response->body(),
+            );
+        }
+
+        $order = $response->json();
+        $payment = data_get($order, 'transactions.payments.0', []);
+        $qrCode = (string) data_get($payment, 'payment_method.qr_code', '');
+        $qrCodeBase64 = (string) data_get($payment, 'payment_method.qr_code_base64', '');
+        $ticketUrl = data_get($payment, 'payment_method.ticket_url');
+        $orderId = (string) $order['id'];
+        $transactionId = isset($payment['id']) ? (string) $payment['id'] : null;
+
+        $deposit->update([
+            'mercado_pago_order_id' => $orderId,
+            'mercado_pago_transaction_id' => $transactionId,
+            'payment_url' => $ticketUrl,
+            'pix_qr_code' => $qrCode,
+            'pix_qr_code_base64' => $qrCodeBase64,
+            'pix_expires_at' => $expirationDate,
+            'status' => DepositStatus::WaitingPayment,
+        ]);
+
+        return [
+            'qrCode' => $qrCode,
+            'qrCodeBase64' => $qrCodeBase64,
+            'expiresAt' => $expirationDate->toIso8601String(),
+            'orderId' => $orderId,
+            'transactionId' => $transactionId,
+            'ticketUrl' => $ticketUrl,
+        ];
+    }
+
+    /**
+     * @return array{status: string, updated: bool}
+     */
+    public function syncDepositPayment(Deposit $deposit): array
+    {
+        if (! $deposit->mercado_pago_order_id) {
+            throw new \InvalidArgumentException('Essa caucao ainda nao tem uma order Pix gerada.');
+        }
+
+        if ($deposit->status === DepositStatus::Paid) {
+            return ['status' => 'already_paid', 'updated' => false];
+        }
+
+        $order = $this->fetchOrderDetails($deposit->mercado_pago_order_id);
+
+        if ($order['status'] !== 'processed' || ! $order['externalReference']) {
+            return ['status' => $order['status'], 'updated' => false];
+        }
+
+        $isNew = $this->recordApprovedDepositPayment([
+            'depositId' => $deposit->id,
+            'externalId' => $deposit->mercado_pago_order_id,
+            'amountPaid' => $order['paidAmount'],
+            'netAmount' => $order['netAmount'],
+            'fees' => $order['feeAmount'],
+            'paidAt' => $order['paidAt'] ?? now()->toIso8601String(),
+            'method' => $order['paymentMethod'],
+        ]);
+
+        return ['status' => 'processed', 'updated' => $isNew];
+    }
+
+    /**
      * @return array{status: string, updated: bool}
      */
     public function syncChargePayment(Charge $charge): array
@@ -274,15 +399,27 @@ class MercadoPagoService
             return ['handled' => true, 'status' => $order['status']];
         }
 
-        $isNew = $this->recordApprovedPayment([
-            'chargeId' => (int) $order['externalReference'],
-            'externalId' => $orderId,
-            'amountPaid' => $order['paidAmount'],
-            'netAmount' => $order['netAmount'],
-            'fees' => $order['feeAmount'],
-            'paidAt' => $order['paidAt'] ?? now()->toIso8601String(),
-            'method' => $order['paymentMethod'],
-        ]);
+        $reference = (string) $order['externalReference'];
+
+        $isNew = str_starts_with($reference, 'deposit:')
+            ? $this->recordApprovedDepositPayment([
+                'depositId' => (int) substr($reference, strlen('deposit:')),
+                'externalId' => $orderId,
+                'amountPaid' => $order['paidAmount'],
+                'netAmount' => $order['netAmount'],
+                'fees' => $order['feeAmount'],
+                'paidAt' => $order['paidAt'] ?? now()->toIso8601String(),
+                'method' => $order['paymentMethod'],
+            ])
+            : $this->recordApprovedPayment([
+                'chargeId' => (int) $reference,
+                'externalId' => $orderId,
+                'amountPaid' => $order['paidAmount'],
+                'netAmount' => $order['netAmount'],
+                'fees' => $order['feeAmount'],
+                'paidAt' => $order['paidAt'] ?? now()->toIso8601String(),
+                'method' => $order['paymentMethod'],
+            ]);
 
         return ['handled' => true, 'status' => $isNew ? 'processed' : 'duplicate'];
     }
@@ -308,6 +445,34 @@ class MercadoPagoService
         ]);
 
         Charge::query()->whereKey($input['chargeId'])->update(['status' => ChargeStatus::Paid]);
+
+        return true;
+    }
+
+    /**
+     * @param  array{depositId: int, externalId: string, amountPaid: float, netAmount: float|null, fees: float|null, paidAt: string, method?: PaymentMethod}  $input
+     */
+    public function recordApprovedDepositPayment(array $input): bool
+    {
+        if (Payment::query()->where('external_id', $input['externalId'])->exists()) {
+            return false;
+        }
+
+        Payment::query()->create([
+            'deposit_id' => $input['depositId'],
+            'amount_paid' => $input['amountPaid'],
+            'net_amount' => $input['netAmount'],
+            'fees' => $input['fees'],
+            'method' => $input['method'] ?? PaymentMethod::Pix,
+            'status' => PaymentStatus::Approved,
+            'paid_at' => $input['paidAt'],
+            'external_id' => $input['externalId'],
+        ]);
+
+        Deposit::query()->whereKey($input['depositId'])->update([
+            'status' => DepositStatus::Paid,
+            'paid_at' => $input['paidAt'],
+        ]);
 
         return true;
     }
@@ -407,6 +572,14 @@ class MercadoPagoService
             && filled($charge->pix_qr_code)
             && $charge->pix_expires_at !== null
             && $charge->pix_expires_at->isFuture();
+    }
+
+    private function hasReusableDepositPix(Deposit $deposit): bool
+    {
+        return filled($deposit->mercado_pago_order_id)
+            && filled($deposit->pix_qr_code)
+            && $deposit->pix_expires_at !== null
+            && $deposit->pix_expires_at->isFuture();
     }
 
     private function ensureFreshAccessToken(Receiver $receiver): string

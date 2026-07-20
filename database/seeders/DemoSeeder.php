@@ -102,10 +102,12 @@ class DemoSeeder extends Seeder
                 'type' => PropertyType::House,
                 'status' => PropertyStatus::Available,
             ],
-        ])->map(fn (array $data) => Property::create([
-            ...$data,
-            'owner_id' => $owner->id,
-        ]));
+        ])->map(function (array $data) use ($owner) {
+            $property = Property::create($data);
+            $property->owners()->attach($owner->id);
+
+            return $property;
+        });
 
         $template = ContractTemplate::create([
             'name' => 'Contrato de Locação Residencial',

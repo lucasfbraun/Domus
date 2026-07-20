@@ -67,7 +67,7 @@ class ContractController extends Controller
 
         return Inertia::render('admin/contracts/Show', [
             'contract' => $contract->load([
-                'property.owner',
+                'property.owners',
                 'tenant',
                 'receiver',
                 'template',
@@ -140,6 +140,12 @@ class ContractController extends Controller
     public function markOwnerSigned(Contract $contract): RedirectResponse
     {
         $this->authorize('update', $contract);
+
+        if (! $contract->owner_signed_document_path) {
+            return back()->withErrors([
+                'owner_signed_document' => 'Envie o documento assinado pelo proprietario antes de marcar a assinatura.',
+            ]);
+        }
 
         $contract->update(['owner_signed_at' => now()]);
 

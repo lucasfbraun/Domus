@@ -28,6 +28,12 @@ defineProps<{
     properties: Paginated<any>;
 }>();
 
+function ownerNames(property: any): string {
+    return property.owners?.length
+        ? property.owners.map((owner: any) => owner.name).join(', ')
+        : '—';
+}
+
 defineOptions({
     layout: {
         breadcrumbs: [
@@ -98,7 +104,7 @@ defineOptions({
                                     />
                                 </DataTableCell>
                                 <DataTableCell>
-                                    {{ property.owner?.name ?? '—' }}
+                                    {{ ownerNames(property) }}
                                 </DataTableCell>
                                 <DataTableActionsCell>
                                     <TableActionButton label="Editar" as-child>

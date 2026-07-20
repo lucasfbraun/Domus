@@ -2,17 +2,19 @@
 
 Sistema de gestão imobiliária com painel administrativo, portais para inquilinos e recebedores, cobrança de aluguéis via **Pix (Mercado Pago Orders API)** e integrações opcionais (e-mail, WhatsApp).
 
-**Stack:** Laravel 13 · Inertia.js v3 · Vue 3 · Tailwind CSS v4 · Fortify · Spatie Media Library & Permission
+**Stack:** Laravel 13 · Inertia.js v3 · Vue 3 · Tailwind CSS v4 · Fortify · Spatie Media Library & Permission · Docker (Laravel Sail)
 
 ---
 
 ## Índice
 
 - [Requisitos](#requisitos)
+- [Docker (recomendado)](#docker-recomendado)
 - [Início rápido](#início-rápido)
 - [Setup manual](#setup-manual)
 - [Desenvolvimento](#desenvolvimento)
 - [Dados de demonstração](#dados-de-demonstração)
+- [Variáveis de template de contrato](#variáveis-de-template-de-contrato)
 - [Mercado Pago (Pix)](#mercado-pago-pix)
     - [Modo local com token de teste](#modo-local-com-token-de-teste)
     - [OAuth por recebedor (produção)](#oauth-por-recebedor-produção)
@@ -39,9 +41,73 @@ Sistema de gestão imobiliária com painel administrativo, portais para inquilin
 
 O projeto usa **SQLite** por padrão. MySQL/PostgreSQL também funcionam — ajuste `DB_*` no `.env`.
 
+> Não quer instalar PHP/Composer/Node localmente? Use [Docker](#docker-recomendado) — só precisa do Docker Desktop.
+
+---
+
+## Docker (recomendado)
+
+O projeto já vem com `docker-compose.yml` e uma imagem baseada no [Laravel Sail](https://laravel.com/docs/sail) (PHP 8.4 + Node + extensões necessárias, incluindo os binários de otimização de imagem usados pela Media Library). Só precisa do **Docker Desktop** instalado.
+
+### Serviços
+
+| Serviço        | O que é                                                             | Porta padrão                    |
+| -------------- | -------------------------------------------------------------------- | -------------------------------- |
+| `laravel.test` | Aplicação (PHP built-in server) + Vite dev server                   | `8000` (app) / `5173` (Vite)      |
+| `queue`        | Worker de fila (`php artisan queue:work`), mesma imagem da app       | —                                |
+| `redis`        | Cache/sessão/fila em memória, disponível para uso                    | `6379`                            |
+
+### Primeira vez
+
+```bash
+git clone <url-do-repositorio> property-manager
+cd property-manager
+cp .env.example .env
+
+docker compose up -d --build
+
+docker compose exec laravel.test composer install
+docker compose exec laravel.test php artisan key:generate
+docker compose exec laravel.test php artisan migrate --seed
+docker compose exec laravel.test php artisan storage:link
+docker compose exec laravel.test npm install
+docker compose exec laravel.test npm run build
+```
+
+Acesse [http://localhost:8000](http://localhost:8000).
+
+### Dia a dia
+
+```bash
+docker compose up -d              # subir os containers
+docker compose down               # parar
+docker compose logs laravel.test --tail 100   # ver logs da app
+docker compose exec laravel.test php artisan <comando>
+docker compose exec laravel.test npm run dev  # Vite com hot reload (porta 5173)
+docker compose restart laravel.test queue     # reiniciar app/worker após mudanças de config
+```
+
+### Portas ocupadas
+
+Se `8000`, `5173` ou `6379` já estiverem em uso no seu computador, ajuste no `.env` antes de subir os containers:
+
+```env
+APP_PORT=8091
+VITE_PORT=5174
+FORWARD_REDIS_PORT=6380
+```
+
+Depois: `docker compose down && docker compose up -d`.
+
+### Performance no Windows
+
+O bind mount do projeto inteiro (`.:/var/www/html`) é lento no Docker Desktop para Windows por causa da ponte NTFS↔Linux. Por isso `vendor/`, `node_modules/` e `public/build/` ficam em **volumes nomeados** (`sail-vendor`, `sail-node-modules`, `sail-public-build`) em vez do bind mount — são gerados dentro do container via `composer install`/`npm run build` e não aparecem no seu editor local. Se ainda estiver lento, mova o projeto para dentro do filesystem do WSL2 (ex.: `\\wsl$\Ubuntu\home\<usuario>\...`) em vez de `C:\...`.
+
 ---
 
 ## Início rápido
+
+> Preferir Docker? Pule para a seção [Docker (recomendado)](#docker-recomendado) — não precisa instalar PHP/Node localmente.
 
 Com PHP, Composer e Node instalados:
 
@@ -192,6 +258,52 @@ O cenário inclui proprietário, imóveis, contrato ativo, cobranças (paga, ven
 | Admin     | `/dashboard`   |
 | Inquilino | `/inquilino`   |
 | Recebedor | `/recebedor`   |
+
+---
+
+## Variáveis de template de contrato
+
+Em **Admin → Modelos**, o texto do contrato é escrito num editor rico (TipTap) com uma barra lateral de variáveis: clique ou arraste uma variável para inserir um token `{{chave}}` no texto. Na hora de gerar o documento (**Admin → Contrato → Gerar documento**), cada token é substituído pelo dado real daquele contrato.
+
+### Catálogo de variáveis
+
+| Grupo             | Variável                  | Descrição                                    |
+| ------------------ | -------------------------- | ---------------------------------------------- |
+| **Inquilino**       | `{{inquilino_nome}}`       | Nome do inquilino                              |
+|                     | `{{inquilino_documento}}`  | CPF/CNPJ do inquilino                          |
+|                     | `{{inquilino_email}}`      | E-mail do inquilino                            |
+|                     | `{{inquilino_whatsapp}}`   | WhatsApp do inquilino                          |
+| **Imóvel**          | `{{imovel_nome}}`          | Nome/identificação do imóvel                   |
+|                     | `{{imovel_endereco}}`      | Endereço do imóvel                             |
+|                     | `{{imovel_tipo}}`          | Tipo do imóvel (apartamento, casa, etc.)       |
+| **Proprietário**    | `{{proprietario_nome}}`    | Nome de **todos** os proprietários do imóvel, separados por vírgula |
+|                     | `{{proprietario_documento}}` | Documento (CPF/CNPJ) de **todos** os proprietários, separados por vírgula |
+|                     | `{{proprietario_email}}`   | E-mail de **todos** os proprietários, separados por vírgula |
+|                     | `{{proprietario_telefone}}` | Telefone de **todos** os proprietários, separados por vírgula |
+| **Recebedor**       | `{{recebedor_nome}}`       | Nome do recebedor                              |
+|                     | `{{recebedor_documento}}`  | Documento do recebedor                         |
+| **Contrato**        | `{{valor_aluguel}}`        | Valor do aluguel formatado (ex.: `R$ 900,00`)  |
+|                     | `{{dia_vencimento}}`       | Dia de vencimento mensal                       |
+|                     | `{{data_inicio}}`          | Data de início (`dd/mm/aaaa`)                  |
+|                     | `{{data_fim}}`             | Data de término (`dd/mm/aaaa`)                 |
+|                     | `{{multa_percentual}}`     | Percentual de multa por atraso                 |
+|                     | `{{juros_percentual}}`     | Percentual de juros ao mês                     |
+|                     | `{{carencia_dias}}`        | Dias de carência antes de multa/juros          |
+| **Sistema**         | `{{data_geracao}}`         | Data em que o documento foi gerado             |
+
+A lista completa e as labels exibidas no editor vêm de `App\Support\ContractTemplateVariables::catalog()` — é a fonte da verdade tanto pra UI quanto pra validação.
+
+### Como funciona por baixo dos panos
+
+1. **Editor (`TemplateEditor.vue`)** — cada variável inserida vira um "chip" visual no texto rico, internamente representado como `<span data-template-variable="chave">{{chave}}</span>`.
+2. **Ao salvar o modelo** (`StoreContractTemplateRequest`/`UpdateContractTemplateRequest`) — `ContractTemplateVariables::sanitizeHtml()` roda em `prepareForValidation()`: remove tags HTML não permitidas (mantém só `<p> <br> <strong> <b> <em> <i> <u> <h1-h3> <ul> <ol> <li>`) e normaliza os tokens reconhecidos. Uma chave que não existe no catálogo (erro de digitação, variável removida do código) vira texto literal `{{chave}}` e **não é substituída** na geração — não dá erro, só aparece do jeito que foi escrita.
+3. **Ao gerar o contrato** (`ContractDocumentService::generate()`) — `buildVariables()` monta o array `chave => valor` a partir do `Contract` (com `tenant`, `property.owners`, `receiver` carregados) e `renderTemplate()` substitui cada `{{chave}}` pelo valor (HTML-escapado) antes de virar PDF via dompdf. Se o conteúdo salvo não tiver nenhuma tag HTML (modelos antigos em texto puro), o texto é escapado e quebras de linha viram `<br>` automaticamente.
+
+### Adicionando uma nova variável
+
+1. Adicione a entrada em `App\Support\ContractTemplateVariables::catalog()` (`key`, `label`, `group`) — isso já faz ela aparecer na barra lateral do editor.
+2. Popule o valor real em `App\Services\ContractDocumentService::buildVariables()`.
+3. Se o valor depender de uma relação ainda não carregada, adicione-a em `$contract->loadMissing([...])` no mesmo método (e também em `ContractSignatureService`/`ContractController`/`ContractShowController` se a tela de visualização também precisar dela).
 
 ---
 
@@ -378,7 +490,7 @@ Tarefas agendadas (`routes/console.php`):
 | 09:00                       | `GenerateMonthlyChargesJob` | Marca cobranças vencidas + gera cobranças mensais (5 dias antes do vencimento) |
 | 10:00                       | `RunReminderSweepJob`       | Envia lembretes de cobrança                                                    |
 
-**Em desenvolvimento**, `composer dev` já sobe o queue worker.
+**Em desenvolvimento**, `composer dev` já sobe o queue worker. No Docker, o container `queue` já roda `php artisan queue:work` automaticamente — não precisa subir nada manualmente.
 
 **Em produção**, configure o cron do servidor:
 
@@ -420,7 +532,7 @@ Testes de Mercado Pago usam `Http::fake()` — não chamam a API real.
 | **Admin**        | Painel completo: cadastros, contratos, cobranças, rateios, integrações |
 | **Inquilino**    | Portal: cobranças, Pix, contrato, ocorrências                          |
 | **Recebedor**    | Portal de leitura: cobranças e contratos vinculados                    |
-| **Proprietário** | Cadastro administrativo (sem login próprio)                            |
+| **Proprietário** | Cadastro administrativo (sem login próprio). Um imóvel pode ter mais de um proprietário vinculado |
 
 ---
 
@@ -448,6 +560,8 @@ Referência completa em `.env.example`. Principais:
 
 ## Comandos úteis
 
+**Local (PHP/Node instalados):**
+
 ```bash
 composer setup          # Instalação inicial completa
 composer dev            # Ambiente de desenvolvimento
@@ -457,6 +571,16 @@ php artisan storage:link           # Mídia pública
 php artisan config:clear           # Após alterar .env
 php artisan route:list             # Lista rotas
 vendor/bin/pint --dirty            # Formata PHP alterado
+```
+
+**Docker:** prefixe os comandos PHP/Artisan com `docker compose exec laravel.test`, por exemplo:
+
+```bash
+docker compose exec laravel.test php artisan migrate:fresh --seed
+docker compose exec laravel.test php artisan test --compact
+docker compose exec laravel.test php artisan route:list
+docker compose exec laravel.test vendor/bin/pint --dirty
+docker compose exec laravel.test npm run build
 ```
 
 ---

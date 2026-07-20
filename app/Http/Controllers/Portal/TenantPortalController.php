@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Portal;
 
 use App\Enums\ChargeStatus;
+use App\Enums\DepositStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Charge;
 use App\Models\Contract;
+use App\Models\Deposit;
 use App\Models\User;
 use App\Services\MercadoPagoService;
 use App\Support\Money;
@@ -70,6 +72,28 @@ class TenantPortalController extends Controller
                         'has_pix' => filled($charge->pix_qr_code) || filled($charge->pix_qr_code_base64),
                     ];
                 }),
+            'deposits' => Deposit::query()
+                ->with(['contract.property', 'receiver'])
+                ->whereHas('contract', fn ($query) => $query->where('tenant_id', $tenant->id))
+                ->orderByDesc('due_date')
+                ->paginate(Pagination::PER_PAGE, pageName: 'deposits')
+                ->withQueryString()
+                ->through(fn (Deposit $deposit) => [
+                    'id' => $deposit->id,
+                    'description' => $deposit->description,
+                    'amount' => (float) $deposit->amount,
+                    'status' => $deposit->status?->value ?? $deposit->status,
+                    'due_date' => $deposit->due_date?->toDateString(),
+                    'is_paid' => $deposit->status === DepositStatus::Paid,
+                    'is_refunded' => $deposit->status === DepositStatus::Refunded,
+                    'refunded_at' => $deposit->refunded_at?->toDateString(),
+                    'refunded_amount' => $deposit->refunded_amount !== null ? (float) $deposit->refunded_amount : null,
+                    'property' => $deposit->contract?->property?->name,
+                    'pix_qr_code' => $deposit->pix_qr_code,
+                    'pix_qr_code_base64' => $deposit->pix_qr_code_base64,
+                    'pix_expires_at' => $deposit->pix_expires_at?->toIso8601String(),
+                    'has_pix' => filled($deposit->pix_qr_code) || filled($deposit->pix_qr_code_base64),
+                ]),
         ]);
     }
 }

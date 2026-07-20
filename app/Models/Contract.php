@@ -34,6 +34,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'generated_document_path',
     'generated_document_updated_at',
     'owner_signed_at',
+    'owner_signed_document_path',
     'expiring_reminder_sent_at',
 ])]
 class Contract extends Model
@@ -100,6 +101,14 @@ class Contract extends Model
     public function charges(): HasMany
     {
         return $this->hasMany(Charge::class);
+    }
+
+    /**
+     * @return HasMany<Deposit, $this>
+     */
+    public function deposits(): HasMany
+    {
+        return $this->hasMany(Deposit::class);
     }
 
     /**

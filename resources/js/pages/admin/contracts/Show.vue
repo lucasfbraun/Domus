@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Form, Head, Link } from '@inertiajs/vue3';
+import { computed } from 'vue';
 import FormSelect from '@/components/FormSelect.vue';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
@@ -26,7 +27,9 @@ import {
 } from '@/routes/admin/contracts';
 import {
     generate as generateDocument,
+    ownerSigned as downloadOwnerSigned,
     review,
+    uploadOwnerSigned,
 } from '@/routes/admin/contracts/document';
 import {
     destroy as destroyPhoto,
@@ -62,6 +65,14 @@ const templateOptions = (props.templates ?? []).map((template) => ({
     value: template.id,
     label: template.name,
 }));
+
+const ownerNames = computed(() =>
+    props.contract.property?.owners?.length
+        ? props.contract.property.owners
+              .map((owner: any) => owner.name)
+              .join(', ')
+        : '—',
+);
 
 const { formatCurrency } = useMoney();
 
@@ -156,7 +167,7 @@ function formatPercent(value?: number | string | null): string {
                     </div>
                     <div class="flex justify-between gap-4">
                         <span class="text-muted-foreground">Proprietário</span>
-                        <span>{{ contract.property?.owner?.name ?? '—' }}</span>
+                        <span>{{ ownerNames }}</span>
                     </div>
                     <div class="flex justify-between gap-4">
                         <span class="text-muted-foreground">Modelo</span>
@@ -177,15 +188,61 @@ function formatPercent(value?: number | string | null): string {
                 <CardTitle>Assinaturas</CardTitle>
             </CardHeader>
             <CardContent class="space-y-4">
+                <div class="space-y-3 rounded-lg border p-3">
+                    <p class="text-sm font-medium">Documento assinado pelo proprietário</p>
+                    <p class="text-xs text-muted-foreground">
+                        Baixe o contrato gerado, colha a assinatura do proprietário fora do
+                        sistema e envie o PDF assinado aqui. Só é possível marcar a assinatura
+                        depois desse envio.
+                    </p>
+
+                    <Form
+                        v-bind="uploadOwnerSigned.form(contract)"
+                        enctype="multipart/form-data"
+                        class="flex flex-wrap items-end gap-3"
+                        #default="{ errors, processing }"
+                    >
+                        <div class="grid gap-2">
+                            <Label for="owner_signed_document">PDF assinado</Label>
+                            <Input
+                                id="owner_signed_document"
+                                type="file"
+                                name="owner_signed_document"
+                                accept="application/pdf"
+                                required
+                            />
+                            <InputError :message="errors.owner_signed_document" />
+                        </div>
+                        <Button type="submit" variant="outline" :disabled="processing">
+                            {{ contract.owner_signed_document_path ? 'Reenviar' : 'Enviar' }}
+                        </Button>
+                    </Form>
+
+                    <Button
+                        v-if="contract.owner_signed_document_path"
+                        as-child
+                        size="sm"
+                        variant="ghost"
+                    >
+                        <a :href="downloadOwnerSigned.url(contract)">
+                            Baixar documento enviado
+                        </a>
+                    </Button>
+                </div>
+
                 <div class="flex flex-wrap items-center gap-3">
                     <Form
                         v-bind="ownerSign.form(contract)"
-                        #default="{ processing }"
+                        #default="{ errors, processing }"
                     >
                         <Button
                             type="submit"
                             variant="outline"
-                            :disabled="processing || !!contract.owner_signed_at"
+                            :disabled="
+                                processing ||
+                                !!contract.owner_signed_at ||
+                                !contract.owner_signed_document_path
+                            "
                         >
                             {{
                                 contract.owner_signed_at
@@ -193,6 +250,7 @@ function formatPercent(value?: number | string | null): string {
                                     : 'Marcar assinatura do proprietário'
                             }}
                         </Button>
+                        <InputError :message="errors.owner_signed_document" />
                     </Form>
                 </div>
 

@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\ContractInspectionPhotoController;
 use App\Http\Controllers\Admin\ContractOccurrenceController;
 use App\Http\Controllers\Admin\ContractTemplateController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\DepositController;
 use App\Http\Controllers\Admin\HelpController;
 use App\Http\Controllers\Admin\IntegrationController;
 use App\Http\Controllers\Admin\OwnerController;
@@ -64,6 +65,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->name('charges.generate');
         Route::post('charges/{charge}/reminder', [ChargeController::class, 'sendReminder'])
             ->name('charges.reminder');
+        Route::get('deposits', [DepositController::class, 'index'])->name('deposits.index');
+        Route::post('deposits', [DepositController::class, 'store'])->name('deposits.store');
+        Route::put('deposits/{deposit}', [DepositController::class, 'update'])->name('deposits.update');
+        Route::delete('deposits/{deposit}', [DepositController::class, 'destroy'])->name('deposits.destroy');
+        Route::post('deposits/{deposit}/refund', [DepositController::class, 'markRefunded'])->name('deposits.refund');
         Route::get('rateios', [RateioController::class, 'index'])->name('rateios.index');
         Route::post('rateios', [RateioController::class, 'store'])->name('rateios.store');
         Route::put('rateios/{rateio}', [RateioController::class, 'update'])->name('rateios.update');
@@ -82,6 +88,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->name('contracts.document.generate');
         Route::post('contracts/{contract}/document/review', [ContractDocumentController::class, 'review'])
             ->name('contracts.document.review');
+        Route::post('contracts/{contract}/document/upload-owner-signed', [ContractDocumentController::class, 'uploadOwnerSigned'])
+            ->name('contracts.document.upload-owner-signed');
+        Route::get('contracts/{contract}/document/owner-signed', [ContractDocumentController::class, 'downloadOwnerSigned'])
+            ->name('contracts.document.owner-signed');
     });
 
     Route::middleware('role:admin|tenant')->group(function () {
@@ -89,6 +99,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('charges/{charge}/sync', [ChargeController::class, 'syncPayment'])->name('charges.sync');
         Route::post('charges/{charge}/sync-payment', [ChargeController::class, 'syncPayment'])
             ->name('charges.sync-payment');
+        Route::post('deposits/{deposit}/pix', [DepositController::class, 'createPix'])->name('deposits.pix');
+        Route::post('deposits/{deposit}/sync', [DepositController::class, 'syncPayment'])->name('deposits.sync');
         Route::post('contracts/{contract}/document/upload-signed', [ContractDocumentController::class, 'uploadSigned'])
             ->name('contracts.document.upload-signed');
         Route::get('contracts/{contract}/document/generated', [ContractDocumentController::class, 'downloadGenerated'])

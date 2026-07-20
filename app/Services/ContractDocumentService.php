@@ -17,7 +17,7 @@ class ContractDocumentService
 
     public function generate(Contract $contract, ContractTemplate $template): Contract
     {
-        $contract->loadMissing(['tenant', 'property', 'receiver', 'inspectionPhotos']);
+        $contract->loadMissing(['tenant', 'property.owners', 'receiver', 'inspectionPhotos']);
 
         $contractText = $this->renderTemplate($template->content, $this->buildVariables($contract));
 
@@ -80,6 +80,29 @@ class ContractDocumentService
         return $contract->fresh();
     }
 
+    /**
+     * Documento assinado fisicamente pelo proprietario, colhido e reenviado
+     * pelo admin. So depois desse upload e possivel marcar owner_signed_at.
+     */
+    public function storeOwnerSignedUpload(Contract $contract, UploadedFile $file): Contract
+    {
+        if ($file->getSize() > self::MAX_SIGNED_FILE_BYTES) {
+            throw new \InvalidArgumentException('Arquivo muito grande (limite de 15MB).');
+        }
+
+        if ($contract->owner_signed_document_path) {
+            Storage::disk('local')->delete($contract->owner_signed_document_path);
+        }
+
+        $path = $file->store("contracts/{$contract->id}/owner-signed", 'local');
+
+        $contract->update([
+            'owner_signed_document_path' => $path,
+        ]);
+
+        return $contract->fresh();
+    }
+
     public function approve(Contract $contract, ?string $note = null): Contract
     {
         $contract->update([
@@ -133,6 +156,10 @@ class ContractDocumentService
             'imovel_tipo' => $contract->property->type,
             'recebedor_nome' => $contract->receiver->name,
             'recebedor_documento' => $contract->receiver->document,
+            'proprietario_nome' => $contract->property->owners->pluck('name')->implode(', '),
+            'proprietario_documento' => $contract->property->owners->pluck('document')->implode(', '),
+            'proprietario_email' => $contract->property->owners->pluck('email')->filter()->implode(', '),
+            'proprietario_telefone' => $contract->property->owners->pluck('phone')->filter()->implode(', '),
             'valor_aluguel' => Money::format((float) $contract->monthly_rent),
             'dia_vencimento' => (string) $contract->due_day,
             'data_inicio' => $contract->starts_at->format('d/m/Y'),

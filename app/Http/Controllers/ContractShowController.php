@@ -27,7 +27,7 @@ class ContractShowController extends Controller
 
         return Inertia::render('contracts/Show', [
             'contract' => $contract->load([
-                'property.owner',
+                'property.owners',
                 'tenant',
                 'receiver',
                 'witnesses.receiver',

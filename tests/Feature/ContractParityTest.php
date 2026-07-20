@@ -5,10 +5,12 @@ use App\Enums\SignatureStatus;
 use App\Mail\ContractDocumentReviewedMail;
 use App\Models\Contract;
 use App\Models\ContractTemplate;
+use App\Models\Owner;
 use App\Models\Property;
 use App\Models\Receiver;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Services\ContractDocumentService;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Mail;
@@ -94,4 +96,48 @@ test('admin can generate document and review signed upload with email', function
     expect($contract->fresh()->signature_status)->toBe(SignatureStatus::Approved);
 
     Mail::assertQueued(ContractDocumentReviewedMail::class);
+});
+
+test('generated document joins data from every owner of the property', function () {
+    $property = Property::factory()->create();
+    $ownerA = Owner::factory()->create([
+        'name' => 'Joao Silva',
+        'document' => '11111111111',
+        'email' => 'joao@example.com',
+        'phone' => '5511999990001',
+    ]);
+    $ownerB = Owner::factory()->create([
+        'name' => 'Maria Silva',
+        'document' => '22222222222',
+        'email' => 'maria@example.com',
+        'phone' => '5511999990002',
+    ]);
+    $property->owners()->attach([$ownerA->id, $ownerB->id]);
+
+    $contract = Contract::factory()->active()->for($property)->create();
+    $template = ContractTemplate::factory()->create([
+        'content' => 'Proprietarios: {{proprietario_nome}} | Docs: {{proprietario_documento}} | E-mails: {{proprietario_email}} | Telefones: {{proprietario_telefone}}',
+    ]);
+
+    $service = app(ContractDocumentService::class);
+    $contract = $service->generate($contract, $template);
+
+    expect($contract->contract_text)
+        ->toContain('Joao Silva, Maria Silva')
+        ->toContain('11111111111, 22222222222')
+        ->toContain('joao@example.com, maria@example.com')
+        ->toContain('5511999990001, 5511999990002');
+});
+
+test('generated document leaves owner variables empty when property has no owner', function () {
+    $property = Property::factory()->create();
+    $contract = Contract::factory()->active()->for($property)->create();
+    $template = ContractTemplate::factory()->create([
+        'content' => 'Proprietario: [{{proprietario_nome}}]',
+    ]);
+
+    $service = app(ContractDocumentService::class);
+    $contract = $service->generate($contract, $template);
+
+    expect($contract->contract_text)->toContain('Proprietario: []');
 });

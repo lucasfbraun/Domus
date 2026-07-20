@@ -26,6 +26,7 @@ import {
 import { formatDate } from '@/lib/dates';
 import { useMoney } from '@/composables/useMoney';
 import { pix, receipt } from '@/routes/charges';
+import { pix as depositPix } from '@/routes/deposits';
 import { show } from '@/routes/contracts';
 import { portal } from '@/routes/tenant';
 import type { Paginated } from '@/types';
@@ -59,9 +60,27 @@ type PixResponse = {
     expires_at?: string;
 };
 
+type PortalDeposit = {
+    id: number;
+    description?: string | null;
+    amount: number;
+    status: string;
+    due_date: string;
+    is_paid: boolean;
+    is_refunded: boolean;
+    refunded_at?: string | null;
+    refunded_amount?: number | null;
+    property?: string | null;
+    pix_qr_code?: string | null;
+    pix_qr_code_base64?: string | null;
+    pix_expires_at?: string | null;
+    has_pix?: boolean;
+};
+
 const props = defineProps<{
     contracts: Paginated<any>;
     charges: Paginated<PortalCharge>;
+    deposits: Paginated<PortalDeposit>;
 }>();
 
 defineOptions({
@@ -90,6 +109,27 @@ const pixByCharge = computed<Record<number, PixPayload>>(() => {
             copyPaste: charge.pix_qr_code,
             qrCodeBase64: charge.pix_qr_code_base64 ?? null,
             expiresAt: charge.pix_expires_at ?? null,
+        };
+    }
+
+    return merged;
+});
+
+const payingDepositId = ref<number | null>(null);
+const generatedDepositPix = ref<Record<number, PixPayload>>({});
+
+const pixByDeposit = computed<Record<number, PixPayload>>(() => {
+    const merged: Record<number, PixPayload> = { ...generatedDepositPix.value };
+
+    for (const deposit of props.deposits.data) {
+        if (merged[deposit.id] || !deposit.pix_qr_code) {
+            continue;
+        }
+
+        merged[deposit.id] = {
+            copyPaste: deposit.pix_qr_code,
+            qrCodeBase64: deposit.pix_qr_code_base64 ?? null,
+            expiresAt: deposit.pix_expires_at ?? null,
         };
     }
 
@@ -142,6 +182,33 @@ function payPix(id: number): void {
         },
         onFinish: () => {
             payingId.value = null;
+        },
+    });
+}
+
+function payDepositPix(id: number): void {
+    payingDepositId.value = id;
+
+    http.post(depositPix.url(id), {
+        onSuccess: (data) => {
+            if (!data) {
+                return;
+            }
+
+            generatedDepositPix.value[id] = {
+                copyPaste:
+                    data.copy_paste ??
+                    data.qr_code ??
+                    'PIX gerado com sucesso.',
+                qrCodeBase64: data.qr_code_base64 ?? null,
+                expiresAt: data.expires_at ?? null,
+            };
+        },
+        onHttpException: (response) => {
+            toast.error(pixErrorMessage(response), { richColors: true });
+        },
+        onFinish: () => {
+            payingDepositId.value = null;
         },
     });
 }
@@ -309,6 +376,91 @@ function payPix(id: number): void {
                     :paginator="charges"
                     page-name="charges"
                     :only="['charges']"
+                />
+                </template>
+            </CardContent>
+        </Card>
+
+        <Card class="border-border/80 shadow-sm">
+            <CardHeader>
+                <CardTitle>Minha caução</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <div
+                    v-if="deposits.data.length === 0"
+                    class="text-sm text-muted-foreground"
+                >
+                    Nenhuma caução registrada.
+                </div>
+                <template v-else>
+                <div class="space-y-3">
+                    <div
+                        v-for="deposit in deposits.data"
+                        :key="deposit.id"
+                        class="rounded-xl border border-border/80 p-4"
+                    >
+                        <div class="flex flex-wrap items-center justify-between gap-4">
+                            <div class="min-w-0 flex-1 space-y-2">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <p class="font-medium">
+                                        {{ deposit.description ?? 'Caução' }}
+                                    </p>
+                                    <StatusBadge
+                                        type="deposit"
+                                        :status="deposit.status"
+                                    />
+                                </div>
+                                <p class="text-sm text-muted-foreground">
+                                    {{ deposit.property ?? 'Imóvel' }}
+                                </p>
+                                <p class="text-sm tabular-nums text-muted-foreground">
+                                    Vencimento {{ formatDate(deposit.due_date) }}
+                                    <span class="mx-1.5 text-border">|</span>
+                                    {{ formatCurrency(deposit.amount) }}
+                                </p>
+                                <p
+                                    v-if="deposit.is_refunded"
+                                    class="text-sm text-muted-foreground"
+                                >
+                                    Devolvida em {{ formatDate(deposit.refunded_at) }}
+                                    <span v-if="deposit.refunded_amount">
+                                        ({{ formatCurrency(deposit.refunded_amount) }})
+                                    </span>
+                                </p>
+                            </div>
+
+                            <div class="flex w-full shrink-0 flex-wrap items-center justify-end gap-2 sm:w-auto">
+                                <Button
+                                    v-if="!deposit.is_paid && !deposit.is_refunded && !pixByDeposit[deposit.id]"
+                                    size="sm"
+                                    :disabled="payingDepositId === deposit.id"
+                                    @click="payDepositPix(deposit.id)"
+                                >
+                                    {{
+                                        payingDepositId === deposit.id
+                                            ? 'Gerando Pix...'
+                                            : 'Pagar com Pix'
+                                    }}
+                                </Button>
+                            </div>
+                        </div>
+
+                        <PixPaymentPanel
+                            v-if="pixByDeposit[deposit.id]"
+                            :copy-paste="pixByDeposit[deposit.id].copyPaste"
+                            :qr-code-base64="
+                                pixByDeposit[deposit.id].qrCodeBase64
+                            "
+                            :expires-at="pixByDeposit[deposit.id].expiresAt"
+                            :refreshing="payingDepositId === deposit.id"
+                            @refresh="payDepositPix(deposit.id)"
+                        />
+                    </div>
+                </div>
+                <AppPagination
+                    :paginator="deposits"
+                    page-name="deposits"
+                    :only="['deposits']"
                 />
                 </template>
             </CardContent>
