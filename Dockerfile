@@ -1,6 +1,7 @@
 # syntax=docker/dockerfile:1
 # Production image for Dokku (not Sail).
-# Serves on :8080 — Dokku nginx terminates TLS and proxies here.
+# FrankenPHP on :8080 — Dokku nginx terminates TLS and proxies here.
+# Avoids serversideup/s6, which breaks under Dokku ("can only run as pid 1").
 
 # -----------------------------------------------------------------------------
 # 1) PHP dependencies
@@ -30,15 +31,13 @@ RUN composer dump-autoload \
 # -----------------------------------------------------------------------------
 # 2) Frontend assets (Wayfinder runs `php artisan` during `vite build`)
 # -----------------------------------------------------------------------------
-FROM serversideup/php:8.5-cli-alpine AS assets
+FROM dunglas/frankenphp:php8.5-alpine AS assets
 
-USER root
-
-WORKDIR /var/www/html
+WORKDIR /app
 
 RUN apk add --no-cache nodejs npm
 
-COPY --from=vendor --chown=www-data:www-data /app /var/www/html
+COPY --from=vendor /app /app
 
 # Minimal env so Wayfinder/Vite can boot Artisan without DB/Redis.
 RUN cp .env.example .env \
@@ -52,18 +51,16 @@ RUN cp .env.example .env \
     && rm -rf node_modules
 
 # -----------------------------------------------------------------------------
-# 3) Runtime — Nginx + PHP-FPM
+# 3) Runtime — FrankenPHP (Caddy + PHP)
 # -----------------------------------------------------------------------------
-FROM serversideup/php:8.5-fpm-nginx-alpine
+FROM dunglas/frankenphp:php8.5-alpine
 
-USER root
+WORKDIR /app
 
-# Spatie Media Library image-optimizer binaries (+ svgo for SVG).
-# bash is required: Dokku runs app.json predeploy/release via `/bin/bash`.
-# Do not `apk del` here — this image pins nginx from a custom repo; deleting
-# packages makes apk revalidate world tags and fail the build.
+# bash: Dokku app.json predeploy/release. Optimizers: Spatie Media Library.
 RUN apk add --no-cache \
         bash \
+        curl \
         jpegoptim \
         optipng \
         pngquant \
@@ -74,7 +71,8 @@ RUN apk add --no-cache \
     && npm install -g svgo \
     && npm cache clean --force
 
-# Extensions beyond the image defaults (GD/WebP, queues, DB, Redis).
+ADD --chmod=0755 https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions /usr/local/bin/
+
 RUN install-php-extensions \
         bcmath \
         exif \
@@ -87,9 +85,14 @@ RUN install-php-extensions \
         redis \
         zip
 
-WORKDIR /var/www/html
+RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini" \
+    && printf '%s\n' \
+        'upload_max_filesize = 100M' \
+        'post_max_size = 100M' \
+        'memory_limit = 512M' \
+        > "$PHP_INI_DIR/conf.d/99-app.ini"
 
-COPY --from=assets --chown=www-data:www-data /var/www/html /var/www/html
+COPY --from=assets /app /app
 
 RUN mkdir -p \
         storage/app/public \
@@ -99,27 +102,14 @@ RUN mkdir -p \
         storage/framework/views \
         storage/logs \
         bootstrap/cache \
-    && chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R ug+rwx storage bootstrap/cache
 
-# Dokku terminates TLS; app listens on 8080 (serversideup non-root default).
-ENV SSL_MODE=off \
-    AUTORUN_ENABLED=false \
-    PHP_OPCACHE_ENABLE=1 \
-    PHP_MEMORY_LIMIT=512M \
-    PHP_POST_MAX_SIZE=100M \
-    PHP_UPLOAD_MAX_FILESIZE=100M
-
-# Dokku appends Procfile commands to ENTRYPOINT. Wrapper exec's /init as PID 1
-# for web, and runs artisan directly for horizon/scheduler/release/predeploy.
-COPY bin/app-entrypoint /usr/local/bin/app-entrypoint
-RUN chmod +x /usr/local/bin/app-entrypoint
-
-ENTRYPOINT ["/usr/local/bin/app-entrypoint"]
+# HTTP only on 8080 (TLS is terminated by Dokku).
+ENV SERVER_NAME=:8080
 
 EXPOSE 8080
 
 HEALTHCHECK --interval=5s --timeout=3s --start-period=30s --retries=3 \
     CMD curl -f http://localhost:8080/up || exit 1
 
-CMD ["/init"]
+CMD ["frankenphp", "php-server", "--listen", ":8080", "--root", "public/"]
