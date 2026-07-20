@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# serversideup/s6 `/init` must be PID 1. Dokku Procfile args are appended to
+# ENTRYPOINT — web passes `/init`, workers pass `php artisan …`.
+if [[ $# -eq 0 || "${1:-}" == "/init" ]]; then
+    exec /init
+fi
+
+exec "$@"

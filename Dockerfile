@@ -110,8 +110,12 @@ ENV SSL_MODE=off \
     PHP_POST_MAX_SIZE=100M \
     PHP_UPLOAD_MAX_FILESIZE=100M
 
-# Clear image ENTRYPOINT so Dokku Procfile commands run as-is.
-ENTRYPOINT []
+# Dokku appends Procfile commands to ENTRYPOINT. Wrapper exec's /init as PID 1
+# for web, and runs artisan directly for horizon/scheduler/release/predeploy.
+COPY bin/app-entrypoint /usr/local/bin/app-entrypoint
+RUN chmod +x /usr/local/bin/app-entrypoint
+
+ENTRYPOINT ["/usr/local/bin/app-entrypoint"]
 
 EXPOSE 8080
 
