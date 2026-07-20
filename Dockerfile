@@ -59,6 +59,8 @@ FROM serversideup/php:8.5-fpm-nginx-alpine
 USER root
 
 # Spatie Media Library image-optimizer binaries (+ svgo for SVG).
+# Do not `apk del` here — this image pins nginx from a custom repo; deleting
+# packages makes apk revalidate world tags and fail the build.
 RUN apk add --no-cache \
         jpegoptim \
         optipng \
@@ -68,8 +70,7 @@ RUN apk add --no-cache \
         nodejs \
         npm \
     && npm install -g svgo \
-    && npm cache clean --force \
-    && apk del npm
+    && npm cache clean --force
 
 # Extensions beyond the image defaults (GD/WebP, queues, DB, Redis).
 RUN install-php-extensions \
