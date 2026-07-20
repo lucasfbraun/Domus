@@ -454,19 +454,38 @@ Inquilino gera Pix → MP cria Order → Payer paga → Webhook order.processed 
 
 ### E-mail
 
-Padrão: `MAIL_MAILER=log` (mensagens vão para `storage/logs`).
+Padrão local: `MAIL_MAILER=log` (mensagens vão para `storage/logs`) ou Mailpit no Sail.
 
-Para SMTP real:
+Produção (Brevo SMTP):
 
 ```env
 MAIL_MAILER=smtp
-MAIL_HOST=smtp.exemplo.com
+MAIL_SCHEME=null
+MAIL_HOST=smtp-relay.brevo.com
 MAIL_PORT=587
-MAIL_USERNAME=usuario
-MAIL_PASSWORD=senha
-MAIL_FROM_ADDRESS=noreply@exemplo.com
+MAIL_USERNAME=seu-login@smtp-brevo.com
+MAIL_PASSWORD=sua-smtp-key
+MAIL_FROM_ADDRESS=noreply@seudominio.com
 MAIL_FROM_NAME="${APP_NAME}"
 ```
+
+No Dokku (senha separada — não coloque no git):
+
+```bash
+dokku config:set proprietario \
+  MAIL_MAILER=smtp \
+  MAIL_SCHEME=null \
+  MAIL_HOST=smtp-relay.brevo.com \
+  MAIL_PORT=587 \
+  MAIL_USERNAME=seu-login@smtp-brevo.com \
+  MAIL_FROM_ADDRESS=noreply@seudominio.com \
+  MAIL_FROM_NAME=Domus
+
+# Depois, só a senha:
+dokku config:set proprietario MAIL_PASSWORD="sua-smtp-key"
+```
+
+O `MAIL_FROM_ADDRESS` precisa ser um remetente/domínio verificado no Brevo.
 
 ### WhatsApp (WAHA)
 
