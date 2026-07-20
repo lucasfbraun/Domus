@@ -1,5 +1,16 @@
 # Project agent instructions (Claude)
 
+## Brand colors (do not revert)
+
+Primary is blue; surfaces are white / neutral gray. Never restore the old teal/green brand palette.
+
+- `--primary`: `hsl(221 83% 53%)` (keep `--ring`, `--sidebar-primary`, `--chart-1` in sync)
+- `--background` / `--sidebar-background`: `hsl(0 0% 100%)`
+- Neutrals use `hsl(0 0% …)` only (no green or blue-tinted page wash)
+- Forbidden brand hues ~150–175 (e.g. `hsl(175 72% 28%)`, `hsl(160 18% 97%)`)
+- Green is allowed only for semantic success (messages, status badges), not brand chrome
+- See `.cursor/rules/brand-colors.mdc` and `tests/Feature/ThemeColorsTest.php`
+
 ## Spatie Media Library (required for media)
 
 All image/media uploads MUST use `spatie/laravel-medialibrary`. Do not store images via raw `Storage::put`, `$file->store()`, or custom path columns when the file is media/image content.

@@ -1,0 +1,36 @@
+---
+description: Brand colors - blue primary, white background (never green/teal)
+globs: resources/css/**/*.css, resources/views/app.blade.php, resources/js/layouts/**/*.vue, resources/js/components/**/*.vue
+alwaysApply: true
+---
+
+# Brand colors (do not revert)
+
+This app uses a **blue primary** on a **white / neutral gray** surface. Do **not** restore the old teal/green palette.
+
+## Canonical tokens (`resources/css/app.css` `:root`)
+
+| Token | Required value | Notes |
+|---|---|---|
+| `--primary` | `hsl(221 83% 53%)` | Brand blue (Tailwind blue-600 family) |
+| `--ring` / `--sidebar-primary` / `--chart-1` | same as `--primary` | Keep in sync |
+| `--background` | `hsl(0 0% 100%)` | Pure white |
+| `--sidebar-background` / `--sidebar` | `hsl(0 0% 100%)` | Pure white |
+| Neutrals (`--secondary`, `--muted`, `--border`, `--input`) | `hsl(0 0% …)` | No green or blue tint |
+
+## Forbidden
+
+- Teal/green brand hues (~150–175), e.g. `hsl(175 72% 28%)`, `hsl(160 18% 97%)`
+- Tinted page backgrounds (mint, sage, pale teal, pale blue wash)
+- Hardcoded `via-[hsl(175_…)]` / `to-[hsl(152_…)]` / `bg-teal-*` brand accents
+
+## Allowed green
+
+Semantic success only (`text-green-600`, emerald status badges, sonner success). Not for primary buttons, links, sidebar active, or brand chrome.
+
+## Related files
+
+- `resources/views/app.blade.php` html bootstrap: `background-color: hsl(0 0% 100%);`
+- Auth split panel gradient must stay blue (`hsl(221…)` / `hsl(224…)`)
+- Guarded by `tests/Feature/ThemeColorsTest.php` — do not weaken or delete that test
+- `resources/views/app.blade.php` also re-declares brand tokens **after** `@vite` so Cloudflare/browser CSS cache cannot keep an old teal `--primary`

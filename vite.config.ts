@@ -19,6 +19,9 @@ export default defineConfig({
             protocol: 'wss',
             clientPort: 443,
         },
+        headers: {
+            'Cache-Control': 'no-store',
+        },
     },
     plugins: [
         laravel({

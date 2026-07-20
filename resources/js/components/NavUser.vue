@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { usePage } from '@inertiajs/vue3';
-import { ChevronsUpDown } from '@lucide/vue';
+import { ChevronUp } from '@lucide/vue';
 import { computed } from 'vue';
 import {
     DropdownMenu,
@@ -28,24 +28,26 @@ const { isMobile, state } = useSidebar();
                 <DropdownMenuTrigger as-child>
                     <SidebarMenuButton
                         size="lg"
-                        class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                        class="h-auto rounded-md px-2 py-2 data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground data-[active=true]:shadow-none"
                         data-test="sidebar-menu-button"
                     >
-                        <UserInfo :user="user" />
-                        <ChevronsUpDown class="ml-auto size-4" />
+                        <UserInfo :user="user" show-email />
+                        <ChevronUp
+                            class="ml-auto size-3.5 shrink-0 text-muted-foreground opacity-70 group-data-[collapsible=icon]:hidden"
+                        />
                     </SidebarMenuButton>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
-                    class="w-(--reka-dropdown-menu-trigger-width) min-w-56 rounded-lg"
+                    class="w-(--reka-dropdown-menu-trigger-width) min-w-56 rounded-md border-border/80"
                     :side="
                         isMobile
                             ? 'bottom'
                             : state === 'collapsed'
                               ? 'left'
-                              : 'bottom'
+                              : 'top'
                     "
-                    align="end"
-                    :side-offset="4"
+                    align="start"
+                    :side-offset="6"
                 >
                     <UserMenuContent :user="user" />
                 </DropdownMenuContent>

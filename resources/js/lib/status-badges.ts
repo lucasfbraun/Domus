@@ -14,14 +14,14 @@ type StatusConfig = {
 
 const statusColors = {
     success:
-        'border-transparent bg-emerald-500/15 text-emerald-700 dark:text-emerald-400',
+        'border-transparent bg-emerald-500/15 text-emerald-700',
     warning:
-        'border-transparent bg-amber-500/15 text-amber-700 dark:text-amber-400',
-    danger: 'border-transparent bg-red-500/15 text-red-700 dark:text-red-400',
-    info: 'border-transparent bg-blue-500/15 text-blue-700 dark:text-blue-400',
+        'border-transparent bg-amber-500/15 text-amber-700',
+    danger: 'border-transparent bg-red-500/15 text-red-700',
+    info: 'border-transparent bg-blue-500/15 text-blue-700',
     neutral: 'border-transparent bg-muted text-muted-foreground',
     primary:
-        'border-transparent bg-primary/15 text-primary dark:text-primary',
+        'border-transparent bg-primary/15 text-primary',
 } as const;
 
 const statusMaps: Record<StatusType, Record<string, StatusConfig>> = {

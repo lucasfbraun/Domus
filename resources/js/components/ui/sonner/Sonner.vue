@@ -8,9 +8,7 @@ import {
     TriangleAlertIcon,
     XIcon,
 } from '@lucide/vue';
-import { computed } from 'vue';
 import { Toaster as Sonner } from 'vue-sonner';
-import { useAppearance } from '@/composables/useAppearance';
 import { cn } from '@/lib/utils';
 
 import 'vue-sonner/style.css';
@@ -19,17 +17,14 @@ const props = withDefaults(defineProps<ToasterProps>(), {
     richColors: true,
     closeButton: true,
     closeButtonAriaLabel: 'Fechar',
+    theme: 'light',
 });
-
-const { resolvedAppearance } = useAppearance();
-
-const toasterTheme = computed(() => props.theme ?? resolvedAppearance.value);
 </script>
 
 <template>
     <Sonner
         v-bind="props"
-        :theme="toasterTheme"
+        theme="light"
         :class="cn('toaster group', props.class)"
         :rich-colors="true"
         :close-button="true"

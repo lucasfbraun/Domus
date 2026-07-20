@@ -36,6 +36,8 @@ class StorePropertyRequest extends FormRequest
             'status' => ['required', Rule::enum(PropertyStatus::class)],
             'owner_ids' => ['nullable', 'array'],
             'owner_ids.*' => ['integer', 'exists:owners,id'],
+            'photo' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:8192'],
+            'remove_photo' => ['sometimes', 'boolean'],
         ];
     }
 }

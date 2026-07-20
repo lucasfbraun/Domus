@@ -24,9 +24,6 @@ import {
     SidebarContent,
     SidebarFooter,
     SidebarHeader,
-    SidebarMenu,
-    SidebarMenuButton,
-    SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
 import { index as admins } from '@/routes/admin/admins';
@@ -159,22 +156,21 @@ const portalNavItems = computed<NavItem[]>(() => {
 </script>
 
 <template>
-    <Sidebar collapsible="icon" variant="inset">
-        <SidebarHeader>
-            <SidebarMenu>
-                <SidebarMenuItem>
-                    <SidebarMenuButton size="lg" as-child>
-                        <Link :href="dashboard()">
-                            <AppLogo />
-                        </Link>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
-            </SidebarMenu>
+    <Sidebar collapsible="icon" variant="sidebar">
+        <SidebarHeader
+            class="h-16 justify-center border-b border-sidebar-border/80 px-4 py-0 group-data-[collapsible=icon]:px-2"
+        >
+            <Link
+                :href="dashboard()"
+                class="flex items-center rounded-md outline-none ring-sidebar-ring transition-opacity hover:opacity-80 focus-visible:ring-2"
+            >
+                <AppLogo />
+            </Link>
         </SidebarHeader>
 
-        <SidebarContent>
+        <SidebarContent class="gap-5 px-2 py-4">
             <template v-if="isAdmin">
-                <NavMain :items="adminMainNavItems" label="Painel" />
+                <NavMain :items="adminMainNavItems" />
                 <NavMain :items="cadastrosNavItems" label="Cadastros" />
                 <NavMain :items="adminOperationsNavItems" label="Operações" />
             </template>
@@ -186,7 +182,9 @@ const portalNavItems = computed<NavItem[]>(() => {
             />
         </SidebarContent>
 
-        <SidebarFooter>
+        <SidebarFooter
+            class="border-t border-sidebar-border/80 p-3 group-data-[collapsible=icon]:p-2"
+        >
             <NavUser />
         </SidebarFooter>
     </Sidebar>

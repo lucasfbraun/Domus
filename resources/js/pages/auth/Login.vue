@@ -12,7 +12,7 @@ import { request } from '@/routes/password';
 
 defineOptions({
     layout: {
-        title: 'Entre na sua contaaaa',
+        title: 'Entre na sua conta',
         description: 'Informe seu e-mail e senha para acessar',
     },
 });
@@ -28,7 +28,7 @@ defineProps<{
 
     <div
         v-if="status"
-        class="mb-4 text-center text-sm font-medium text-green-600"
+        class="mb-5 rounded-xl bg-green-50 px-3.5 py-2.5 text-center text-sm font-medium text-green-700"
     >
         {{ status }}
     </div>
@@ -88,7 +88,7 @@ defineProps<{
 
             <Button
                 type="submit"
-                class="mt-4 w-full"
+                class="mt-2 w-full"
                 :tabindex="4"
                 :disabled="processing"
                 data-test="login-button"

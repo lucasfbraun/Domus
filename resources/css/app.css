@@ -4,8 +4,8 @@
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
-
-@custom-variant dark (&:is(.dark *));
+@source '../js/**/*.{vue,js,ts}';
+@source '../views/**/*.blade.php';
 
 @theme inline {
     --font-sans:
@@ -75,7 +75,7 @@
   looks the same as it did with Tailwind CSS v3.
 
   If we ever want to remove these styles, we need to add an explicit border
-  color utility to any element that depends on these defaults.
+  color utility to every element that depends on these defaults.
 */
 @layer base {
     *,
@@ -97,91 +97,53 @@
     }
 }
 
+/*
+  Brand palette (locked): blue primary + white surfaces.
+  Do NOT restore teal/green brand hues (~150–175).
+  See .cursor/rules/brand-colors.mdc
+*/
 :root {
-    --background: hsl(220 22% 97%);
-    --foreground: hsl(222 32% 12%);
+    --background: hsl(0 0% 100%);
+    --foreground: hsl(0 0% 9%);
     --card: hsl(0 0% 100%);
-    --card-foreground: hsl(222 32% 12%);
+    --card-foreground: hsl(0 0% 9%);
     --popover: hsl(0 0% 100%);
-    --popover-foreground: hsl(222 32% 12%);
-    --primary: hsl(222 58% 42%);
+    --popover-foreground: hsl(0 0% 9%);
+    --primary: hsl(221 83% 53%);
     --primary-foreground: hsl(0 0% 100%);
-    --secondary: hsl(220 18% 92%);
-    --secondary-foreground: hsl(222 28% 18%);
-    --muted: hsl(220 16% 94%);
-    --muted-foreground: hsl(220 10% 42%);
-    --accent: hsl(222 40% 94%);
-    --accent-foreground: hsl(222 50% 28%);
+    --secondary: hsl(0 0% 96%);
+    --secondary-foreground: hsl(0 0% 15%);
+    --muted: hsl(0 0% 96%);
+    --muted-foreground: hsl(0 0% 40%);
+    --accent: hsl(214 95% 93%);
+    --accent-foreground: hsl(221 70% 35%);
     --destructive: hsl(4 72% 52%);
     --destructive-foreground: hsl(0 0% 100%);
-    --border: hsl(220 14% 88%);
-    --input: hsl(220 14% 88%);
-    --ring: hsl(222 58% 42%);
-    --chart-1: hsl(222 58% 42%);
-    --chart-2: hsl(199 72% 48%);
-    --chart-3: hsl(38 88% 52%);
-    --chart-4: hsl(262 48% 54%);
-    --chart-5: hsl(340 65% 55%);
+    --border: hsl(0 0% 90%);
+    --input: hsl(0 0% 90%);
+    --ring: hsl(221 83% 53%);
+    --chart-1: hsl(221 83% 53%);
+    --chart-2: hsl(199 89% 48%);
+    --chart-3: hsl(38 78% 48%);
+    --chart-4: hsl(262 45% 48%);
+    --chart-5: hsl(18 48% 46%);
     --radius: 0.75rem;
-    --sidebar-background: hsl(220 24% 96%);
-    --sidebar-foreground: hsl(222 22% 24%);
-    --sidebar-primary: hsl(222 58% 42%);
+    --sidebar-background: hsl(0 0% 100%);
+    --sidebar-foreground: hsl(0 0% 45%);
+    --sidebar-primary: hsl(221 83% 53%);
     --sidebar-primary-foreground: hsl(0 0% 100%);
-    --sidebar-accent: hsl(222 35% 92%);
-    --sidebar-accent-foreground: hsl(222 45% 28%);
-    --sidebar-border: hsl(220 14% 88%);
-    --sidebar-ring: hsl(222 58% 42%);
-    --sidebar: hsl(220 24% 96%);
-    --surface-tint: hsl(222 35% 96%);
+    --sidebar-accent: hsl(214 95% 95%);
+    --sidebar-accent-foreground: hsl(221 83% 53%);
+    --sidebar-border: hsl(0 0% 91%);
+    --sidebar-ring: hsl(221 83% 53%);
+    --sidebar: hsl(0 0% 100%);
+    --surface-tint: hsl(0 0% 98%);
     --stat-amber: hsl(38 90% 94%);
     --stat-amber-fg: hsl(32 78% 36%);
-    --stat-sky: hsl(199 78% 94%);
-    --stat-sky-fg: hsl(199 72% 32%);
-    --stat-violet: hsl(262 55% 95%);
-    --stat-violet-fg: hsl(262 42% 40%);
-}
-
-.dark {
-    --background: hsl(222 24% 7%);
-    --foreground: hsl(220 15% 96%);
-    --card: hsl(222 20% 10%);
-    --card-foreground: hsl(220 15% 96%);
-    --popover: hsl(222 20% 10%);
-    --popover-foreground: hsl(220 15% 96%);
-    --primary: hsl(217 72% 58%);
-    --primary-foreground: hsl(222 30% 8%);
-    --secondary: hsl(222 14% 16%);
-    --secondary-foreground: hsl(220 15% 96%);
-    --muted: hsl(222 12% 15%);
-    --muted-foreground: hsl(220 10% 65%);
-    --accent: hsl(222 22% 16%);
-    --accent-foreground: hsl(217 60% 78%);
-    --destructive: hsl(4 72% 52%);
-    --destructive-foreground: hsl(0 0% 100%);
-    --border: hsl(222 12% 18%);
-    --input: hsl(222 12% 18%);
-    --ring: hsl(217 72% 58%);
-    --chart-1: hsl(217 72% 58%);
-    --chart-2: hsl(199 70% 55%);
-    --chart-3: hsl(38 85% 55%);
-    --chart-4: hsl(262 50% 62%);
-    --chart-5: hsl(340 65% 58%);
-    --sidebar-background: hsl(222 22% 9%);
-    --sidebar-foreground: hsl(220 12% 92%);
-    --sidebar-primary: hsl(217 72% 58%);
-    --sidebar-primary-foreground: hsl(222 30% 8%);
-    --sidebar-accent: hsl(222 18% 15%);
-    --sidebar-accent-foreground: hsl(217 55% 82%);
-    --sidebar-border: hsl(222 12% 16%);
-    --sidebar-ring: hsl(217 72% 58%);
-    --sidebar: hsl(222 22% 9%);
-    --surface-tint: hsl(222 18% 12%);
-    --stat-amber: hsl(38 40% 16%);
-    --stat-amber-fg: hsl(38 85% 68%);
-    --stat-sky: hsl(199 40% 16%);
-    --stat-sky-fg: hsl(199 75% 70%);
-    --stat-violet: hsl(262 30% 18%);
-    --stat-violet-fg: hsl(262 55% 75%);
+    --stat-sky: hsl(214 95% 93%);
+    --stat-sky-fg: hsl(221 70% 40%);
+    --stat-violet: hsl(262 40% 94%);
+    --stat-violet-fg: hsl(262 40% 36%);
 }
 
 @layer base {
@@ -207,31 +169,13 @@
     --error-border: hsl(4 65% 86%);
     --error-text: hsl(4 72% 40%);
 
-    --info-bg: hsl(217 85% 96%);
-    --info-border: hsl(217 70% 88%);
-    --info-text: hsl(222 58% 38%);
+    --info-bg: hsl(214 95% 93%);
+    --info-border: hsl(213 94% 80%);
+    --info-text: hsl(221 70% 35%);
 
     --warning-bg: hsl(38 90% 94%);
     --warning-border: hsl(38 75% 82%);
     --warning-text: hsl(32 78% 32%);
-}
-
-.dark [data-sonner-toaster] {
-    --success-bg: hsl(150 40% 14%);
-    --success-border: hsl(147 35% 22%);
-    --success-text: hsl(150 70% 72%);
-
-    --error-bg: hsl(4 45% 14%);
-    --error-border: hsl(4 40% 22%);
-    --error-text: hsl(4 80% 78%);
-
-    --info-bg: hsl(217 40% 14%);
-    --info-border: hsl(217 35% 22%);
-    --info-text: hsl(217 70% 78%);
-
-    --warning-bg: hsl(38 40% 14%);
-    --warning-border: hsl(38 35% 22%);
-    --warning-text: hsl(38 85% 72%);
 }
 
 [data-rich-colors='true'][data-sonner-toast][data-type='success'] {

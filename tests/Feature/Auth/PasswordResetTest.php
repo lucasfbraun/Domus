@@ -13,6 +13,9 @@ test('reset password link screen can be rendered', function () {
     $response = $this->get(route('password.request'));
 
     $response->assertOk();
+    $response->assertInertia(fn ($page) => $page
+        ->component('auth/ForgotPassword')
+    );
 });
 
 test('reset password link can be requested', function () {

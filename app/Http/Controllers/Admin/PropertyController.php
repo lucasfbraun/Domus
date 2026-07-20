@@ -21,10 +21,11 @@ class PropertyController extends Controller
 
         return Inertia::render('admin/properties/Index', [
             'properties' => Property::query()
-                ->with('owners')
+                ->with(['owners', 'media'])
                 ->orderBy('name')
                 ->paginate(Pagination::PER_PAGE)
-                ->withQueryString(),
+                ->withQueryString()
+                ->through(fn (Property $property) => $this->propertyPayload($property)),
         ]);
     }
 
@@ -43,8 +44,9 @@ class PropertyController extends Controller
     {
         $this->authorize('create', Property::class);
 
-        $property = Property::query()->create($request->safe()->except('owner_ids'));
+        $property = Property::query()->create($request->safe()->except(['owner_ids', 'photo']));
         $property->owners()->sync($request->input('owner_ids', []));
+        $this->syncCoverPhoto($request, $property);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Imovel cadastrado.']);
 
@@ -55,8 +57,10 @@ class PropertyController extends Controller
     {
         $this->authorize('update', $property);
 
+        $property->load(['owners', 'media']);
+
         return Inertia::render('admin/properties/Form', [
-            'property' => $property->load('owners'),
+            'property' => $this->propertyPayload($property),
             'owners' => Owner::query()->orderBy('name')->get(),
             'types' => $this->typeOptions(),
         ]);
@@ -66,8 +70,9 @@ class PropertyController extends Controller
     {
         $this->authorize('update', $property);
 
-        $property->update($request->safe()->except('owner_ids'));
+        $property->update($request->safe()->except(['owner_ids', 'photo', 'remove_photo']));
         $property->owners()->sync($request->input('owner_ids', []));
+        $this->syncCoverPhoto($request, $property);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Imovel atualizado.']);
 
@@ -83,6 +88,53 @@ class PropertyController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Imovel removido.']);
 
         return to_route('admin.properties.index');
+    }
+
+    /**
+     * @return array{
+     *     id: int,
+     *     name: string,
+     *     address: string|null,
+     *     type: string|null,
+     *     type_label: string|null,
+     *     status: string|null,
+     *     cover_url: string|null,
+     *     owners: list<array{id: int, name: string}>
+     * }
+     */
+    private function propertyPayload(Property $property): array
+    {
+        return [
+            'id' => $property->id,
+            'name' => $property->name,
+            'address' => $property->address,
+            'type' => $property->type?->value,
+            'type_label' => $property->type?->label(),
+            'status' => $property->status?->value,
+            'cover_url' => $property->coverUrl(),
+            'owners' => $property->owners
+                ->map(fn (Owner $owner) => [
+                    'id' => $owner->id,
+                    'name' => $owner->name,
+                ])
+                ->values()
+                ->all(),
+        ];
+    }
+
+    private function syncCoverPhoto(StorePropertyRequest $request, Property $property): void
+    {
+        if ($request->hasFile('photo')) {
+            $property
+                ->addMediaFromRequest('photo')
+                ->toMediaCollection(Property::COVER_COLLECTION);
+
+            return;
+        }
+
+        if ($request->boolean('remove_photo')) {
+            $property->clearMediaCollection(Property::COVER_COLLECTION);
+        }
     }
 
     /**

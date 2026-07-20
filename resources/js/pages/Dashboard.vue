@@ -130,18 +130,18 @@ const { formatCurrency } = useMoney();
                 </CardContent>
             </Card>
 
-            <Card class="overflow-hidden border-0 bg-red-50 shadow-none ring-1 ring-red-500/15 dark:bg-red-950/30">
+            <Card class="overflow-hidden border-0 bg-red-50 shadow-none ring-1 ring-red-500/15">
                 <CardHeader class="flex flex-row items-start justify-between space-y-0 pb-2">
-                    <CardTitle class="text-sm font-medium text-red-700/80 dark:text-red-300/80">
+                    <CardTitle class="text-sm font-medium text-red-700/80">
                         Vencido
                     </CardTitle>
-                    <TriangleAlert class="size-5 text-red-700 dark:text-red-300" />
+                    <TriangleAlert class="size-5 text-red-700" />
                 </CardHeader>
                 <CardContent class="pt-2">
-                    <p class="text-3xl font-semibold tracking-tight text-red-700 dark:text-red-300">
+                    <p class="text-3xl font-semibold tracking-tight text-red-700">
                         {{ formatCurrency(stats.overdue) }}
                     </p>
-                    <p class="mt-1 text-xs text-red-700/70 dark:text-red-300/70">
+                    <p class="mt-1 text-xs text-red-700/70">
                         {{ stats.tenantsCount }} inquilinos · {{ stats.activeContracts }} contratos
                     </p>
                 </CardContent>

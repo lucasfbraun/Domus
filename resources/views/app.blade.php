@@ -1,32 +1,13 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}"  @class(['dark' => ($appearance ?? 'system') == 'dark'])>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="color-scheme" content="light">
 
-        {{-- Inline script to detect system dark mode preference and apply it immediately --}}
-        <script>
-            (function() {
-                const appearance = '{{ $appearance ?? "system" }}';
-
-                if (appearance === 'system') {
-                    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-
-                    if (prefersDark) {
-                        document.documentElement.classList.add('dark');
-                    }
-                }
-            })();
-        </script>
-
-        {{-- Inline style to set the HTML background color based on our theme in app.css --}}
         <style>
             html {
-                background-color: oklch(1 0 0);
-            }
-
-            html.dark {
-                background-color: oklch(0.145 0 0);
+                background-color: hsl(0 0% 100%);
             }
         </style>
 
@@ -37,6 +18,41 @@
         @fonts
 
         @vite(['resources/css/app.css', 'resources/js/app.ts', "resources/js/pages/{$page['component']}.vue"])
+
+        {{-- Brand tokens after Vite so Cloudflare/browser CSS cache cannot keep the old teal palette --}}
+        <style>
+            :root {
+                --background: hsl(0 0% 100%);
+                --foreground: hsl(0 0% 9%);
+                --card: hsl(0 0% 100%);
+                --card-foreground: hsl(0 0% 9%);
+                --popover: hsl(0 0% 100%);
+                --popover-foreground: hsl(0 0% 9%);
+                --primary: hsl(221 83% 53%);
+                --primary-foreground: hsl(0 0% 100%);
+                --secondary: hsl(0 0% 96%);
+                --secondary-foreground: hsl(0 0% 15%);
+                --muted: hsl(0 0% 96%);
+                --muted-foreground: hsl(0 0% 40%);
+                --accent: hsl(214 95% 93%);
+                --accent-foreground: hsl(221 70% 35%);
+                --border: hsl(0 0% 90%);
+                --input: hsl(0 0% 90%);
+                --ring: hsl(221 83% 53%);
+                --chart-1: hsl(221 83% 53%);
+                --sidebar-background: hsl(0 0% 100%);
+                --sidebar-foreground: hsl(0 0% 45%);
+                --sidebar-primary: hsl(221 83% 53%);
+                --sidebar-primary-foreground: hsl(0 0% 100%);
+                --sidebar-accent: hsl(214 95% 95%);
+                --sidebar-accent-foreground: hsl(221 83% 53%);
+                --sidebar-border: hsl(0 0% 91%);
+                --sidebar-ring: hsl(221 83% 53%);
+                --sidebar: hsl(0 0% 100%);
+                --surface-tint: hsl(0 0% 98%);
+            }
+        </style>
+
         <x-inertia::head>
             <title>{{ config('app.name', 'Laravel') }}</title>
         </x-inertia::head>

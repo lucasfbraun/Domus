@@ -8,14 +8,21 @@ const appName = computed(() => (page.props.name as string) || 'Domus');
 </script>
 
 <template>
-    <div
-        class="flex aspect-square size-8 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground"
-    >
-        <AppLogoIcon class="size-5 fill-current text-white dark:text-black" />
-    </div>
-    <div class="ml-1 grid flex-1 text-left text-sm">
-        <span class="mb-0.5 truncate leading-tight font-semibold">{{
-            appName
-        }}</span>
+    <div class="flex min-w-0 items-center gap-2.5">
+        <AppLogoIcon
+            class="size-6 shrink-0 text-primary group-data-[collapsible=icon]:size-5"
+        />
+        <div
+            class="grid min-w-0 flex-1 text-left group-data-[collapsible=icon]:hidden"
+        >
+            <span
+                class="truncate text-[15px] font-semibold tracking-tight text-sidebar-foreground"
+            >
+                {{ appName }}
+            </span>
+            <span class="truncate text-[11px] text-muted-foreground">
+                Gestão de imóveis
+            </span>
+        </div>
     </div>
 </template>

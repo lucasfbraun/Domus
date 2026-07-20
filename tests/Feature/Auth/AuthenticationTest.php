@@ -8,6 +8,10 @@ test('login screen can be rendered', function () {
     $response = $this->get(route('login'));
 
     $response->assertOk();
+    $response->assertInertia(fn ($page) => $page
+        ->component('auth/Login')
+        ->has('canResetPassword')
+    );
 });
 
 test('users can authenticate using the login screen', function () {

@@ -154,6 +154,38 @@ defineOptions({
                 <InputError :message="errors.owner_ids" />
             </div>
 
+            <div class="grid gap-3">
+                <Label for="photo">Foto de capa</Label>
+                <div
+                    v-if="property?.cover_url"
+                    class="overflow-hidden rounded-xl border border-border/80"
+                >
+                    <img
+                        :src="property.cover_url"
+                        :alt="property.name"
+                        class="aspect-16/10 w-full object-cover"
+                    />
+                </div>
+                <Input
+                    id="photo"
+                    name="photo"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                />
+                <p class="text-xs text-muted-foreground">
+                    JPG, PNG ou WebP. Até 8 MB.
+                </p>
+                <Label
+                    v-if="property?.cover_url"
+                    for="remove_photo"
+                    class="flex cursor-pointer items-center gap-2 font-normal"
+                >
+                    <Checkbox id="remove_photo" name="remove_photo" value="1" />
+                    Remover foto atual
+                </Label>
+                <InputError :message="errors.photo" />
+            </div>
+
             <div class="flex items-center gap-4">
                 <Button type="submit" :disabled="processing">
                     {{ isEditing ? 'Salvar' : 'Cadastrar' }}
