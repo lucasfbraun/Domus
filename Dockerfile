@@ -59,9 +59,11 @@ FROM serversideup/php:8.5-fpm-nginx-alpine
 USER root
 
 # Spatie Media Library image-optimizer binaries (+ svgo for SVG).
+# bash is required: Dokku runs app.json predeploy/release via `/bin/bash`.
 # Do not `apk del` here — this image pins nginx from a custom repo; deleting
 # packages makes apk revalidate world tags and fail the build.
 RUN apk add --no-cache \
+        bash \
         jpegoptim \
         optipng \
         pngquant \

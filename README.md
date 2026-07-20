@@ -22,6 +22,7 @@ Sistema de gestão imobiliária com painel administrativo, portais para inquilin
     - [Testar pagamento Pix no sandbox](#testar-pagamento-pix-no-sandbox)
 - [Integrações opcionais](#integrações-opcionais)
 - [Agendamentos e filas](#agendamentos-e-filas)
+- [Deploy (Dokku)](#deploy-dokku)
 - [Testes](#testes)
 - [Papéis de usuário](#papéis-de-usuário)
 - [Variáveis de ambiente](#variáveis-de-ambiente)
@@ -498,13 +499,71 @@ Tarefas agendadas (`routes/console.php`):
 * * * * * cd /caminho/do/projeto && php artisan schedule:run >> /dev/null 2>&1
 ```
 
-E mantenha um worker de fila rodando:
+E mantenha um worker de fila rodando (ou Horizon, via `Procfile` no Dokku):
 
 ```bash
 php artisan queue:work --tries=3
+# ou: php artisan horizon
 ```
 
 O `.env` usa `QUEUE_CONNECTION=database` — as tabelas `jobs` e `failed_jobs` são criadas na migrate.
+
+---
+
+## Deploy (Dokku)
+
+Deploy via `git push` para o remote do Dokku. O servidor precisa ter o app criado (`dokku apps:create proprietario`) e a tua chave SSH autorizada em `dokku@SEU_SERVIDOR`.
+
+### 1. Adicionar o remote
+
+Na máquina local, na raiz do projeto:
+
+```bash
+git remote add dokku dokku@SEU_SERVIDOR:proprietario
+```
+
+Exemplo com IP:
+
+```bash
+git remote add dokku dokku@137.131.228.83:proprietario
+```
+
+Se o remote `dokku` já existir e apontar para o lugar errado:
+
+```bash
+git remote set-url dokku dokku@SEU_SERVIDOR:proprietario
+```
+
+Confira:
+
+```bash
+git remote -v
+```
+
+Deve aparecer algo como:
+
+```text
+dokku   dokku@137.131.228.83:proprietario (fetch)
+dokku   dokku@137.131.228.83:proprietario (push)
+origin  git@github.com:seu-user/property-mananger-laravel.git (fetch)
+origin  git@github.com:seu-user/property-mananger-laravel.git (push)
+```
+
+`origin` = GitHub (código). `dokku` = servidor de produção (deploy).
+
+### 2. Deploy
+
+```bash
+git push dokku main
+```
+
+Se a branch local não for `main`:
+
+```bash
+git push dokku HEAD:main
+```
+
+O Dokku recebe o push, builda o `Dockerfile` da raiz e publica o app.
 
 ---
 
