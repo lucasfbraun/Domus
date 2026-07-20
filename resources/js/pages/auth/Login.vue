@@ -12,7 +12,7 @@ import { request } from '@/routes/password';
 
 defineOptions({
     layout: {
-        title: 'Entre na sua conta',
+        title: 'Entre na sua contaaaa',
         description: 'Informe seu e-mail e senha para acessar',
     },
 });

@@ -47,7 +47,7 @@ O projeto usa **SQLite** por padrão. MySQL/PostgreSQL também funcionam — aju
 
 ## Docker (recomendado)
 
-O projeto já vem com `docker-compose.yml` e uma imagem baseada no [Laravel Sail](https://laravel.com/docs/sail) (PHP 8.4 + Node + extensões necessárias, incluindo os binários de otimização de imagem usados pela Media Library). Só precisa do **Docker Desktop** instalado.
+O projeto já vem com `docker-compose.yml` e uma imagem baseada no [Laravel Sail](https://laravel.com/docs/sail) (PHP 8.5 + Node 24 + extensões necessárias, incluindo os binários de otimização de imagem usados pela Media Library). Só precisa do **Docker Desktop** instalado.
 
 ### Serviços
 
