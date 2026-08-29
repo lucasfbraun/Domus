@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#2563eb">
+        <title>Domus — sem conexão</title>
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+        <style>
+            :root {
+                color-scheme: light;
+                --primary: hsl(221 83% 53%);
+                --foreground: hsl(0 0% 9%);
+                --muted-foreground: hsl(0 0% 40%);
+                --border: hsl(0 0% 90%);
+            }
+
+            * {
+                box-sizing: border-box;
+            }
+
+            body {
+                margin: 0;
+                min-height: 100dvh;
+                display: grid;
+                place-items: center;
+                padding: 1.5rem;
+                background-color: hsl(0 0% 100%);
+                color: var(--foreground);
+                font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+            }
+
+            main {
+                width: 100%;
+                max-width: 22rem;
+                text-align: center;
+            }
+
+            img {
+                width: 4rem;
+                height: 4rem;
+            }
+
+            h1 {
+                margin: 1.25rem 0 0;
+                font-size: 1.125rem;
+                line-height: 1.4;
+            }
+
+            p {
+                margin: 0.5rem 0 0;
+                font-size: 0.875rem;
+                line-height: 1.45;
+                color: var(--muted-foreground);
+            }
+
+            button {
+                margin-top: 1.5rem;
+                width: 100%;
+                padding: 0.625rem 1rem;
+                border: 1px solid var(--border);
+                border-radius: 0.5rem;
+                background-color: var(--primary);
+                color: hsl(0 0% 100%);
+                font: inherit;
+                font-size: 0.875rem;
+                font-weight: 600;
+                cursor: pointer;
+            }
+        </style>
+    </head>
+    <body>
+        <main>
+            <img src="/icons/icon-192.png" alt="Domus">
+            <h1>Você está sem conexão</h1>
+            <p>
+                Não foi possível carregar o Domus agora. Verifique sua internet e
+                tente novamente.
+            </p>
+            <button type="button" onclick="window.location.reload()">
+                Tentar novamente
+            </button>
+        </main>
+    </body>
+</html>

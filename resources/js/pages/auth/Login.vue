@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
 import InputError from '@/components/InputError.vue';
+import PwaInstallCard from '@/components/PwaInstallCard.vue';
 import TextLink from '@/components/TextLink.vue';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -96,6 +97,8 @@ defineProps<{
                 <Spinner v-if="processing" />
                 Entrar
             </Button>
+
+            <PwaInstallCard />
         </div>
     </Form>
 </template>

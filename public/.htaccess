@@ -1,3 +1,17 @@
+<IfModule mod_mime.c>
+    # Without this the manifest is served as text/plain and Chrome ignores it,
+    # which silently makes the app non-installable.
+    AddType application/manifest+json .webmanifest
+</IfModule>
+
+<IfModule mod_headers.c>
+    # The service worker must never be served stale, or clients keep an old shell.
+    <Files "sw.js">
+        Header set Cache-Control "no-cache, max-age=0"
+        Header set Service-Worker-Allowed "/"
+    </Files>
+</IfModule>
+
 <IfModule mod_rewrite.c>
     <IfModule mod_negotiation.c>
         Options -MultiViews -Indexes
