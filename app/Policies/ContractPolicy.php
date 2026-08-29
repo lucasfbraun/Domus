@@ -6,6 +6,11 @@ use App\Enums\UserRole;
 use App\Models\Contract;
 use App\Models\User;
 
+/**
+ * Admin sees every Contract. A Tenant/Receiver user only sees contracts
+ * where they are the tenant/receiver on that specific contract — checked by
+ * `user_id` on the related Tenant/Receiver record, not by role alone.
+ */
 class ContractPolicy
 {
     public function viewAny(User $user): bool

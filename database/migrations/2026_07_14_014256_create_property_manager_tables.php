@@ -4,6 +4,10 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
+/**
+ * Initial schema for the whole property-manager domain, created in one
+ * migration rather than one table per file.
+ */
 return new class extends Migration
 {
     public function up(): void

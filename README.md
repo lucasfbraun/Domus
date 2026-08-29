@@ -4,6 +4,8 @@ Sistema de gestão imobiliária com painel administrativo, portais para inquilin
 
 **Stack:** Laravel 13 · Inertia.js v3 · Vue 3 · Tailwind CSS v4 · Fortify · Spatie Media Library & Permission · Docker (Laravel Sail)
 
+> Glossário do domínio (termos de negócio) em [`CONTEXT.md`](CONTEXT.md); decisões de arquitetura registradas em [`docs/adr/`](docs/adr/).
+
 ---
 
 ## Índice
@@ -21,6 +23,7 @@ Sistema de gestão imobiliária com painel administrativo, portais para inquilin
     - [Webhooks](#webhooks)
     - [Testar pagamento Pix no sandbox](#testar-pagamento-pix-no-sandbox)
 - [Integrações opcionais](#integrações-opcionais)
+- [Backup e restauração do banco](#backup-e-restauração-do-banco)
 - [Agendamentos e filas](#agendamentos-e-filas)
 - [Deploy (Dokku)](#deploy-dokku)
 - [Testes](#testes)
@@ -498,6 +501,39 @@ WAHA_SESSION=default
 ```
 
 Sem WAHA configurado, mensagens são apenas logadas (não quebram o fluxo).
+
+---
+
+## Backup e restauração do banco
+
+Em **Admin → Backups**, um administrador pode exportar o banco inteiro para um arquivo e, se precisar, restaurar a partir de um desses arquivos depois.
+
+> Só funciona com o driver **sqlite** (o padrão deste projeto — veja [`docs/adr/0005-sqlite-only-database-backup.md`](docs/adr/0005-sqlite-only-database-backup.md)). Com MySQL/PostgreSQL configurados, a tela mostra um aviso e desabilita as ações.
+
+- **Gerar backup**: roda `sqlite3 <banco> .dump`, comprime o resultado (gzip) e salva em `storage/app/private/backups/domus-backup-{data}_{hora}_{microssegundos}.sql.gz`. Nunca fica em disco público — todo acesso passa pela rota autenticada (`admin.backups.*`, admin-only).
+- **Restaurar**: substitui o banco inteiro pelo conteúdo do backup escolhido. Antes de qualquer coisa, um backup do estado *atual* é gerado automaticamente — então uma restauração sempre pode ser desfeita restaurando esse backup de segurança (o nome dele aparece na mensagem de confirmação). A restauração exige digitar literalmente `RESTAURAR BANCO` — não é só um clique.
+- **Baixar/excluir**: cada backup listado pode ser baixado (`.sql.gz`, pode ser aberto com `gunzip` ou restaurado em outra instalação via `sqlite3 novo.sqlite < backup.sql`) ou removido.
+
+Programático (fora da UI):
+
+```php
+use App\Services\DatabaseBackupService;
+
+app(DatabaseBackupService::class)->create();           // gera e retorna o nome do arquivo
+app(DatabaseBackupService::class)->restore($filename);  // restaura e retorna o nome do backup de seguranca
+```
+
+Não há backup automático agendado por padrão. Para isso, adicione em `routes/console.php`:
+
+```php
+use App\Jobs\CreateDatabaseBackupJob;
+
+Schedule::job(new CreateDatabaseBackupJob)->daily();
+```
+
+Backups antigos não são removidos automaticamente — se for agendar backups diários, adicione sua própria rotina de limpeza (ex.: apagar arquivos com mais de N dias em `storage/app/private/backups/`).
+
+> **Cuidado com permissões:** se você rodar `php artisan tinker` ou qualquer comando manualmente como um usuário diferente do que serve a aplicação (ex.: `root` via SSH/Docker, enquanto o servidor roda como `sail`/`www-data`), os arquivos gerados em `storage/app/private/backups/` ficam com o dono errado. O servidor web então perde a permissão de listar a pasta, e **todo** acesso a `/backups` passa a devolver 500 até alguém corrigir com `chown`. Sempre rode comandos relacionados a backup como o mesmo usuário do servidor web.
 
 ---
 

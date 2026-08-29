@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AdminUserController;
+use App\Http\Controllers\Admin\BackupController;
 use App\Http\Controllers\Admin\ChargeController;
 use App\Http\Controllers\Admin\ContractController;
 use App\Http\Controllers\Admin\ContractDocumentController;
@@ -76,6 +77,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::delete('rateios/{rateio}', [RateioController::class, 'destroy'])->name('rateios.destroy');
         Route::get('rateios/{rateio}/invoice', [RateioController::class, 'invoice'])->name('rateios.invoice');
         Route::get('integracoes', [IntegrationController::class, 'index'])->name('integrations.index');
+        Route::get('backups', [BackupController::class, 'index'])->name('backups.index');
+        Route::post('backups', [BackupController::class, 'store'])->name('backups.store');
+        Route::get('backups/{filename}/download', [BackupController::class, 'download'])
+            ->where('filename', '.*\.sql\.gz')
+            ->name('backups.download');
+        Route::post('backups/{filename}/restore', [BackupController::class, 'restore'])
+            ->where('filename', '.*\.sql\.gz')
+            ->name('backups.restore');
+        Route::delete('backups/{filename}', [BackupController::class, 'destroy'])
+            ->where('filename', '.*\.sql\.gz')
+            ->name('backups.destroy');
         Route::get('help/search', [HelpController::class, 'search'])->name('help.search');
         Route::get('occurrences', [ContractOccurrenceController::class, 'index'])->name('occurrences.index');
         Route::patch('occurrences/{occurrence}', [ContractOccurrenceController::class, 'update'])

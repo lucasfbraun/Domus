@@ -2,6 +2,7 @@
 
 namespace App\Enums;
 
+/** Kind of unit a Property represents. */
 enum PropertyType: string
 {
     case Apartment = 'apartment';

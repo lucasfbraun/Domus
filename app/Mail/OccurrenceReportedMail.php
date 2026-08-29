@@ -9,6 +9,10 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
+/**
+ * Sent to every Admin user when a tenant reports a new ContractOccurrence
+ * from the tenant portal (ContractOccurrenceController::store()).
+ */
 class OccurrenceReportedMail extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;

@@ -7,11 +7,11 @@ use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreContractOccurrenceRequest;
 use App\Http\Requests\Admin\UpdateContractOccurrenceRequest;
+use App\Mail\OccurrenceReportedMail;
+use App\Mail\OccurrenceUpdatedMail;
 use App\Models\Contract;
 use App\Models\ContractOccurrence;
 use App\Models\ContractOccurrencePhoto;
-use App\Mail\OccurrenceReportedMail;
-use App\Mail\OccurrenceUpdatedMail;
 use App\Models\User;
 use App\Support\Pagination;
 use Illuminate\Http\RedirectResponse;
@@ -22,6 +22,16 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
+/**
+ * Manages tenant-reported occurrences (maintenance/complaint reports) on a
+ * contract, with attached photos. There is no dedicated Policy: `store` and
+ * `showPhoto` are reached from the tenant portal and authorize access inline
+ * via `abort_unless` (matching the authenticated user's Tenant record),
+ * while `index`/`update` are admin-only routes. `store` emails every Admin
+ * user via {@see OccurrenceReportedMail}; `update` emails the
+ * tenant via {@see OccurrenceUpdatedMail} when the tenant has an
+ * email on file.
+ */
 class ContractOccurrenceController extends Controller
 {
     public function index(): Response
@@ -131,6 +141,10 @@ class ContractOccurrenceController extends Controller
         return back();
     }
 
+    /**
+     * Streams an occurrence photo from local storage. Allowed for any Admin,
+     * or for the Tenant who owns the occurrence the photo belongs to.
+     */
     public function showPhoto(Request $request, ContractOccurrencePhoto $photo): StreamedResponse
     {
         $user = $request->user();

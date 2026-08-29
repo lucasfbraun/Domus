@@ -9,6 +9,13 @@ use App\Services\ReminderService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
+/**
+ * Receives Mercado Pago's inbound "order" webhook notifications for charge and
+ * deposit Pix payments. Verifies the `x-signature`/`x-request-id` HMAC before
+ * processing (see {@see MercadoPagoService::validateWebhookSignature()}) and,
+ * once a payment is confirmed, dispatches the payment-confirmed reminder for
+ * the matching charge.
+ */
 class MercadoPagoWebhookController extends Controller
 {
     public function store(

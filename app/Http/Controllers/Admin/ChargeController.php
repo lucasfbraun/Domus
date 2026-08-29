@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Charge;
 use App\Models\Contract;
+use App\Policies\ChargePolicy;
 use App\Services\ChargeScheduler;
 use App\Services\ContractDocumentService;
 use App\Services\MercadoPagoService;
@@ -18,6 +19,13 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
+/**
+ * Manages rent Charge records (list, Pix generation/sync, reminders,
+ * receipt PDF). See {@see ChargePolicy}: besides Admin, a
+ * Tenant can view/update charges on their own contract and a Receiver can
+ * view charges they are the payment recipient of, so these endpoints are
+ * also reachable outside the admin UI proper.
+ */
 class ChargeController extends Controller
 {
     public function index(): Response
@@ -64,6 +72,12 @@ class ChargeController extends Controller
         return back();
     }
 
+    /**
+     * Requests a Pix charge from Mercado Pago for this charge. Responds with
+     * JSON (qr code, ticket url, computed amount due) for XHR/Inertia
+     * partial requests, or a flashed toast + redirect for a full page
+     * request.
+     */
     public function createPix(Request $request, Charge $charge, MercadoPagoService $mercadoPago): RedirectResponse|JsonResponse
     {
         $this->authorize('update', $charge);
@@ -103,6 +117,11 @@ class ChargeController extends Controller
         return back();
     }
 
+    /**
+     * Translates a raw Mercado Pago exception message into a Portuguese
+     * message safe to show the user, recognizing known sandbox/credential
+     * error signatures.
+     */
     private function friendlyPixErrorMessage(\Throwable $exception): string
     {
         $raw = $exception->getMessage();
@@ -135,6 +154,11 @@ class ChargeController extends Controller
         return 'Não foi possível gerar o Pix agora. Tente novamente em instantes.';
     }
 
+    /**
+     * Polls Mercado Pago for this charge's current Pix payment status. When
+     * the sync marks the charge as newly paid, sends the tenant/receiver a
+     * payment-confirmed notification via {@see ReminderService}.
+     */
     public function syncPayment(Request $request, Charge $charge, MercadoPagoService $mercadoPago, ReminderService $reminderService): RedirectResponse|JsonResponse
     {
         $this->authorize('update', $charge);

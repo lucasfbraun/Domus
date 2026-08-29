@@ -9,6 +9,10 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
+/**
+ * Sent to the contract's tenant and receiver when an admin approves or
+ * rejects the tenant-uploaded signed document (ContractDocumentController::review()).
+ */
 class ContractDocumentReviewedMail extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;

@@ -6,6 +6,7 @@ use App\Enums\UserRole;
 use App\Models\Owner;
 use App\Models\User;
 
+/** Owner records are admin-only; owners never have their own User/login. */
 class OwnerPolicy
 {
     public function viewAny(User $user): bool

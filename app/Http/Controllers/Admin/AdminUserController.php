@@ -14,6 +14,13 @@ use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
 use Inertia\Response;
 
+/**
+ * Manages back-office User records that hold the Admin role. There is no
+ * AdminPolicy: access is gated only by the `role:admin` route middleware, and
+ * `edit`/`update`/`destroy` each re-check `hasRole(UserRole::Admin)` to make
+ * sure the resolved User is actually an admin (a plain tenant/receiver id
+ * would otherwise 404 through route-model binding without this guard).
+ */
 class AdminUserController extends Controller
 {
     public function index(): Response

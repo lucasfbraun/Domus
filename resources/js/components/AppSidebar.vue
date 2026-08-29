@@ -3,6 +3,7 @@ import { Link, usePage } from '@inertiajs/vue3';
 import {
     Building2,
     CreditCard,
+    DatabaseBackup,
     FileText,
     Handshake,
     LayoutGrid,
@@ -27,6 +28,7 @@ import {
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
 import { index as admins } from '@/routes/admin/admins';
+import { index as backups } from '@/routes/admin/backups';
 import { index as charges } from '@/routes/admin/charges';
 import { index as contracts } from '@/routes/admin/contracts';
 import { index as deposits } from '@/routes/admin/deposits';
@@ -129,6 +131,11 @@ const adminOperationsNavItems = computed<NavItem[]>(() => [
         title: 'Integrações',
         href: integrations(),
         icon: Plug,
+    },
+    {
+        title: 'Backups',
+        href: backups(),
+        icon: DatabaseBackup,
     },
 ]);
 

@@ -6,6 +6,10 @@ use App\Enums\UserRole;
 use App\Models\Deposit;
 use App\Models\User;
 
+/**
+ * Same access shape as ChargePolicy: Admin sees everything, Tenant sees
+ * deposits on their own contracts, Receiver sees deposits they collect.
+ */
 class DepositPolicy
 {
     public function viewAny(User $user): bool

@@ -7,11 +7,17 @@ use App\Http\Requests\Admin\StoreOwnerRequest;
 use App\Http\Requests\Admin\UpdateOwnerRequest;
 use App\Models\Owner;
 use App\Models\Property;
+use App\Policies\OwnerPolicy;
 use App\Support\Pagination;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
 
+/**
+ * Manages Owner records (property owners). See
+ * {@see OwnerPolicy}: admin-only — owners never have their own
+ * User/login, so there is no owner-facing counterpart to these routes.
+ */
 class OwnerController extends Controller
 {
     public function index(): Response

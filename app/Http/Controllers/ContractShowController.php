@@ -11,6 +11,11 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
+/**
+ * Renders the read-only contract detail page shared by admins and the tenant on
+ * the contract (authorized per-contract via the Contract policy), including
+ * whether the tenant may currently upload a signed document.
+ */
 class ContractShowController extends Controller
 {
     public function show(Request $request, Contract $contract, ContractSignatureService $signatureService): Response

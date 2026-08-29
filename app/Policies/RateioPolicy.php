@@ -6,6 +6,10 @@ use App\Enums\UserRole;
 use App\Models\Rateio;
 use App\Models\User;
 
+/**
+ * Rateio records are admin-only; tenants/receivers never see the split
+ * itself, only the Charge it produces on their own contract.
+ */
 class RateioPolicy
 {
     public function viewAny(User $user): bool

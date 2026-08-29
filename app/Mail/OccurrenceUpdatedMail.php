@@ -9,6 +9,10 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
+/**
+ * Sent to the reporting tenant when an admin changes a ContractOccurrence's
+ * status (ContractOccurrenceController::update()).
+ */
 class OccurrenceUpdatedMail extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;

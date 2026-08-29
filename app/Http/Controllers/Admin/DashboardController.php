@@ -12,6 +12,13 @@ use App\Services\Finance;
 use Inertia\Inertia;
 use Inertia\Response;
 
+/**
+ * Renders the admin home dashboard: aggregate financial stats (expected,
+ * received, open, overdue amounts) computed from all Charges via
+ * {@see Finance::computeAmountDue()}, a per-receiver
+ * breakdown, and recent charges/active contracts. No dedicated Policy;
+ * gated only by the `role:admin` route middleware.
+ */
 class DashboardController extends Controller
 {
     public function index(): Response

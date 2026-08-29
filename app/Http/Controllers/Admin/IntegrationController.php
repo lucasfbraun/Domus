@@ -7,6 +7,12 @@ use App\Models\Receiver;
 use Inertia\Inertia;
 use Inertia\Response;
 
+/**
+ * Read-only status page summarizing whether external integrations
+ * (Mercado Pago OAuth app, WAHA WhatsApp gateway, outgoing mail, the daily
+ * cron) are configured. Reads config/DB state only; never performs a live
+ * connectivity check against any of these services.
+ */
 class IntegrationController extends Controller
 {
     public function index(): Response

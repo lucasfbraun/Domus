@@ -1,6 +1,8 @@
 <?php
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
 /*
@@ -50,4 +52,36 @@ expect()->extend('toBeOne', function () {
 function something()
 {
     // ..
+}
+
+/**
+ * Points the sqlite connection at a throwaway copy of the real (already
+ * migrated) test database for the duration of the callback, then restores
+ * the original connection — so tests can freely create/destroy/swap whole
+ * database files (DatabaseBackupService) without touching the shared test
+ * database other Feature tests rely on.
+ *
+ * @param  callable(string $scratchPath): void  $callback
+ */
+function withScratchSqliteDatabase(callable $callback): void
+{
+    $original = (string) config('database.connections.sqlite.database');
+    $originalAbsolute = str_starts_with($original, '/') || preg_match('#^[A-Za-z]:[\\\\/]#', $original) === 1
+        ? $original
+        : base_path($original);
+
+    $scratchPath = tempnam(sys_get_temp_dir(), 'domus-test-db-');
+    File::copy($originalAbsolute, $scratchPath);
+
+    config(['database.connections.sqlite.database' => $scratchPath]);
+    DB::purge('sqlite');
+
+    try {
+        $callback($scratchPath);
+    } finally {
+        config(['database.connections.sqlite.database' => $original]);
+        DB::purge('sqlite');
+        DB::beginTransaction();
+        File::delete($scratchPath);
+    }
 }

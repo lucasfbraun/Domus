@@ -16,6 +16,11 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
+/**
+ * Read-only self-service portal for a logged-in tenant: lists only the
+ * contracts, charges, and deposits tied to their own `tenant` record, with
+ * charge amounts recomputed live (fines/interest) via {@see MercadoPagoService}.
+ */
 class TenantPortalController extends Controller
 {
     public function index(Request $request, MercadoPagoService $mercadoPago): Response

@@ -7,6 +7,7 @@ use App\Http\Requests\Admin\StoreRateioRequest;
 use App\Http\Requests\Admin\UpdateRateioRequest;
 use App\Models\Property;
 use App\Models\Rateio;
+use App\Policies\RateioPolicy;
 use App\Services\RateioService;
 use App\Support\Pagination;
 use Illuminate\Http\RedirectResponse;
@@ -15,6 +16,16 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
+/**
+ * Manages Rateio records (shared/utility expenses split across properties).
+ * See {@see RateioPolicy}: admin-only. Creating or updating a
+ * rateio via {@see RateioService} immediately adds each
+ * property's share onto that property's open Charge for the matching
+ * reference month when one exists (and clears any Pix already generated for
+ * it); shares for properties without a matching charge yet stay pending
+ * until one is generated. `update`/`destroy` refuse to touch a rateio that
+ * is already linked to a paid charge.
+ */
 class RateioController extends Controller
 {
     public function index(): Response

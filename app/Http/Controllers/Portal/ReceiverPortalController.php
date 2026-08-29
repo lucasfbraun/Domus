@@ -12,6 +12,10 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
+/**
+ * Read-only self-service portal for a logged-in receiver: lists only the
+ * contracts and charges tied to their own `receiver` record.
+ */
 class ReceiverPortalController extends Controller
 {
     public function index(Request $request): Response

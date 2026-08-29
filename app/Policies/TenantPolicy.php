@@ -6,6 +6,11 @@ use App\Enums\UserRole;
 use App\Models\Tenant;
 use App\Models\User;
 
+/**
+ * Managing Tenant records (cadastro) is admin-only. A tenant's own portal
+ * access is governed by ChargePolicy/ContractPolicy/DepositPolicy, not by
+ * this policy.
+ */
 class TenantPolicy
 {
     public function viewAny(User $user): bool

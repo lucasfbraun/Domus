@@ -8,6 +8,7 @@ use App\Http\Requests\Admin\StoreReceiverRequest;
 use App\Http\Requests\Admin\UpdateReceiverRequest;
 use App\Models\Receiver;
 use App\Models\User;
+use App\Policies\ReceiverPolicy;
 use App\Services\MercadoPagoService;
 use App\Support\Pagination;
 use Illuminate\Http\RedirectResponse;
@@ -17,6 +18,14 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
+/**
+ * Manages Receiver records (payment recipients for charges) and their
+ * Mercado Pago OAuth connection. See {@see ReceiverPolicy}:
+ * admin-only — a receiver's own portal access (viewing their charges, etc.)
+ * is governed elsewhere. Setting a password on store/update also creates
+ * or updates a linked User with the Receiver role, so the receiver can log
+ * in to their own portal.
+ */
 class ReceiverController extends Controller
 {
     public function index(): Response
@@ -111,6 +120,13 @@ class ReceiverController extends Controller
         return to_route('admin.receivers.index');
     }
 
+    /**
+     * Starts the Mercado Pago OAuth Connect flow for this receiver: builds
+     * the authorization URL (with a signed state binding it to this
+     * receiver) and does a full browser redirect via `Inertia::location`
+     * rather than an Inertia visit, since the destination is an external
+     * origin.
+     */
     public function connectMercadoPago(Request $request, Receiver $receiver, MercadoPagoService $mercadoPago): SymfonyResponse
     {
         $this->authorize('update', $receiver);
@@ -121,6 +137,12 @@ class ReceiverController extends Controller
         return Inertia::location($url);
     }
 
+    /**
+     * OAuth redirect target for Mercado Pago Connect. Verifies the signed
+     * `state` to recover which receiver initiated the flow, exchanges the
+     * authorization `code` for tokens, and persists the connection on that
+     * receiver.
+     */
     public function mercadoPagoCallback(Request $request, MercadoPagoService $mercadoPago): RedirectResponse
     {
         $receiverId = $mercadoPago->verifyConnectState((string) $request->query('state'));

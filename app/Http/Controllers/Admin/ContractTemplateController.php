@@ -13,6 +13,12 @@ use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
 
+/**
+ * Manages reusable Contract document templates (with merge variables from
+ * {@see ContractTemplateVariables}). No dedicated Policy exists;
+ * access is gated only by the `role:admin` route middleware. `destroy` refuses to
+ * delete a template that is still referenced by any Contract.
+ */
 class ContractTemplateController extends Controller
 {
     public function index(): Response

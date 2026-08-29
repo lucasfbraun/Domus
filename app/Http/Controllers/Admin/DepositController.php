@@ -9,6 +9,7 @@ use App\Http\Requests\Admin\UpdateDepositRequest;
 use App\Models\Contract;
 use App\Models\Deposit;
 use App\Models\Receiver;
+use App\Policies\DepositPolicy;
 use App\Services\MercadoPagoService;
 use App\Support\Pagination;
 use Illuminate\Http\JsonResponse;
@@ -17,6 +18,12 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
+/**
+ * Manages security Deposit records (cadastro, refund, Pix generation/sync).
+ * See {@see DepositPolicy}: besides Admin, a Tenant can
+ * view/update deposits on their own contract and a Receiver can view
+ * deposits they collect.
+ */
 class DepositController extends Controller
 {
     public function index(): Response
@@ -94,6 +101,11 @@ class DepositController extends Controller
         return to_route('admin.deposits.index');
     }
 
+    /**
+     * Marks a previously paid deposit as refunded. Only valid from the Paid
+     * status; the refunded amount defaults to the full deposit amount when
+     * not explicitly provided.
+     */
     public function markRefunded(Request $request, Deposit $deposit): RedirectResponse
     {
         $this->authorize('update', $deposit);
@@ -121,6 +133,11 @@ class DepositController extends Controller
         return back();
     }
 
+    /**
+     * Requests a Pix charge from Mercado Pago for this deposit. Responds
+     * with JSON (qr code, ticket url) for XHR/Inertia partial requests, or a
+     * flashed toast + redirect for a full page request.
+     */
     public function createPix(Request $request, Deposit $deposit, MercadoPagoService $mercadoPago): RedirectResponse|JsonResponse
     {
         $this->authorize('update', $deposit);
@@ -161,6 +178,9 @@ class DepositController extends Controller
         return back();
     }
 
+    /**
+     * Polls Mercado Pago for this deposit's current Pix payment status.
+     */
     public function syncPayment(Request $request, Deposit $deposit, MercadoPagoService $mercadoPago): RedirectResponse|JsonResponse
     {
         $this->authorize('update', $deposit);

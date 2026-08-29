@@ -2,6 +2,10 @@
 
 namespace App\Enums;
 
+/**
+ * Resolution lifecycle of a ContractOccurrence (an incident/request a tenant
+ * reports during the lease, e.g. a maintenance issue).
+ */
 enum OccurrenceStatus: string
 {
     case Open = 'open';

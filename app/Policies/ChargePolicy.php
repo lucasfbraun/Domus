@@ -6,6 +6,11 @@ use App\Enums\UserRole;
 use App\Models\Charge;
 use App\Models\User;
 
+/**
+ * Admin sees every Charge. A Tenant sees charges on their own contracts; a
+ * Receiver sees charges they are the payment recipient of. Only Admin and
+ * the owning Tenant can update; only Admin can delete.
+ */
 class ChargePolicy
 {
     public function viewAny(User $user): bool

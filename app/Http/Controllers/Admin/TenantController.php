@@ -8,12 +8,19 @@ use App\Http\Requests\Admin\StoreTenantRequest;
 use App\Http\Requests\Admin\UpdateTenantRequest;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Policies\TenantPolicy;
 use App\Support\Pagination;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
 use Inertia\Response;
 
+/**
+ * Manages Tenant records (renters). See {@see TenantPolicy}:
+ * admin-only — a tenant's own portal access is governed elsewhere. Setting a
+ * password on store/update also creates or updates a linked User with the
+ * Tenant role, so the tenant can log in to their own portal.
+ */
 class TenantController extends Controller
 {
     public function index(): Response
