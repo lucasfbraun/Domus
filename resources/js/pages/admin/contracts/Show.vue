@@ -33,6 +33,7 @@ import {
 } from '@/routes/admin/contracts/document';
 import {
     destroy as destroyPhoto,
+    show as showPhoto,
     store as storePhoto,
 } from '@/routes/admin/contracts/inspection-photos';
 import { sign as signWitness } from '@/routes/admin/contracts/witnesses';
@@ -390,6 +391,7 @@ function formatPercent(value?: number | string | null): string {
                             type="file"
                             name="photo"
                             accept="image/jpeg,image/png"
+                            capture="environment"
                             required
                         />
                         <InputError :message="errors.photo" />
@@ -415,26 +417,47 @@ function formatPercent(value?: number | string | null): string {
                 >
                     Nenhuma foto de vistoria.
                 </div>
-                <ul v-else class="space-y-2 text-sm">
+                <ul v-else class="grid gap-3 sm:grid-cols-2">
                     <li
                         v-for="photo in contract.inspection_photos"
                         :key="photo.id"
-                        class="flex items-center justify-between gap-3 rounded-lg border p-3"
+                        class="flex items-center gap-3 rounded-lg border p-3 text-sm"
                     >
-                        <span>
-                            {{ photo.room || 'Foto' }}
-                            <span v-if="photo.caption" class="text-muted-foreground">
-                                — {{ photo.caption }}
-                            </span>
-                        </span>
-                        <Form
-                            v-bind="destroyPhoto.form({ contract, photo })"
-                            #default="{ processing }"
+                        <a
+                            :href="showPhoto.url({ contract, photo })"
+                            target="_blank"
+                            rel="noopener"
+                            class="shrink-0"
                         >
-                            <Button type="submit" size="sm" variant="outline" :disabled="processing">
-                                Remover
-                            </Button>
-                        </Form>
+                            <img
+                                :src="showPhoto.url({ contract, photo })"
+                                :alt="photo.room || photo.caption || 'Foto de vistoria'"
+                                class="size-16 rounded-md border object-cover"
+                                loading="lazy"
+                            >
+                        </a>
+                        <div class="min-w-0 flex-1">
+                            <p class="truncate">
+                                {{ photo.room || 'Foto' }}
+                                <span v-if="photo.caption" class="text-muted-foreground">
+                                    — {{ photo.caption }}
+                                </span>
+                            </p>
+                            <Form
+                                v-bind="destroyPhoto.form({ contract, photo })"
+                                #default="{ processing }"
+                            >
+                                <Button
+                                    type="submit"
+                                    size="sm"
+                                    variant="outline"
+                                    class="mt-2"
+                                    :disabled="processing"
+                                >
+                                    Remover
+                                </Button>
+                            </Form>
+                        </div>
                     </li>
                 </ul>
             </CardContent>

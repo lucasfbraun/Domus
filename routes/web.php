@@ -82,6 +82,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->name('occurrences.update');
         Route::post('contracts/{contract}/inspection-photos', [ContractInspectionPhotoController::class, 'store'])
             ->name('contracts.inspection-photos.store');
+        Route::get('contracts/{contract}/inspection-photos/{photo}', [ContractInspectionPhotoController::class, 'show'])
+            ->name('contracts.inspection-photos.show');
         Route::delete('contracts/{contract}/inspection-photos/{photo}', [ContractInspectionPhotoController::class, 'destroy'])
             ->name('contracts.inspection-photos.destroy');
         Route::post('contracts/{contract}/document/generate', [ContractDocumentController::class, 'generate'])
