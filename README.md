@@ -54,7 +54,7 @@ O projeto já vem com `docker-compose.yml` e uma imagem baseada no [Laravel Sail
 
 | Serviço        | O que é                                                             | Porta padrão                    |
 | -------------- | -------------------------------------------------------------------- | -------------------------------- |
-| `laravel.test` | Aplicação (PHP built-in server) + Vite dev server                   | `80` (app) / `5173` (Vite)        |
+| `laravel.test` | Aplicação (PHP built-in server) + Vite dev server                   | `8000` (app) / `5173` (Vite)      |
 | `queue`        | Worker de fila (`php artisan queue:work`), mesma imagem da app       | —                                |
 | `redis`        | Cache/sessão/fila em memória, disponível para uso                    | `6379`                            |
 
@@ -64,27 +64,18 @@ O projeto já vem com `docker-compose.yml` e uma imagem baseada no [Laravel Sail
 git clone <url-do-repositorio> property-manager
 cd property-manager
 cp .env.example .env
-# Windows PowerShell: Copy-Item .env.example .env
 
 docker compose up -d --build
 
 docker compose exec laravel.test composer install
 docker compose exec laravel.test php artisan key:generate
-docker compose exec laravel.test touch database/database.sqlite
-docker compose exec -u root laravel.test chown sail:sail database/database.sqlite
-docker compose exec laravel.test chmod 664 database/database.sqlite
 docker compose exec laravel.test php artisan migrate --seed
 docker compose exec laravel.test php artisan storage:link
 docker compose exec laravel.test npm install
 docker compose exec laravel.test npm run build
-docker compose restart queue
 ```
 
-Acesse [http://127.0.0.1](http://127.0.0.1).
-
-> No Windows, `localhost` pode resolver para outro serviço local. Se aparecer uma página padrão do Apache, use `http://127.0.0.1`.
-
-> O projeto usa SQLite por padrão. O `docker-compose.yml` também inclui MySQL/PostgreSQL para quem quiser trocar de banco; por isso o Docker pode exibir avisos sobre `DB_DATABASE`, `DB_USERNAME` e `DB_PASSWORD` não definidos. Esses avisos não impedem o uso com SQLite.
+Acesse [http://localhost:8000](http://localhost:8000).
 
 ### Dia a dia
 
@@ -99,7 +90,7 @@ docker compose restart laravel.test queue     # reiniciar app/worker após mudan
 
 ### Portas ocupadas
 
-Se `80`, `5173` ou `6379` já estiverem em uso no seu computador, ajuste no `.env` antes de subir os containers:
+Se `8000`, `5173` ou `6379` já estiverem em uso no seu computador, ajuste no `.env` antes de subir os containers:
 
 ```env
 APP_PORT=8091
@@ -108,8 +99,6 @@ FORWARD_REDIS_PORT=6380
 ```
 
 Depois: `docker compose down && docker compose up -d`.
-
-Com `APP_PORT=8091`, acesse `http://127.0.0.1:8091`.
 
 ### Performance no Windows
 
