@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreReceiverRequest;
 use App\Http\Requests\Admin\UpdateReceiverRequest;
 use App\Models\Receiver;
+use App\Models\Tenant;
 use App\Models\User;
 use App\Policies\ReceiverPolicy;
 use App\Services\MercadoPagoService;
@@ -113,7 +114,20 @@ class ReceiverController extends Controller
     {
         $this->authorize('delete', $receiver);
 
+        $userId = $receiver->user_id;
+
         $receiver->delete();
+
+        // The linked User only exists to grant this receiver portal access —
+        // leaving it behind after deleting the receiver would silently block
+        // recreating a receiver with the same email later (unique constraint
+        // on users.email) with no visible link back to this deletion.
+        if ($userId
+            && ! Receiver::query()->where('user_id', $userId)->exists()
+            && ! Tenant::query()->where('user_id', $userId)->exists()
+        ) {
+            User::query()->find($userId)?->delete();
+        }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Recebedor removido.']);
 

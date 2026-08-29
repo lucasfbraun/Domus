@@ -6,6 +6,7 @@ use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreTenantRequest;
 use App\Http\Requests\Admin\UpdateTenantRequest;
+use App\Models\Receiver;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Policies\TenantPolicy;
@@ -108,7 +109,20 @@ class TenantController extends Controller
     {
         $this->authorize('delete', $tenant);
 
+        $userId = $tenant->user_id;
+
         $tenant->delete();
+
+        // The linked User only exists to grant this tenant portal access —
+        // leaving it behind after deleting the tenant would silently block
+        // recreating a tenant with the same email later (unique constraint
+        // on users.email) with no visible link back to this deletion.
+        if ($userId
+            && ! Tenant::query()->where('user_id', $userId)->exists()
+            && ! Receiver::query()->where('user_id', $userId)->exists()
+        ) {
+            User::query()->find($userId)?->delete();
+        }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Inquilino removido.']);
 

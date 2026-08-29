@@ -5,6 +5,7 @@ namespace App\Http\Requests\Admin;
 use App\Http\Requests\Concerns\PreparesBrazilianFields;
 use App\Models\Receiver;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 
 class StoreReceiverRequest extends FormRequest
@@ -26,13 +27,33 @@ class StoreReceiverRequest extends FormRequest
      */
     public function rules(): array
     {
+        $emailRules = ['required', 'email', 'max:255'];
+
+        // A password here means ReceiverController will create a linked
+        // User, which needs a globally unique email across every role —
+        // otherwise the insert fails with a raw SQLSTATE 23000 instead of a
+        // validation error.
+        if (filled($this->input('password'))) {
+            $emailRules[] = Rule::unique('users', 'email');
+        }
+
         return [
             'name' => ['required', 'string', 'max:255'],
             'document' => ['required', 'string', 'cpf_ou_cnpj'],
-            'email' => ['required', 'email', 'max:255'],
+            'email' => $emailRules,
             'mercado_pago_account' => ['nullable', 'string', 'max:255'],
             'active' => ['boolean'],
             'password' => ['nullable', 'confirmed', Password::defaults()],
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'email.unique' => 'Já existe uma conta de acesso com este e-mail.',
         ];
     }
 }

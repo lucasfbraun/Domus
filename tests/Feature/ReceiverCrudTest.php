@@ -2,6 +2,7 @@
 
 use App\Enums\UserRole;
 use App\Models\Receiver;
+use App\Models\Tenant;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Support\Facades\Hash;
@@ -53,4 +54,138 @@ test('admin cannot create a receiver with mismatched password confirmation', fun
         ->assertSessionHasErrors('password');
 
     expect(Receiver::query()->where('email', 'receiver-portal@example.com')->exists())->toBeFalse();
+});
+
+test('admin cannot create a receiver whose portal email is already used by another account', function () {
+    $admin = User::factory()->admin()->create();
+    User::factory()->create(['email' => 'ja-existe@example.com']);
+
+    $this->actingAs($admin)
+        ->from(route('admin.receivers.create'))
+        ->post(route('admin.receivers.store'), [
+            'name' => 'Recebedor Duplicado',
+            'document' => '52998224725',
+            'email' => 'ja-existe@example.com',
+            'active' => '1',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+        ])
+        ->assertRedirect(route('admin.receivers.create'))
+        ->assertSessionHasErrors('email');
+
+    expect(Receiver::query()->where('email', 'ja-existe@example.com')->exists())->toBeFalse();
+});
+
+test('creating a receiver without a password never checks users table email uniqueness', function () {
+    $admin = User::factory()->admin()->create();
+    User::factory()->create(['email' => 'conta-de-outro-papel@example.com']);
+
+    $this->actingAs($admin)
+        ->post(route('admin.receivers.store'), [
+            'name' => 'Recebedor Sem Portal',
+            'document' => '52998224725',
+            'email' => 'conta-de-outro-papel@example.com',
+            'active' => '1',
+        ])
+        ->assertRedirect(route('admin.receivers.index'))
+        ->assertSessionDoesntHaveErrors();
+
+    $receiver = Receiver::query()->where('email', 'conta-de-outro-papel@example.com')->first();
+
+    expect($receiver)->not->toBeNull()
+        ->and($receiver->user_id)->toBeNull();
+});
+
+test('admin can set a password for an already portal-linked receiver without a false unique conflict', function () {
+    $admin = User::factory()->admin()->create();
+    $user = User::factory()->create(['email' => 'recebedor-existente@example.com']);
+    $user->assignRole(UserRole::Receiver);
+    $receiver = Receiver::factory()->create(['email' => 'recebedor-existente@example.com', 'user_id' => $user->id]);
+
+    $this->actingAs($admin)
+        ->put(route('admin.receivers.update', $receiver), [
+            'name' => $receiver->name,
+            'document' => $receiver->document,
+            'email' => 'recebedor-existente@example.com',
+            'active' => '1',
+            'password' => 'nova-senha-valida',
+            'password_confirmation' => 'nova-senha-valida',
+        ])
+        ->assertRedirect(route('admin.receivers.index'))
+        ->assertSessionDoesntHaveErrors();
+
+    expect(Hash::check('nova-senha-valida', $user->fresh()->password))->toBeTrue();
+});
+
+test('admin cannot update a receiver to a portal email already used by another account', function () {
+    $admin = User::factory()->admin()->create();
+    User::factory()->create(['email' => 'ja-existe-update@example.com']);
+    $receiver = Receiver::factory()->create(['email' => 'sem-portal@example.com', 'user_id' => null]);
+
+    $this->actingAs($admin)
+        ->from(route('admin.receivers.edit', $receiver))
+        ->put(route('admin.receivers.update', $receiver), [
+            'name' => $receiver->name,
+            'document' => $receiver->document,
+            'email' => 'ja-existe-update@example.com',
+            'active' => '1',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+        ])
+        ->assertRedirect(route('admin.receivers.edit', $receiver))
+        ->assertSessionHasErrors('email');
+
+    expect($receiver->fresh()->user_id)->toBeNull();
+});
+
+test('deleting a receiver also deletes its portal login, so the email can be reused later', function () {
+    $admin = User::factory()->admin()->create();
+    $user = User::factory()->create(['email' => 'recebedor-removido@example.com']);
+    $user->assignRole(UserRole::Receiver);
+    $receiver = Receiver::factory()->create(['email' => 'recebedor-removido@example.com', 'user_id' => $user->id]);
+
+    $this->actingAs($admin)
+        ->delete(route('admin.receivers.destroy', $receiver))
+        ->assertRedirect(route('admin.receivers.index'));
+
+    expect(Receiver::query()->find($receiver->id))->toBeNull()
+        ->and(User::query()->find($user->id))->toBeNull();
+
+    // The email is free again — recreating a receiver with it must not 500.
+    $this->actingAs($admin)
+        ->post(route('admin.receivers.store'), [
+            'name' => 'Recebedor Recriado',
+            'document' => '52998224725',
+            'email' => 'recebedor-removido@example.com',
+            'active' => '1',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+        ])
+        ->assertRedirect(route('admin.receivers.index'))
+        ->assertSessionDoesntHaveErrors();
+});
+
+test('deleting a receiver without a portal account does not error', function () {
+    $admin = User::factory()->admin()->create();
+    $receiver = Receiver::factory()->create(['user_id' => null]);
+
+    $this->actingAs($admin)
+        ->delete(route('admin.receivers.destroy', $receiver))
+        ->assertRedirect(route('admin.receivers.index'));
+
+    expect(Receiver::query()->find($receiver->id))->toBeNull();
+});
+
+test('deleting a receiver never deletes a user still linked to a tenant', function () {
+    $admin = User::factory()->admin()->create();
+    $user = User::factory()->create();
+    $user->assignRole(UserRole::Receiver);
+    $receiver = Receiver::factory()->create(['user_id' => $user->id]);
+    Tenant::factory()->create(['user_id' => $user->id]);
+
+    $this->actingAs($admin)
+        ->delete(route('admin.receivers.destroy', $receiver))
+        ->assertRedirect(route('admin.receivers.index'));
+
+    expect(User::query()->find($user->id))->not->toBeNull();
 });
