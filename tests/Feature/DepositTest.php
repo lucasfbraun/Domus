@@ -219,6 +219,155 @@ test('admin so pode marcar caução como devolvida depois de paga', function () 
         ->and($deposit->fresh()->refunded_amount)->toEqual('2000.00');
 });
 
+test('admin can update a deposit', function () {
+    $admin = User::factory()->admin()->create();
+    $deposit = makeDeposit();
+
+    $this->actingAs($admin)
+        ->put(route('admin.deposits.update', $deposit), [
+            'contract_id' => $deposit->contract_id,
+            'receiver_id' => $deposit->receiver_id,
+            'description' => 'Caução atualizada',
+            'amount' => 2500,
+            'due_date' => now()->addDays(20)->toDateString(),
+        ])
+        ->assertRedirect();
+
+    expect($deposit->fresh()->description)->toBe('Caução atualizada')
+        ->and((float) $deposit->fresh()->amount)->toBe(2500.0);
+});
+
+test('non admin cannot update a deposit', function () {
+    $tenantUser = User::factory()->tenant()->create();
+    $deposit = makeDeposit();
+
+    $this->actingAs($tenantUser)
+        ->put(route('admin.deposits.update', $deposit), [
+            'contract_id' => $deposit->contract_id,
+            'receiver_id' => $deposit->receiver_id,
+            'description' => 'x',
+            'amount' => 100,
+            'due_date' => now()->toDateString(),
+        ])
+        ->assertForbidden();
+});
+
+test('admin can delete a deposit', function () {
+    $admin = User::factory()->admin()->create();
+    $deposit = makeDeposit();
+
+    $this->actingAs($admin)
+        ->delete(route('admin.deposits.destroy', $deposit))
+        ->assertRedirect();
+
+    expect(Deposit::query()->find($deposit->id))->toBeNull();
+});
+
+test('non admin cannot delete a deposit', function () {
+    $tenantUser = User::factory()->tenant()->create();
+    $deposit = makeDeposit();
+
+    $this->actingAs($tenantUser)
+        ->delete(route('admin.deposits.destroy', $deposit))
+        ->assertForbidden();
+
+    expect(Deposit::query()->find($deposit->id))->not->toBeNull();
+});
+
+test('admin can create a pix charge for a deposit via http', function () {
+    $admin = User::factory()->admin()->create();
+    $deposit = makeDeposit();
+
+    Http::fake([
+        'https://api.mercadopago.com/v1/orders' => Http::response([
+            'id' => 'ORD-HTTP-DEPOSIT',
+            'status' => 'action_required',
+            'external_reference' => 'deposit:'.$deposit->id,
+            'transactions' => [
+                'payments' => [[
+                    'id' => 'PAY-HTTP-DEPOSIT',
+                    'payment_method' => [
+                        'id' => 'pix',
+                        'type' => 'bank_transfer',
+                        'qr_code' => '00020126http-deposit-pix',
+                        'qr_code_base64' => 'base64qr',
+                        'ticket_url' => 'https://www.mercadopago.com.br/sandbox/payments/ticket',
+                    ],
+                ]],
+            ],
+        ], 201),
+    ]);
+
+    $this->actingAs($admin)
+        ->post(route('deposits.pix', $deposit))
+        ->assertRedirect();
+
+    expect($deposit->fresh()->status)->toBe(DepositStatus::WaitingPayment);
+});
+
+test('the owning tenant can also create a pix charge for their own deposit', function () {
+    $deposit = makeDeposit();
+    $tenantUser = User::factory()->tenant()->create();
+    $deposit->contract->tenant->update(['user_id' => $tenantUser->id]);
+
+    Http::fake([
+        'https://api.mercadopago.com/v1/orders' => Http::response([
+            'id' => 'ORD-TENANT-DEPOSIT',
+            'status' => 'action_required',
+            'external_reference' => 'deposit:'.$deposit->id,
+            'transactions' => [
+                'payments' => [[
+                    'id' => 'PAY-TENANT-DEPOSIT',
+                    'payment_method' => ['id' => 'pix', 'type' => 'bank_transfer', 'qr_code' => 'x', 'qr_code_base64' => 'y', 'ticket_url' => 'z'],
+                ]],
+            ],
+        ], 201),
+    ]);
+
+    $this->actingAs($tenantUser)
+        ->post(route('deposits.pix', $deposit))
+        ->assertRedirect();
+});
+
+test('a receiver cannot create a pix charge for a deposit', function () {
+    $deposit = makeDeposit();
+    $receiverUser = User::factory()->receiver()->create();
+    $deposit->receiver->update(['user_id' => $receiverUser->id]);
+
+    $this->actingAs($receiverUser)
+        ->post(route('deposits.pix', $deposit))
+        ->assertForbidden();
+});
+
+test('admin can sync a deposit payment via http', function () {
+    $admin = User::factory()->admin()->create();
+    $deposit = makeDeposit();
+    $deposit->update(['status' => DepositStatus::WaitingPayment, 'mercado_pago_order_id' => 'ORD-SYNC-DEPOSIT']);
+
+    Http::fake([
+        'https://api.mercadopago.com/v1/orders/ORD-SYNC-DEPOSIT' => Http::response([
+            'id' => 'ORD-SYNC-DEPOSIT',
+            'status' => 'processed',
+            'external_reference' => 'deposit:'.$deposit->id,
+            'total_paid_amount' => '2000.00',
+            'updated_date' => now()->toIso8601String(),
+            'transactions' => [
+                'payments' => [[
+                    'id' => 'PAY-SYNC-DEPOSIT',
+                    'paid_amount' => '2000.00',
+                    'payment_method' => ['id' => 'pix', 'type' => 'bank_transfer'],
+                ]],
+            ],
+        ]),
+    ]);
+
+    $this->actingAs($admin)
+        ->post(route('deposits.sync', $deposit))
+        ->assertRedirect();
+
+    expect($deposit->fresh()->status)->toBe(DepositStatus::Paid);
+});
+
 test('inquilino ve sua caução no portal', function () {
     $deposit = makeDeposit();
     $tenant = $deposit->contract->tenant;
