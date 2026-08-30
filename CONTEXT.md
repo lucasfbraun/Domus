@@ -27,6 +27,10 @@ _Avoid_: Beneficiário.
 **Testemunha (Witness)**:
 Um Recebedor atuando como testemunha da assinatura de um Contrato específico, com sua própria data de assinatura. Não implica vínculo de pagamento com aquele contrato.
 
+**Pré-cadastro (TenantPreRegistration)**:
+Convite de auto-preenchimento enviado a um futuro Inquilino: o admin gera um link único (`PreRegistrationStatus::Pending`), a pessoa preenche nome, documento, e-mail, WhatsApp e número de moradores pelo link público (`InReview`), e o admin aceita (`Approved`, cria o Inquilino de verdade com login temporário) ou recusa (`Rejected`). Não existe Inquilino nem Usuário antes do aceite — o pré-cadastro é só a coleta de dados.
+_Avoid_: Convite (usar só como verbo, "convidar um inquilino"; o registro em si é sempre "pré-cadastro").
+
 ### Imóvel e contrato
 
 **Imóvel (Property)**:

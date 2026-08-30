@@ -5,7 +5,8 @@ export type StatusType =
     | 'property'
     | 'tenant'
     | 'signature'
-    | 'occurrence';
+    | 'occurrence'
+    | 'preRegistration';
 
 type StatusConfig = {
     label: string;
@@ -84,6 +85,16 @@ const statusMaps: Record<StatusType, Record<string, StatusConfig>> = {
         in_review: { label: 'Em análise', className: statusColors.warning },
         resolved: { label: 'Resolvida', className: statusColors.success },
         closed: { label: 'Fechada', className: statusColors.neutral },
+    },
+    preRegistration: {
+        pending: {
+            label: 'Aguardando preenchimento',
+            className: statusColors.neutral,
+        },
+        expired: { label: 'Expirado', className: statusColors.danger },
+        in_review: { label: 'Em análise', className: statusColors.warning },
+        approved: { label: 'Aceito', className: statusColors.success },
+        rejected: { label: 'Recusado', className: statusColors.danger },
     },
 };
 

@@ -19,10 +19,12 @@ use App\Http\Controllers\Admin\PropertyController;
 use App\Http\Controllers\Admin\RateioController;
 use App\Http\Controllers\Admin\ReceiverController;
 use App\Http\Controllers\Admin\TenantController;
+use App\Http\Controllers\Admin\TenantPreRegistrationController;
 use App\Http\Controllers\ContractShowController;
 use App\Http\Controllers\Portal\OwnerPortalController;
 use App\Http\Controllers\Portal\ReceiverPortalController;
 use App\Http\Controllers\Portal\TenantPortalController;
+use App\Http\Controllers\TenantPreRegistrationFormController;
 use App\Http\Controllers\Webhooks\MercadoPagoWebhookController;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
@@ -39,6 +41,11 @@ Route::get('/', function () {
 Route::post('webhooks/mercadopago', [MercadoPagoWebhookController::class, 'store'])
     ->name('webhooks.mercadopago');
 
+Route::get('pre-cadastro/{token}', [TenantPreRegistrationFormController::class, 'show'])
+    ->name('tenant-pre-registrations.show');
+Route::post('pre-cadastro/{token}', [TenantPreRegistrationFormController::class, 'store'])
+    ->name('tenant-pre-registrations.submit');
+
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])
         ->middleware('role:admin')
@@ -48,6 +55,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::resource('owners', OwnerController::class)->except(['show']);
         Route::resource('properties', PropertyController::class)->except(['show']);
         Route::resource('tenants', TenantController::class)->except(['show']);
+        Route::get('tenants-pre-cadastros', [TenantPreRegistrationController::class, 'index'])->name('tenant-pre-registrations.index');
+        Route::post('tenants-pre-cadastros', [TenantPreRegistrationController::class, 'store'])->name('tenant-pre-registrations.store');
+        Route::post('tenants-pre-cadastros/{preRegistration}/approve', [TenantPreRegistrationController::class, 'approve'])->name('tenant-pre-registrations.approve');
+        Route::post('tenants-pre-cadastros/{preRegistration}/reject', [TenantPreRegistrationController::class, 'reject'])->name('tenant-pre-registrations.reject');
         Route::resource('receivers', ReceiverController::class)->except(['show']);
         Route::get('receivers/{receiver}/mercadopago/connect', [ReceiverController::class, 'connectMercadoPago'])
             ->name('receivers.mercadopago.connect');

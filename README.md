@@ -27,6 +27,7 @@ Sistema de gestão imobiliária com painel administrativo, portais para inquilin
 - [Agendamentos e filas](#agendamentos-e-filas)
 - [Deploy (Dokku)](#deploy-dokku)
 - [Testes](#testes)
+- [Pré-cadastro de inquilino](#pré-cadastro-de-inquilino)
 - [Papéis de usuário](#papéis-de-usuário)
 - [Variáveis de ambiente](#variáveis-de-ambiente)
 
@@ -651,6 +652,23 @@ Em **Admin → Funcionalidades** (`/funcionalidades`), a tela lista todas as fun
 > Só funciona em ambiente **local** com as dependências de dev instaladas (`vendor/bin/pest` precisa existir) — a imagem de produção roda `composer install --no-dev`, então nem tem o Pest instalado. Fora do local, o botão aparece desabilitado com uma explicação. Veja [ADR 0008](docs/adr/0008-feature-checks-page.md).
 
 Para manter o catálogo honesto ao adicionar uma funcionalidade nova: edite `App\Support\FeatureCatalog::entries()` e aponte para o(s) teste(s) reais — os caminhos são conferidos no disco a cada carregamento da página, então um teste renomeado/apagado aparece automaticamente como "Sem teste".
+
+---
+
+## Pré-cadastro de inquilino
+
+Em **Admin → Pré-cadastros**, gere um link único (`/pre-cadastro/{token}`) e envie para um futuro inquilino. Ele preenche nome, CPF, e-mail, WhatsApp e quantidade de moradores pelo link — sem precisar de login, e sem definir senha. Depois do preenchimento, o pré-cadastro fica **em análise**; nada é criado no sistema ainda.
+
+O admin então:
+
+- **Aceita** — cria o Inquilino de verdade com os dados preenchidos, e um login com a senha temporária `Muda@123`. No primeiro acesso, o inquilino é **obrigado a trocar essa senha** antes de conseguir ver qualquer outra tela (inclusive o próprio portal) — ver `App\Http\Middleware\EnsureUserHasChangedPassword`.
+- **Recusa** — marca como recusado (com um motivo opcional); nada é criado.
+
+O link expira em 7 dias se não for preenchido. Depois de aceito ou recusado, o mesmo link não pode ser preenchido de novo — é preciso gerar um novo convite.
+
+> O admin também pode trocar a senha de um inquilino já existente a qualquer momento, direto na tela de edição do inquilino (mesmo fluxo usado para o cadastro manual) — isso já funcionava antes do pré-cadastro existir.
+
+Veja [ADR 0009](docs/adr/0009-tenant-pre-registration.md) para as decisões de desenho (por que um link por convite, por que sem senha no formulário público, por que senha temporária fixa em vez de e-mail de redefinição).
 
 ---
 

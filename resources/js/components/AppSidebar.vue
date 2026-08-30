@@ -15,6 +15,7 @@ import {
     Shield,
     ShieldCheck,
     UserCircle,
+    UserPlus,
     Users,
     Wallet,
 } from '@lucide/vue';
@@ -44,6 +45,7 @@ import { index as rateios } from '@/routes/admin/rateios';
 import { index as receivers } from '@/routes/admin/receivers';
 import { index as templates } from '@/routes/admin/templates';
 import { index as tenants } from '@/routes/admin/tenants';
+import { index as tenantPreRegistrations } from '@/routes/admin/tenant-pre-registrations';
 import { portal as ownerPortal } from '@/routes/owner';
 import { portal as receiverPortal } from '@/routes/receiver';
 import { portal as tenantPortal } from '@/routes/tenant';
@@ -89,6 +91,11 @@ const cadastrosNavItems = computed<NavItem[]>(() => [
         title: 'Inquilinos',
         href: tenants(),
         icon: Users,
+    },
+    {
+        title: 'Pré-cadastros',
+        href: tenantPreRegistrations(),
+        icon: UserPlus,
     },
     {
         title: 'Recebedores',

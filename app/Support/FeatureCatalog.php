@@ -97,6 +97,30 @@ class FeatureCatalog
                 'tests' => ['tests/Feature/PortalAccountServiceTest.php'],
                 'note' => null,
             ],
+            [
+                'area' => 'Cadastros',
+                'name' => 'Pré-cadastro de inquilino (link público)',
+                'description' => 'Convite público em que o futuro inquilino preenche os próprios dados (nome, CPF, e-mail, WhatsApp, moradores), ficando em análise até o admin decidir.',
+                'source' => ['app/Http/Controllers/TenantPreRegistrationFormController.php', 'app/Services/TenantPreRegistrationService.php'],
+                'tests' => ['tests/Feature/TenantPreRegistrationFormTest.php', 'tests/Feature/TenantPreRegistrationServiceTest.php'],
+                'note' => null,
+            ],
+            [
+                'area' => 'Cadastros',
+                'name' => 'Pré-cadastro: gerar link, aceitar e recusar (admin)',
+                'description' => 'Tela admin para gerar o link de convite e revisar (aceitar/recusar) cada pré-cadastro preenchido.',
+                'source' => ['app/Http/Controllers/Admin/TenantPreRegistrationController.php'],
+                'tests' => ['tests/Feature/TenantPreRegistrationControllerTest.php'],
+                'note' => null,
+            ],
+            [
+                'area' => 'Cadastros',
+                'name' => 'Troca obrigatória de senha (login com senha temporária)',
+                'description' => 'Ao aceitar um pré-cadastro, o inquilino recebe uma senha temporária e é obrigado a trocá-la antes de acessar qualquer outra tela.',
+                'source' => ['app/Http/Middleware/EnsureUserHasChangedPassword.php', 'app/Http/Controllers/Settings/SecurityController.php'],
+                'tests' => ['tests/Feature/EnsureUserHasChangedPasswordTest.php'],
+                'note' => null,
+            ],
 
             // Contratos
             [
