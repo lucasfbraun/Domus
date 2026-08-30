@@ -83,6 +83,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::put('configuracoes/cobranca', [BillingSettingController::class, 'update'])->name('billing-settings.update');
         Route::get('backups', [BackupController::class, 'index'])->name('backups.index');
         Route::post('backups', [BackupController::class, 'store'])->name('backups.store');
+        Route::post('backups/import', [BackupController::class, 'import'])->name('backups.import');
         Route::get('backups/{filename}/download', [BackupController::class, 'download'])
             ->where('filename', '.*\.sql\.gz')
             ->name('backups.download');

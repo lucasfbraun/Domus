@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
@@ -124,6 +125,42 @@ class DatabaseBackupService
         $this->swapLiveDatabase($newDatabasePath);
 
         return $safetyBackup;
+    }
+
+    /**
+     * Stores an externally-produced backup file (e.g. downloaded from another
+     * environment) as if it had been generated here, so it shows up in
+     * {@see list()} and can be restored/downloaded/deleted like any other.
+     *
+     * Never touches the live database: content is validated by decompressing
+     * it and rebuilding it into a standalone sqlite file first (the same
+     * check {@see restore()} relies on), and the upload is rejected if that
+     * fails. The stored filename is always freshly generated here — the
+     * uploaded file's own name is discarded — so it always matches
+     * FILENAME_PATTERN regardless of what the file was called before.
+     */
+    public function import(UploadedFile $file): string
+    {
+        $this->assertSupported();
+
+        $compressed = (string) File::get($file->getRealPath());
+
+        // gzdecode() both returns false AND raises an E_WARNING on invalid
+        // input; the warning alone would otherwise be promoted to an
+        // ErrorException before the false-check below ever runs.
+        $sql = @gzdecode($compressed);
+
+        if ($sql === false) {
+            throw new RuntimeException('O arquivo enviado nao e um backup .sql.gz valido.');
+        }
+
+        $tempPath = $this->buildDatabaseFile($sql);
+        File::delete($tempPath);
+
+        $filename = 'domus-backup-'.now()->format(self::TIMESTAMP_FORMAT).'.sql.gz';
+        Storage::disk(self::DISK)->put(self::DIRECTORY.'/'.$filename, $compressed);
+
+        return $filename;
     }
 
     public function download(string $filename): string

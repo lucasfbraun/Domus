@@ -3,6 +3,7 @@
 use App\Models\Owner;
 use App\Models\User;
 use App\Services\DatabaseBackupService;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -111,6 +112,63 @@ test('admin can restore a backup after typing the confirmation phrase', function
 
         expect(Owner::where('name', 'Marcador HTTP')->exists())->toBeFalse();
     });
+});
+
+test('non admin cannot import a backup', function () {
+    $tenant = User::factory()->tenant()->create();
+
+    $this->actingAs($tenant)
+        ->post(route('admin.backups.import'), [
+            'file' => UploadedFile::fake()->createWithContent(
+                'backup.sql.gz',
+                (string) gzencode('CREATE TABLE t (id INTEGER);'),
+            ),
+        ])
+        ->assertForbidden();
+});
+
+test('admin can import a valid backup file', function () {
+    Storage::fake('local');
+    $admin = User::factory()->admin()->create();
+
+    $this->actingAs($admin)
+        ->post(route('admin.backups.import'), [
+            'file' => UploadedFile::fake()->createWithContent(
+                'meu-backup-de-outro-servidor.sql.gz',
+                (string) gzencode('CREATE TABLE imported_marker (id INTEGER);'),
+            ),
+        ])
+        ->assertRedirect();
+
+    expect(app(DatabaseBackupService::class)->list())->toHaveCount(1);
+});
+
+test('admin cannot import a file that is not a valid gzip', function () {
+    Storage::fake('local');
+    $admin = User::factory()->admin()->create();
+
+    $this->actingAs($admin)
+        ->from(route('admin.backups.index'))
+        ->post(route('admin.backups.import'), [
+            'file' => UploadedFile::fake()->createWithContent('nao-e-gzip.sql.gz', 'isto nao e gzip'),
+        ])
+        ->assertRedirect(route('admin.backups.index'))
+        ->assertSessionHasErrors('file');
+
+    expect(app(DatabaseBackupService::class)->list())->toHaveCount(0);
+});
+
+test('admin cannot import a file larger than the size limit', function () {
+    Storage::fake('local');
+    $admin = User::factory()->admin()->create();
+
+    $this->actingAs($admin)
+        ->from(route('admin.backups.index'))
+        ->post(route('admin.backups.import'), [
+            'file' => UploadedFile::fake()->create('grande.sql.gz', 102_401),
+        ])
+        ->assertRedirect(route('admin.backups.index'))
+        ->assertSessionHasErrors('file');
 });
 
 test('admin can delete a backup', function () {

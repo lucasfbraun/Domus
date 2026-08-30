@@ -513,6 +513,7 @@ Em **Admin → Backups**, um administrador pode exportar o banco inteiro para um
 - **Gerar backup**: roda `sqlite3 <banco> .dump`, comprime o resultado (gzip) e salva em `storage/app/private/backups/domus-backup-{data}_{hora}_{microssegundos}.sql.gz`. Nunca fica em disco público — todo acesso passa pela rota autenticada (`admin.backups.*`, admin-only).
 - **Restaurar**: substitui o banco inteiro pelo conteúdo do backup escolhido. Antes de qualquer coisa, um backup do estado *atual* é gerado automaticamente — então uma restauração sempre pode ser desfeita restaurando esse backup de segurança (o nome dele aparece na mensagem de confirmação). A restauração exige digitar literalmente `RESTAURAR BANCO` — não é só um clique.
 - **Baixar/excluir**: cada backup listado pode ser baixado (`.sql.gz`, pode ser aberto com `gunzip` ou restaurado em outra instalação via `sqlite3 novo.sqlite < backup.sql`) ou removido.
+- **Importar**: envie um `.sql.gz` (baixado daqui ou gerado em outro ambiente) para adicioná-lo à lista, sem precisar copiar o arquivo manualmente no servidor (`docker cp`, SSH, etc.). O arquivo é validado antes de ser aceito — precisa ser um gzip válido que reconstrói um banco sqlite abrível — sem nunca tocar no banco ao vivo nesse passo. O nome exibido na lista é sempre gerado pelo servidor (`domus-backup-{data}_{hora}...`), independente do nome do arquivo enviado. Limite de 100MB por envio.
 
 Programático (fora da UI):
 
@@ -521,6 +522,7 @@ use App\Services\DatabaseBackupService;
 
 app(DatabaseBackupService::class)->create();           // gera e retorna o nome do arquivo
 app(DatabaseBackupService::class)->restore($filename);  // restaura e retorna o nome do backup de seguranca
+app(DatabaseBackupService::class)->import($uploadedFile); // valida e importa um arquivo .sql.gz externo
 ```
 
 Não há backup automático agendado por padrão. Para isso, adicione em `routes/console.php`:

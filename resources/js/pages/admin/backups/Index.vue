@@ -32,7 +32,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { formatDateTime } from '@/lib/dates';
 import { dashboard } from '@/routes';
-import { destroy, download, index, restore, store } from '@/routes/admin/backups';
+import backupRoutes, {
+    destroy,
+    download,
+    index,
+    restore,
+    store,
+} from '@/routes/admin/backups';
 
 type Backup = {
     name: string;
@@ -135,6 +141,42 @@ function formatBytes(bytes: number): string {
             dados SQLite da aplicação. Arquivos de mídia (fotos, documentos)
             enviados pelos usuários não fazem parte deste backup.
         </p>
+
+        <Card v-if="props.supported" class="border-border/80 shadow-sm">
+            <CardHeader>
+                <CardTitle>Importar backup</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <p class="mb-4 text-sm text-muted-foreground">
+                    Envie um arquivo <code>.sql.gz</code> gerado por este
+                    mesmo sistema (baixado daqui ou de outro ambiente) para
+                    adicioná-lo à lista abaixo, sem precisar copiá-lo
+                    manualmente no servidor.
+                </p>
+                <Form
+                    v-bind="backupRoutes.import.form()"
+                    enctype="multipart/form-data"
+                    reset-on-success
+                    class="flex flex-wrap items-end gap-4"
+                    #default="{ errors, processing }"
+                >
+                    <div class="grid gap-2">
+                        <Label for="import-file">Arquivo (.sql.gz)</Label>
+                        <Input
+                            id="import-file"
+                            type="file"
+                            name="file"
+                            accept=".gz"
+                            required
+                        />
+                        <InputError :message="errors.file" />
+                    </div>
+                    <Button type="submit" :disabled="processing">
+                        Importar
+                    </Button>
+                </Form>
+            </CardContent>
+        </Card>
 
         <Card v-if="!props.supported" class="border-border/80 shadow-sm">
             <CardHeader>

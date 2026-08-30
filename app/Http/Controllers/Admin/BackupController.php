@@ -44,6 +44,28 @@ class BackupController extends Controller
         return back();
     }
 
+    /**
+     * Stores an uploaded backup file (e.g. downloaded from another
+     * environment) so it can be restored here, without ever touching the
+     * live database at upload time — see {@see DatabaseBackupService::import()}.
+     */
+    public function import(Request $request, DatabaseBackupService $backups): RedirectResponse
+    {
+        $request->validate([
+            'file' => ['required', 'file', 'max:102400'],
+        ]);
+
+        try {
+            $filename = $backups->import($request->file('file'));
+        } catch (RuntimeException $exception) {
+            return back()->withErrors(['file' => $exception->getMessage()]);
+        }
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => "Backup importado como {$filename}."]);
+
+        return back();
+    }
+
     public function download(string $filename, DatabaseBackupService $backups): BinaryFileResponse
     {
         try {
