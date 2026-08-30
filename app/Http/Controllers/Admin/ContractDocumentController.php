@@ -32,6 +32,16 @@ class ContractDocumentController extends Controller
         return back();
     }
 
+    /**
+     * The readiness/status gate below only applies when the acting user
+     * is the Tenant (self-service upload from their own portal) — an
+     * admin uploading on the tenant's behalf (e.g. digitizing a
+     * physically-signed copy) is intentionally not gated the same way
+     * {@see uploadOwnerSigned()} isn't, since the admin is already
+     * trusted to manage the whole signature workflow through other
+     * endpoints regardless. Don't "fix" this asymmetry without checking
+     * that intent first.
+     */
     public function uploadSigned(
         Request $request,
         Contract $contract,

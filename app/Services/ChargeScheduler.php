@@ -9,6 +9,17 @@ use App\Models\Charge;
 use App\Models\Contract;
 use Illuminate\Support\Carbon;
 
+/**
+ * Two distinct entry points, deliberately gated differently:
+ * {@see generateChargeForContract()} is the admin's on-demand "gerar
+ * cobrança" button — always allowed, no day restriction. {@see
+ * runMonthlyChargeSweep()} is the scheduled daily sweep, gated by
+ * {@see hasReachedGenerationDay()} against the configurable
+ * {@see BillingSetting} — see
+ * docs/adr/0007-configurable-charge-generation-day.md for why that
+ * generation day is a single global setting decoupled from each
+ * Contract's own due date, and how the two interact.
+ */
 class ChargeScheduler
 {
     public function __construct(private RateioService $rateioService) {}

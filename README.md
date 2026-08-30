@@ -707,6 +707,7 @@ Referência completa em `.env.example`. Principais:
 | `MAIL_*`             | Envio de e-mail                                             |
 | `MEDIA_DISK`         | Disco da Media Library (padrão: `public`)                   |
 | `FEATURE_CHECKS_ENABLED` | Habilita o botão "Rodar suíte de testes" em Funcionalidades. Padrão: `true` só quando `APP_ENV=local` |
+| `MONEY_CURRENCY`, `MONEY_LOCALE`, `MONEY_DECIMALS`, `MONEY_SYMBOL` | Moeda/formatação usada em todo o sistema (`App\Support\Money`), compartilhada com o frontend. Padrões (`BRL`, `pt-BR`, `2`, `R$`) já são os certos pra este projeto — só mexer se for adaptar pra outro país |
 
 ---
 

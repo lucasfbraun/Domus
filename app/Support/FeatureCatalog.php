@@ -256,9 +256,9 @@ class FeatureCatalog
             [
                 'area' => 'Cobrança',
                 'name' => 'Geração automática mensal + dia configurável',
-                'description' => 'Job diário que marca cobranças vencidas e gera a cobrança do mês a partir do dia configurado em Configurações.',
-                'source' => ['app/Services/ChargeScheduler.php', 'app/Jobs/GenerateMonthlyChargesJob.php'],
-                'tests' => ['tests/Feature/ChargeOverdueTest.php', 'tests/Feature/ChargeSchedulerTest.php'],
+                'description' => 'Job diário que marca cobranças vencidas e gera a cobrança do mês a partir do dia configurado em Configurações. A matemática de ciclo/vencimento (inclusive o rollover pro mês seguinte) mora em BillingCycle.',
+                'source' => ['app/Services/ChargeScheduler.php', 'app/Jobs/GenerateMonthlyChargesJob.php', 'app/Services/BillingCycle.php'],
+                'tests' => ['tests/Feature/ChargeOverdueTest.php', 'tests/Feature/ChargeSchedulerTest.php', 'tests/Unit/BillingCycleTest.php'],
                 'note' => 'A classe do Job em si (o wrapper agendado) não tem teste próprio, só o serviço que ela chama.',
             ],
             [
@@ -407,6 +407,22 @@ class FeatureCatalog
                 'description' => 'Upload de um .sql.gz gerado em outro ambiente para a lista de backups, com validação de conteúdo.',
                 'source' => ['app/Services/DatabaseBackupService.php', 'app/Http/Controllers/Admin/BackupController.php'],
                 'tests' => ['tests/Feature/BackupControllerTest.php'],
+                'note' => null,
+            ],
+            [
+                'area' => 'Ferramentas internas',
+                'name' => 'Funcionalidades: catálogo de cobertura + rodar suíte de testes',
+                'description' => 'A própria página que gera este catálogo, incluindo o job que roda a suíte real e o cuidado com o bug de ambiente herdado (ADR 0008).',
+                'source' => ['app/Support/FeatureCatalog.php', 'app/Http/Controllers/Admin/FeatureCheckController.php', 'app/Jobs/RunTestSuiteJob.php'],
+                'tests' => ['tests/Feature/FeatureCatalogTest.php', 'tests/Feature/FeatureCheckTest.php', 'tests/Feature/RunTestSuiteJobTest.php'],
+                'note' => null,
+            ],
+            [
+                'area' => 'Backup',
+                'name' => 'Backup agendado (job opcional)',
+                'description' => 'Job pronto para agendar backup automático diário — não roda por padrão, é um wrapper de uma linha para quando alguém quiser ligar.',
+                'source' => ['app/Jobs/CreateDatabaseBackupJob.php'],
+                'tests' => ['tests/Feature/CreateDatabaseBackupJobTest.php'],
                 'note' => null,
             ],
 

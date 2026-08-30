@@ -13,6 +13,18 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
+/**
+ * Generates a Contract's PDF document from its ContractTemplate (see
+ * docs/adr/0003-restricted-token-substitution-for-contract-templates.md
+ * for the closed-catalog token substitution this relies on), and manages
+ * the three separate signed-document upload paths that follow: the
+ * tenant's own signed upload ({@see storeSignedUpload()}), the owner's
+ * physically-collected signed copy the admin digitizes ({@see
+ * storeOwnerSignedUpload()}), and the admin's approve/reject review of the
+ * tenant's upload ({@see approve()}/{@see reject()}). Each keeps its own
+ * path/timestamp columns on Contract rather than sharing one, since they
+ * represent independent signatures with independent review states.
+ */
 class ContractDocumentService
 {
     public const MAX_SIGNED_FILE_BYTES = 15 * 1024 * 1024;

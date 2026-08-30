@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\ContractStatus;
 use App\Enums\SignatureStatus;
+use App\Services\ContractDocumentService;
 use Database\Factories\ContractFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -11,6 +12,18 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * Three independent signed-document paths, each with its own
+ * timestamp/status, deliberately not sharing columns:
+ * `generated_document_path` (the system-generated PDF from the
+ * ContractTemplate), `signed_document_path`/`signed_uploaded_at`/
+ * `reviewed_at`/`review_note` (the tenant's own signed upload, reviewed
+ * by an admin — see {@see ContractDocumentService}), and
+ * `owner_signed_at`/`owner_signed_document_path` (the owner's physically
+ * collected signature, no review step). `ContractStatus` (the lease
+ * term) and `SignatureStatus` (this document's signing workflow) are
+ * independent — a Contract can be Active with no signed document at all.
+ */
 #[Fillable([
     'property_id',
     'tenant_id',

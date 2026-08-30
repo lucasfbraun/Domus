@@ -14,6 +14,18 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
+/**
+ * Splits a shared expense (Rateio) across properties and folds each
+ * property's share directly into that property's own Contract's Charge
+ * for the matching reference month (see CONTEXT.md's Rateio entry — this
+ * never creates a separate Charge). `update()`/`delete()` must always
+ * {@see reverseAppliedAllocations()} before recomputing or removing
+ * allocations — applying a new split without first undoing the old one
+ * would double-count the previous share still sitting inside
+ * `Charge::original_amount`/`rateio_amount`. Both also refuse to touch a
+ * Rateio already linked to a *paid* Charge ({@see assertNoLinkedPaidCharge()}),
+ * since a paid Charge shouldn't have its amount silently rewritten.
+ */
 class RateioService
 {
     public const CATEGORIES = ['agua', 'condominio', 'gas', 'internet', 'iptu', 'outro'];

@@ -15,6 +15,15 @@ use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
+/**
+ * Orders API (Pix) + OAuth Connect integration. Two separate credential
+ * paths feed the same Orders API calls: a receiver's own OAuth-connected
+ * `mp_access_token` (production), or the shared platform token in
+ * `MP_ACCESS_TOKEN` as a local/CI shortcut for receivers who haven't
+ * connected — see {@see allowsPlatformTokenFallback()} and
+ * docs/adr/0010-mercadopago-platform-token-restricted-to-local.md for why
+ * that fallback is hard-restricted to non-production environments.
+ */
 class MercadoPagoService
 {
     private const OAUTH_AUTHORIZE_URL = 'https://auth.mercadopago.com/authorization';

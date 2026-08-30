@@ -13,7 +13,7 @@ Conta de autenticação do sistema. Pode acumular mais de um papel ao mesmo temp
 Papel de Usuário com acesso completo ao painel: cadastros, contratos, cobranças, rateios e integrações. Não é uma entidade de domínio própria, só um papel de Usuário.
 
 **Inquilino (Tenant)**:
-Pessoa que ocupa o Imóvel e é responsável pelo pagamento do aluguel de um Contrato. Pode ter um Usuário vinculado para acessar o portal do inquilino.
+Pessoa que ocupa o Imóvel e é responsável pelo pagamento do aluguel de um Contrato. Pode ter um Usuário vinculado para acessar o portal do inquilino. Status próprio, definido pelo admin (não muda sozinho): ativo, inativo, inadimplente ou ex-inquilino.
 _Avoid_: Locatário (usado apenas no texto jurídico do contrato gerado, nunca no código ou na UI).
 
 **Proprietário (Owner)**:
@@ -28,13 +28,16 @@ _Avoid_: Beneficiário.
 Um Recebedor atuando como testemunha da assinatura de um Contrato específico, com sua própria data de assinatura. Não implica vínculo de pagamento com aquele contrato.
 
 **Pré-cadastro (TenantPreRegistration)**:
-Convite de auto-preenchimento enviado a um futuro Inquilino: o admin gera um link único (`PreRegistrationStatus::Pending`), a pessoa preenche nome, documento, e-mail, WhatsApp e número de moradores pelo link público (`InReview`), e o admin aceita (`Approved`, cria o Inquilino de verdade com login temporário) ou recusa (`Rejected`). Não existe Inquilino nem Usuário antes do aceite — o pré-cadastro é só a coleta de dados.
+Convite de auto-preenchimento enviado a um futuro Inquilino: o admin gera um link único (`PreRegistrationStatus::Pending`), a pessoa preenche nome, documento, e-mail, WhatsApp e número de moradores pelo link público (`InReview`), e o admin aceita (`Approved`, cria o Inquilino de verdade com login e Troca obrigatória de senha pendente) ou recusa (`Rejected`). Não existe Inquilino nem Usuário antes do aceite — o pré-cadastro é só a coleta de dados.
 _Avoid_: Convite (usar só como verbo, "convidar um inquilino"; o registro em si é sempre "pré-cadastro").
+
+**Troca obrigatória de senha (forced password change)**:
+Estado de um Usuário (`must_change_password`) que bloqueia qualquer tela — inclusive o próprio portal — até a senha ser trocada. Ativado quando o login é criado com uma senha temporária conhecida (hoje só no aceite de um Pré-cadastro); desativado automaticamente na primeira troca de senha bem-sucedida. Não é exclusivo de Inquilino — é um estado de Usuário, reutilizável por qualquer fluxo futuro que precise entregar uma senha temporária.
 
 ### Imóvel e contrato
 
 **Imóvel (Property)**:
-A unidade oferecida para locação (apartamento, casa, comercial ou studio). Pertence a um ou mais Proprietários.
+A unidade oferecida para locação (apartamento, casa, comercial ou studio). Pertence a um ou mais Proprietários. Status próprio, definido pelo admin (nada no sistema muda sozinho): disponível, alugado, em manutenção ou inativo.
 
 **Contrato (Contract)**:
 Acordo de locação de um Imóvel por um Inquilino, com vigência, valor de aluguel, dia de vencimento e um Recebedor responsável pelos pagamentos. Não referencia Proprietário diretamente — chega até eles pelo Imóvel.
@@ -60,7 +63,7 @@ Uma parcela mensal do aluguel de um Contrato, com vencimento e status próprio (
 _Avoid_: Fatura, boleto.
 
 **Caução (Deposit)**:
-Valor cobrado do Inquilino fora do ciclo mensal de aluguel, com ciclo de pagamento e status próprios, podendo ser reembolsado.
+Valor cobrado do Inquilino fora do ciclo mensal de aluguel, com ciclo de pagamento e status próprios (pendente, aguardando pagamento, paga ou devolvida), podendo ser reembolsado.
 _Avoid_: Depósito (nome da classe/tabela no código; o termo de negócio usado na UI é Caução).
 
 **Pagamento (Payment)**:
@@ -77,7 +80,7 @@ Incidente ou solicitação (ex. manutenção) reportado durante a vigência de u
 ### Rateio
 
 **Rateio (Rateio)**:
-Despesa (ex. conta de água, taxa de condomínio) dividida entre vários Imóveis/Contratos ativos — igualmente ou por número de moradores. O valor de cada Imóvel participante é somado à Cobrança do ciclo daquele Contrato (não gera uma Cobrança separada); a Cobrança guarda o quanto dela é Rateio, para poder discriminar aluguel e rateio no recibo.
+Despesa (ex. conta de água, taxa de condomínio) dividida entre vários Imóveis/Contratos ativos ou encerrando — igualmente ou por número de moradores. O valor de cada Imóvel participante é somado à Cobrança do ciclo daquele Contrato (não gera uma Cobrança separada); a Cobrança guarda o quanto dela é Rateio, para poder discriminar aluguel e rateio no recibo.
 _Avoid_: Divisão de despesa, apuração.
 
 ### Configuração de cobrança
