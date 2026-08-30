@@ -543,9 +543,11 @@ Tarefas agendadas (`routes/console.php`):
 
 | Horário (America/Sao_Paulo) | Job                          | Função                                                                         |
 | ---------------------------- | ----------------------------- | ------------------------------------------------------------------------------ |
-| 09:00                        | `GenerateMonthlyChargesJob`   | Marca cobranças vencidas + gera cobranças mensais (5 dias antes do vencimento) |
+| 09:00                        | `GenerateMonthlyChargesJob`   | Marca cobranças vencidas + gera a cobrança mensal de cada contrato ativo, a partir do dia configurado (ver abaixo) |
 | 10:00                        | `RunReminderSweepJob`         | Envia lembretes de cobrança                                                    |
 | A cada 2 minutos             | `SyncPendingPixPaymentsJob`   | Verifica na API do Mercado Pago se alguma Cobrança/Caução com Pix pendente já foi paga — substituto do webhook quando não há URL pública configurada (ex.: dev local). Idempotente, seguro rodar junto com um webhook real. |
+
+**Dia de geração das cobranças**: configurável em **Configurações** (`/configuracoes/cobranca`, admin), um único valor para todo o sistema (não por contrato). A partir desse dia do mês, o `GenerateMonthlyChargesJob` passa a gerar a cobrança de cada contrato ativo — e continua gerando nos dias seguintes (até o fim do mês) caso a execução daquele dia tenha sido perdida. O vencimento de cada contrato (`due_day`) não muda; só o dia em que a cobrança nasce. Padrão: dia 1. Veja [ADR 0007](docs/adr/0007-configurable-charge-generation-day.md).
 
 **Em desenvolvimento via Docker**, o container `queue` já roda `php artisan queue:work` automaticamente, e o container `scheduler` roda `php artisan schedule:work` — sem eles rodando, **nenhum** job agendado acima dispara sozinho (nem os que já existiam antes do `SyncPendingPixPaymentsJob`). Rode `docker compose up -d` normalmente e os dois já sobem junto.
 

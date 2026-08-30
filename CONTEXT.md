@@ -73,5 +73,10 @@ Incidente ou solicitação (ex. manutenção) reportado durante a vigência de u
 ### Rateio
 
 **Rateio (Rateio)**:
-Despesa (ex. conta de água, taxa de condomínio) dividida entre vários Imóveis/Contratos ativos — igualmente ou por número de moradores —, gerando uma Cobrança extra em cada Contrato participante.
+Despesa (ex. conta de água, taxa de condomínio) dividida entre vários Imóveis/Contratos ativos — igualmente ou por número de moradores. O valor de cada Imóvel participante é somado à Cobrança do ciclo daquele Contrato (não gera uma Cobrança separada); a Cobrança guarda o quanto dela é Rateio, para poder discriminar aluguel e rateio no recibo.
 _Avoid_: Divisão de despesa, apuração.
+
+### Configuração de cobrança
+
+**Dia de geração (Billing setting)**:
+Configuração única do sistema (não por Contrato) que define a partir de qual dia do mês a geração automática mensal de Cobranças começa a rodar, para todos os Contratos ativos. Não altera o dia de vencimento de nenhum Contrato — só quando a Cobrança daquele ciclo é criada. Ver [ADR 0007](docs/adr/0007-configurable-charge-generation-day.md).

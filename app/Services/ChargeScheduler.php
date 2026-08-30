@@ -4,15 +4,13 @@ namespace App\Services;
 
 use App\Enums\ChargeStatus;
 use App\Enums\ContractStatus;
+use App\Models\BillingSetting;
 use App\Models\Charge;
 use App\Models\Contract;
+use Illuminate\Support\Carbon;
 
 class ChargeScheduler
 {
-    private const GENERATE_LEAD_DAYS = 5;
-
-    private const GENERATE_CATCHUP_DAYS = -3;
-
     public function __construct(private RateioService $rateioService) {}
 
     /**
@@ -82,17 +80,18 @@ class ChargeScheduler
         $created = 0;
         $skipped = 0;
 
+        if (! $this->hasReachedGenerationDay($today)) {
+            $this->markOverdueCharges();
+
+            return ['created' => $created, 'skipped' => $skipped];
+        }
+
         $contracts = Contract::query()
             ->whereIn('status', [ContractStatus::Active, ContractStatus::Expiring])
             ->get();
 
         foreach ($contracts as $contract) {
             $cycle = BillingCycle::resolveBillingCycleDueDate($contract->due_day, $today);
-
-            if ($cycle['daysUntilDue'] > self::GENERATE_LEAD_DAYS || $cycle['daysUntilDue'] < self::GENERATE_CATCHUP_DAYS) {
-                continue;
-            }
-
             $reference = BillingCycle::formatReference($cycle['dueDateIso']);
 
             if (Charge::query()->where('contract_id', $contract->id)->where('reference', $reference)->exists()) {
@@ -130,6 +129,16 @@ class ChargeScheduler
             ->whereIn('status', [ChargeStatus::Open, ChargeStatus::WaitingPayment])
             ->whereDate('due_date', '<', BillingCycle::todayInSaoPaulo())
             ->update(['status' => ChargeStatus::Overdue]);
+    }
+
+    /**
+     * True from the configured {@see BillingSetting::$generation_day} of the
+     * month onward, so a missed run (server down, deploy window) still
+     * catches up on later days instead of skipping the whole month.
+     */
+    private function hasReachedGenerationDay(string $todayIso): bool
+    {
+        return Carbon::parse($todayIso)->day >= BillingSetting::current()->generation_day;
     }
 
     /**

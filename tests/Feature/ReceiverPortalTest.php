@@ -22,6 +22,7 @@ test('receiver portal only sees own contracts and charges', function () {
     $ownCharge = Charge::factory()->open()->for($ownContract)->for($receiver)->create([
         'reference' => '2026-07',
         'original_amount' => 1500.5,
+        'rateio_amount' => 200,
         'status' => ChargeStatus::Paid,
     ]);
     Charge::factory()->open()->for(
@@ -41,6 +42,7 @@ test('receiver portal only sees own contracts and charges', function () {
         ->and($charges->first()['id'])->toBe($ownCharge->id)
         ->and($charges->first()['description'])->toBe('2026-07')
         ->and($charges->first()['amount'])->toBe(1500.5)
+        ->and($charges->first()['rateio_amount'])->toBe(200.0)
         ->and($charges->first()['is_paid'])->toBeTrue()
         ->and($charges->first()['tenant'])->toBe($ownContract->tenant->name)
         ->and($charges->first()['property'])->toBe($ownContract->property->name);

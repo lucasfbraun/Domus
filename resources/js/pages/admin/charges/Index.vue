@@ -143,6 +143,13 @@ function syncPayment(charge: { id: number }): void {
                             </DataTableCell>
                             <DataTableCell class="tabular-nums">
                                 {{ formatCurrency(charge.amount) }}
+                                <span
+                                    v-if="charge.rateio_amount > 0"
+                                    class="block text-xs text-muted-foreground"
+                                >
+                                    inclui rateio de
+                                    {{ formatCurrency(charge.rateio_amount) }}
+                                </span>
                             </DataTableCell>
                             <DataTableCell>
                                 {{ formatDate(charge.due_date) }}

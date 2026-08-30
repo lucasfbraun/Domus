@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\Admin\BackupController;
+use App\Http\Controllers\Admin\BillingSettingController;
 use App\Http\Controllers\Admin\ChargeController;
 use App\Http\Controllers\Admin\ContractController;
 use App\Http\Controllers\Admin\ContractDocumentController;
@@ -78,6 +79,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::delete('rateios/{rateio}', [RateioController::class, 'destroy'])->name('rateios.destroy');
         Route::get('rateios/{rateio}/invoice', [RateioController::class, 'invoice'])->name('rateios.invoice');
         Route::get('integracoes', [IntegrationController::class, 'index'])->name('integrations.index');
+        Route::get('configuracoes/cobranca', [BillingSettingController::class, 'edit'])->name('billing-settings.edit');
+        Route::put('configuracoes/cobranca', [BillingSettingController::class, 'update'])->name('billing-settings.update');
         Route::get('backups', [BackupController::class, 'index'])->name('backups.index');
         Route::post('backups', [BackupController::class, 'store'])->name('backups.store');
         Route::get('backups/{filename}/download', [BackupController::class, 'download'])

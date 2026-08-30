@@ -17,14 +17,14 @@ class HelpContent
         [
             'id' => 'gerar-cobranca',
             'title' => 'Como e gerada a cobranca mensal?',
-            'keywords' => ['gerar cobranca', 'cobranca automatica', 'cron'],
-            'answer' => 'Manualmente pelo botao Gerar cobranca ou automaticamente via agendamento diario, 5 dias antes do vencimento. O sistema nao duplica cobrancas do mesmo mes.',
+            'keywords' => ['gerar cobranca', 'cobranca automatica', 'cron', 'dia de geracao'],
+            'answer' => 'Manualmente pelo botao Gerar cobranca ou automaticamente via agendamento diario, a partir do dia do mes definido em Configuracoes (padrao: dia 1) para todos os contratos ativos. O vencimento de cada contrato nao muda. O sistema nao duplica cobrancas do mesmo mes.',
         ],
         [
             'id' => 'rateio',
             'title' => 'Como fazer um rateio de despesa entre imoveis?',
             'keywords' => ['rateio', 'agua', 'condominio', 'gas', 'iptu'],
-            'answer' => 'Informe categoria, mes de referencia, valor total e imoveis participantes. O valor pode ser dividido igualmente ou proporcional ao numero de moradores.',
+            'answer' => 'Informe categoria, mes de referencia, valor total e imoveis participantes. O valor pode ser dividido igualmente ou proporcional ao numero de moradores. O rateio de cada imovel entra na mesma cobranca do aluguel daquele contrato (nao gera uma cobranca separada) e aparece discriminado no recibo.',
         ],
         [
             'id' => 'assinatura',

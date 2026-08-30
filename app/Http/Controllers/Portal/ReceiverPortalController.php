@@ -56,6 +56,7 @@ class ReceiverPortalController extends Controller
                     'id' => $charge->id,
                     'description' => $charge->reference,
                     'amount' => (float) $charge->original_amount,
+                    'rateio_amount' => (float) ($charge->rateio_amount ?? 0),
                     'status' => $charge->status?->value ?? $charge->status,
                     'due_date' => $charge->due_date?->toDateString(),
                     'is_paid' => $charge->status === ChargeStatus::Paid,

@@ -37,6 +37,7 @@ type PortalCharge = {
     amount: number;
     amount_due: number;
     has_penalties?: boolean;
+    rateio_amount?: number;
     status: string;
     due_date: string;
     is_paid: boolean;
@@ -331,6 +332,13 @@ function payDepositPix(id: number): void {
                                         (com juros/multa; original
                                         {{ formatCurrency(charge.amount) }})
                                     </span>
+                                </p>
+                                <p
+                                    v-if="(charge.rateio_amount ?? 0) > 0"
+                                    class="text-xs text-muted-foreground"
+                                >
+                                    Inclui rateio de
+                                    {{ formatCurrency(charge.rateio_amount!) }}
                                 </p>
                             </div>
 

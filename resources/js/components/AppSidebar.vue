@@ -10,6 +10,7 @@ import {
     MessageSquareWarning,
     PieChart,
     Plug,
+    Settings,
     Shield,
     ShieldCheck,
     UserCircle,
@@ -29,6 +30,7 @@ import {
 import { dashboard } from '@/routes';
 import { index as admins } from '@/routes/admin/admins';
 import { index as backups } from '@/routes/admin/backups';
+import { edit as billingSettings } from '@/routes/admin/billing-settings';
 import { index as charges } from '@/routes/admin/charges';
 import { index as contracts } from '@/routes/admin/contracts';
 import { index as deposits } from '@/routes/admin/deposits';
@@ -138,6 +140,11 @@ const adminOperationsNavItems = computed<NavItem[]>(() => [
         title: 'Backups',
         href: backups(),
         icon: DatabaseBackup,
+    },
+    {
+        title: 'Configurações',
+        href: billingSettings(),
+        icon: Settings,
     },
 ]);
 

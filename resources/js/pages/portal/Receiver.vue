@@ -31,6 +31,7 @@ type PortalCharge = {
     id: number;
     description?: string | null;
     amount: number;
+    rateio_amount?: number;
     status: string;
     due_date: string;
     is_paid: boolean;
@@ -180,6 +181,13 @@ const { formatCurrency } = useMoney();
                                     {{ formatDate(charge.due_date) }}
                                     <span class="mx-1.5 text-border">|</span>
                                     {{ formatCurrency(charge.amount) }}
+                                    <span
+                                        v-if="(charge.rateio_amount ?? 0) > 0"
+                                        class="ms-1 text-xs"
+                                    >
+                                        (inclui rateio de
+                                        {{ formatCurrency(charge.rateio_amount!) }})
+                                    </span>
                                 </p>
                             </div>
 

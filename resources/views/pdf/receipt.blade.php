@@ -15,7 +15,13 @@
 
     <div class="section">
         <div><span class="label">Referencia:</span> {{ $charge->reference }}</div>
-        <div><span class="label">Valor pago:</span> {{ \App\Support\Money::format((float) ($payment?->amount_paid ?? $charge->original_amount)) }}</div>
+        @if ($charge->rateio_amount > 0)
+            <div><span class="label">Aluguel:</span> {{ \App\Support\Money::format((float) $charge->original_amount - (float) $charge->rateio_amount) }}</div>
+            <div><span class="label">Rateio:</span> {{ \App\Support\Money::format((float) $charge->rateio_amount) }}</div>
+            <div><span class="label">Valor pago (total):</span> {{ \App\Support\Money::format((float) ($payment?->amount_paid ?? $charge->original_amount)) }}</div>
+        @else
+            <div><span class="label">Valor pago:</span> {{ \App\Support\Money::format((float) ($payment?->amount_paid ?? $charge->original_amount)) }}</div>
+        @endif
         <div><span class="label">Vencimento:</span> {{ $charge->due_date->format('d/m/Y') }}</div>
     </div>
 
