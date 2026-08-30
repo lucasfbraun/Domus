@@ -48,4 +48,14 @@ return [
         ],
     ],
 
+    'feature_checks' => [
+        // Running the real test suite from the admin UI only makes sense in
+        // local dev: production ships without dev dependencies (see
+        // Dockerfile's `composer install --no-dev`) and a full run takes
+        // several minutes. Override with FEATURE_CHECKS_ENABLED for a
+        // non-local sandbox where dev deps happen to be installed; tests
+        // override this directly via config(), not this env default.
+        'enabled' => (bool) env('FEATURE_CHECKS_ENABLED', env('APP_ENV') === 'local'),
+    ],
+
 ];

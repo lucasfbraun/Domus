@@ -644,6 +644,14 @@ php artisan test --compact --filter=MercadoPago
 
 Testes de Mercado Pago usam `Http::fake()` — não chamam a API real.
 
+### Funcionalidades (catálogo + rodar testes pela UI)
+
+Em **Admin → Funcionalidades** (`/funcionalidades`), a tela lista todas as funcionalidades mapeadas do sistema (`App\Support\FeatureCatalog`) com o(s) arquivo(s) de teste que realmente cobre(m) cada uma — ou "Sem teste" quando não há nenhum. O botão **Rodar suíte de testes** dispara `php artisan test` de verdade em segundo plano (`RunTestSuiteJob`) e a página mostra o resultado assim que termina (passou/falhou, resumo, saída completa).
+
+> Só funciona em ambiente **local** com as dependências de dev instaladas (`vendor/bin/pest` precisa existir) — a imagem de produção roda `composer install --no-dev`, então nem tem o Pest instalado. Fora do local, o botão aparece desabilitado com uma explicação. Veja [ADR 0008](docs/adr/0008-feature-checks-page.md).
+
+Para manter o catálogo honesto ao adicionar uma funcionalidade nova: edite `App\Support\FeatureCatalog::entries()` e aponte para o(s) teste(s) reais — os caminhos são conferidos no disco a cada carregamento da página, então um teste renomeado/apagado aparece automaticamente como "Sem teste".
+
 ---
 
 ## Papéis de usuário
@@ -680,6 +688,7 @@ Referência completa em `.env.example`. Principais:
 | `WAHA_*`             | Integração WhatsApp                                         |
 | `MAIL_*`             | Envio de e-mail                                             |
 | `MEDIA_DISK`         | Disco da Media Library (padrão: `public`)                   |
+| `FEATURE_CHECKS_ENABLED` | Habilita o botão "Rodar suíte de testes" em Funcionalidades. Padrão: `true` só quando `APP_ENV=local` |
 
 ---
 

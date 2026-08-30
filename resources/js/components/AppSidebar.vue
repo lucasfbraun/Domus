@@ -7,6 +7,7 @@ import {
     FileText,
     Handshake,
     LayoutGrid,
+    ListChecks,
     MessageSquareWarning,
     PieChart,
     Plug,
@@ -34,6 +35,7 @@ import { edit as billingSettings } from '@/routes/admin/billing-settings';
 import { index as charges } from '@/routes/admin/charges';
 import { index as contracts } from '@/routes/admin/contracts';
 import { index as deposits } from '@/routes/admin/deposits';
+import { index as featureChecks } from '@/routes/admin/feature-checks';
 import { index as integrations } from '@/routes/admin/integrations';
 import { index as occurrences } from '@/routes/admin/occurrences';
 import { index as owners } from '@/routes/admin/owners';
@@ -145,6 +147,11 @@ const adminOperationsNavItems = computed<NavItem[]>(() => [
         title: 'Configurações',
         href: billingSettings(),
         icon: Settings,
+    },
+    {
+        title: 'Funcionalidades',
+        href: featureChecks(),
+        icon: ListChecks,
     },
 ]);
 

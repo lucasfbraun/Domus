@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\ContractOccurrenceController;
 use App\Http\Controllers\Admin\ContractTemplateController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DepositController;
+use App\Http\Controllers\Admin\FeatureCheckController;
 use App\Http\Controllers\Admin\HelpController;
 use App\Http\Controllers\Admin\IntegrationController;
 use App\Http\Controllers\Admin\OwnerController;
@@ -94,6 +95,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->where('filename', '.*\.sql\.gz')
             ->name('backups.destroy');
         Route::get('help/search', [HelpController::class, 'search'])->name('help.search');
+        Route::get('funcionalidades', [FeatureCheckController::class, 'index'])->name('feature-checks.index');
+        Route::post('funcionalidades/executar', [FeatureCheckController::class, 'run'])->name('feature-checks.run');
+        Route::get('funcionalidades/status', [FeatureCheckController::class, 'status'])->name('feature-checks.status');
         Route::get('occurrences', [ContractOccurrenceController::class, 'index'])->name('occurrences.index');
         Route::patch('occurrences/{occurrence}', [ContractOccurrenceController::class, 'update'])
             ->name('occurrences.update');
