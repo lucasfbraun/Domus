@@ -18,6 +18,7 @@ use App\Http\Controllers\Admin\RateioController;
 use App\Http\Controllers\Admin\ReceiverController;
 use App\Http\Controllers\Admin\TenantController;
 use App\Http\Controllers\ContractShowController;
+use App\Http\Controllers\Portal\OwnerPortalController;
 use App\Http\Controllers\Portal\ReceiverPortalController;
 use App\Http\Controllers\Portal\TenantPortalController;
 use App\Http\Controllers\Webhooks\MercadoPagoWebhookController;
@@ -136,6 +137,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::middleware('role:receiver')->group(function () {
         Route::get('recebedor', [ReceiverPortalController::class, 'index'])->name('receiver.portal');
+    });
+
+    Route::middleware('role:owner')->group(function () {
+        Route::get('proprietario', [OwnerPortalController::class, 'index'])->name('owner.portal');
     });
 
     Route::get('contrato/{contract}', [ContractShowController::class, 'show'])->name('contracts.show');

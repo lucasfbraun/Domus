@@ -12,7 +12,7 @@ class HelpContent
             'id' => 'papeis',
             'title' => 'Quais sao os papeis de usuario (admin, inquilino, recebedor, proprietario)?',
             'keywords' => ['papel', 'perfil', 'acesso', 'admin', 'inquilino', 'recebedor', 'proprietario'],
-            'answer' => 'Admin: acesso total ao painel. Inquilino: portal proprio com cobrancas, Pix e contrato. Recebedor: portal de leitura das cobrancas e contratos vinculados. Proprietario: cadastro administrativo sem login.',
+            'answer' => 'Admin: acesso total ao painel. Inquilino: portal proprio com cobrancas, Pix e contrato. Recebedor: portal de leitura das cobrancas e contratos vinculados. Proprietario: portal de leitura dos seus imoveis e contratos; pode ter login proprio ou compartilhar o login de outro papel (ex: o mesmo acesso do Admin).',
         ],
         [
             'id' => 'gerar-cobranca',

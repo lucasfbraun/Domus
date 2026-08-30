@@ -1,9 +1,15 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import BrazilianMaskedInput from '@/components/BrazilianMaskedInput.vue';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
+import PortalAccessFields from '@/components/PortalAccessFields.vue';
+import type {
+    LinkableUser,
+    LinkedUser,
+    PortalAccessMode,
+} from '@/components/PortalAccessFields.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,13 +17,25 @@ import { dashboard } from '@/routes';
 import { create, index, store, update } from '@/routes/admin/owners';
 
 const props = defineProps<{
-    owner?: any | null;
+    owner?: {
+        id: number;
+        name?: string;
+        document?: string;
+        email?: string;
+        phone?: string;
+        user?: LinkedUser | null;
+    } | null;
+    users?: LinkableUser[];
 }>();
 
 const isEditing = computed(() => !!props.owner?.id);
 
 const form = computed(() =>
-    isEditing.value ? update.form(props.owner) : store.form(),
+    isEditing.value ? update.form(props.owner!) : store.form(),
+);
+
+const portalMode = ref<PortalAccessMode>(
+    props.owner?.user ? 'existing' : 'none',
 );
 
 defineOptions({
@@ -78,6 +96,12 @@ defineOptions({
                     :default-value="owner?.email"
                     placeholder="email@exemplo.com"
                 />
+                <p
+                    v-if="portalMode === 'new'"
+                    class="text-xs text-muted-foreground"
+                >
+                    Este e-mail também será usado como login do portal.
+                </p>
                 <InputError :message="errors.email" />
             </div>
 
@@ -92,6 +116,14 @@ defineOptions({
                 />
                 <InputError :message="errors.phone" />
             </div>
+
+            <PortalAccessFields
+                v-model:mode="portalMode"
+                :users="users"
+                :linked-user="owner?.user"
+                :errors="errors"
+                id-prefix="owner"
+            />
 
             <div class="flex items-center gap-4">
                 <Button type="submit" :disabled="processing">

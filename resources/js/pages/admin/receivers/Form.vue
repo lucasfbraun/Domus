@@ -1,9 +1,15 @@
 <script setup lang="ts">
 import { Form, Head, router } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import BrazilianMaskedInput from '@/components/BrazilianMaskedInput.vue';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
+import PortalAccessFields from '@/components/PortalAccessFields.vue';
+import type {
+    LinkableUser,
+    LinkedUser,
+    PortalAccessMode,
+} from '@/components/PortalAccessFields.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -27,13 +33,19 @@ const props = defineProps<{
         mp_user_id?: string | null;
         mp_connected_at?: string | null;
         mp_live_mode?: boolean | null;
+        user?: LinkedUser | null;
     } | null;
+    users?: LinkableUser[];
 }>();
 
 const isEditing = computed(() => !!props.receiver?.id);
 
 const form = computed(() =>
     isEditing.value ? update.form(props.receiver) : store.form(),
+);
+
+const portalMode = ref<PortalAccessMode>(
+    props.receiver?.user ? 'existing' : 'none',
 );
 
 const mpConnected = computed(() => props.receiver?.mp_connected ?? false);
@@ -55,9 +67,11 @@ const mpConnectedAtLabel = computed(() => {
 });
 
 function confirmDisconnect(): void {
-    if (!window.confirm(
-        'Desconectar a conta Mercado Pago deste recebedor? Novos Pix exigirão reconexão.',
-    )) {
+    if (
+        !window.confirm(
+            'Desconectar a conta Mercado Pago deste recebedor? Novos Pix exigirão reconexão.',
+        )
+    ) {
         return;
     }
 
@@ -65,9 +79,13 @@ function confirmDisconnect(): void {
         return;
     }
 
-    router.post(disconnectMercadoPago.url(props.receiver), {}, {
-        preserveScroll: true,
-    });
+    router.post(
+        disconnectMercadoPago.url(props.receiver),
+        {},
+        {
+            preserveScroll: true,
+        },
+    );
 }
 
 defineOptions({
@@ -109,10 +127,7 @@ defineOptions({
                 recebedor.
             </p>
 
-            <dl
-                v-if="mpConnected"
-                class="grid gap-1 text-muted-foreground"
-            >
+            <dl v-if="mpConnected" class="grid gap-1 text-muted-foreground">
                 <div v-if="receiver?.mp_user_id">
                     <dt class="inline font-medium text-foreground">
                         ID Mercado Pago:
@@ -184,6 +199,12 @@ defineOptions({
                     :default-value="receiver?.email"
                     placeholder="email@exemplo.com"
                 />
+                <p
+                    v-if="portalMode === 'new'"
+                    class="text-xs text-muted-foreground"
+                >
+                    Este e-mail também será usado como login do portal.
+                </p>
                 <InputError :message="errors.email" />
             </div>
 
@@ -198,39 +219,13 @@ defineOptions({
             </div>
             <InputError :message="errors.active" />
 
-            <div
-                v-if="!isEditing"
-                class="space-y-4 rounded-xl border border-border/80 bg-muted/30 p-5"
-            >
-                <div class="flex items-center gap-2">
-                    <Checkbox id="create_portal" name="create_portal" value="1" />
-                    <Label for="create_portal">Criar acesso ao portal</Label>
-                </div>
-
-                <div class="grid gap-2">
-                    <Label for="password">Senha do portal</Label>
-                    <Input
-                        id="password"
-                        type="password"
-                        name="password"
-                        autocomplete="new-password"
-                        placeholder="Senha para acesso ao portal"
-                    />
-                    <InputError :message="errors.password" />
-                </div>
-
-                <div class="grid gap-2">
-                    <Label for="password_confirmation">Confirmar senha</Label>
-                    <Input
-                        id="password_confirmation"
-                        type="password"
-                        name="password_confirmation"
-                        autocomplete="new-password"
-                        placeholder="Confirmar senha do portal"
-                    />
-                    <InputError :message="errors.password_confirmation" />
-                </div>
-            </div>
+            <PortalAccessFields
+                v-model:mode="portalMode"
+                :users="users"
+                :linked-user="receiver?.user"
+                :errors="errors"
+                id-prefix="receiver"
+            />
 
             <div class="flex items-center gap-4">
                 <Button type="submit" :disabled="processing">

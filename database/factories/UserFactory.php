@@ -89,4 +89,12 @@ class UserFactory extends Factory
             $user->syncRoles([UserRole::Receiver]);
         });
     }
+
+    public function owner(): static
+    {
+        return $this->afterCreating(function (User $user) {
+            Role::findOrCreate(UserRole::Owner->value);
+            $user->syncRoles([UserRole::Owner]);
+        });
+    }
 }

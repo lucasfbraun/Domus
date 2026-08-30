@@ -29,11 +29,11 @@ class StoreReceiverRequest extends FormRequest
     {
         $emailRules = ['required', 'email', 'max:255'];
 
-        // A password here means ReceiverController will create a linked
-        // User, which needs a globally unique email across every role —
-        // otherwise the insert fails with a raw SQLSTATE 23000 instead of a
-        // validation error.
-        if (filled($this->input('password'))) {
+        // A password here (and no existing user picked) means
+        // ReceiverController will create a brand-new linked User, which
+        // needs a globally unique email across every role — otherwise the
+        // insert fails with a raw SQLSTATE 23000 instead of a validation error.
+        if (filled($this->input('password')) && ! filled($this->input('existing_user_id'))) {
             $emailRules[] = Rule::unique('users', 'email');
         }
 
@@ -43,7 +43,13 @@ class StoreReceiverRequest extends FormRequest
             'email' => $emailRules,
             'mercado_pago_account' => ['nullable', 'string', 'max:255'],
             'active' => ['boolean'],
-            'password' => ['nullable', 'confirmed', Password::defaults()],
+            'existing_user_id' => ['nullable', 'integer', 'exists:users,id'],
+            'password' => [
+                'nullable',
+                'confirmed',
+                Password::defaults(),
+                Rule::prohibitedIf(fn () => filled($this->input('existing_user_id'))),
+            ],
         ];
     }
 
@@ -54,6 +60,7 @@ class StoreReceiverRequest extends FormRequest
     {
         return [
             'email.unique' => 'Já existe uma conta de acesso com este e-mail.',
+            'password.prohibited' => 'Escolha "criar novo login" ou "vincular usuário existente", não os dois.',
         ];
     }
 }

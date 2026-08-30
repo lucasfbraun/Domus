@@ -140,8 +140,10 @@ test('admin cannot update a receiver to a portal email already used by another a
 
 test('deleting a receiver also deletes its portal login, so the email can be reused later', function () {
     $admin = User::factory()->admin()->create();
-    $user = User::factory()->create(['email' => 'recebedor-removido@example.com']);
-    $user->assignRole(UserRole::Receiver);
+    // ->receiver() syncs roles down to exactly [Receiver] — a bare create()
+    // would auto-assign Admin too (see UserFactory::configure()), making
+    // the login "shared" and this test's exclusive-deletion assertion wrong.
+    $user = User::factory()->receiver()->create(['email' => 'recebedor-removido@example.com']);
     $receiver = Receiver::factory()->create(['email' => 'recebedor-removido@example.com', 'user_id' => $user->id]);
 
     $this->actingAs($admin)
@@ -178,8 +180,9 @@ test('deleting a receiver without a portal account does not error', function () 
 
 test('deleting a receiver never deletes a user still linked to a tenant', function () {
     $admin = User::factory()->admin()->create();
-    $user = User::factory()->create();
-    $user->assignRole(UserRole::Receiver);
+    // Single-role on purpose (see the comment on the earlier deletion test)
+    // so what saves this login is unambiguously the Tenant row below.
+    $user = User::factory()->receiver()->create();
     $receiver = Receiver::factory()->create(['user_id' => $user->id]);
     Tenant::factory()->create(['user_id' => $user->id]);
 

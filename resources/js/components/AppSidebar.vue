@@ -40,6 +40,7 @@ import { index as rateios } from '@/routes/admin/rateios';
 import { index as receivers } from '@/routes/admin/receivers';
 import { index as templates } from '@/routes/admin/templates';
 import { index as tenants } from '@/routes/admin/tenants';
+import { portal as ownerPortal } from '@/routes/owner';
 import { portal as receiverPortal } from '@/routes/receiver';
 import { portal as tenantPortal } from '@/routes/tenant';
 import type { NavItem } from '@/types';
@@ -59,6 +60,7 @@ const roles = computed(() => {
 const isAdmin = computed(() => roles.value.includes('admin'));
 const isTenant = computed(() => roles.value.includes('tenant'));
 const isReceiver = computed(() => roles.value.includes('receiver'));
+const isOwner = computed(() => roles.value.includes('owner'));
 
 const adminMainNavItems = computed<NavItem[]>(() => [
     {
@@ -155,6 +157,14 @@ const portalNavItems = computed<NavItem[]>(() => {
             title: 'Portal Recebedor',
             href: receiverPortal(),
             icon: Wallet,
+        });
+    }
+
+    if (isOwner.value) {
+        items.push({
+            title: 'Portal Proprietário',
+            href: ownerPortal(),
+            icon: UserCircle,
         });
     }
 

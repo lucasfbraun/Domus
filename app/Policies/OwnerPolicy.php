@@ -6,7 +6,11 @@ use App\Enums\UserRole;
 use App\Models\Owner;
 use App\Models\User;
 
-/** Owner records are admin-only; owners never have their own User/login. */
+/**
+ * Managing Owner records (cadastro, linking/creating their portal login) is
+ * admin-only. An Owner's own portal access is governed separately — see
+ * OwnerPortalController — not by this policy.
+ */
 class OwnerPolicy
 {
     public function viewAny(User $user): bool

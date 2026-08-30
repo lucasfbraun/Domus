@@ -8,6 +8,7 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -63,11 +64,31 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasOne(Receiver::class);
     }
 
+    /**
+     * Plural, unlike tenant()/receiver(): a shared login can be linked from
+     * more than one Owner record (e.g. co-owned properties), so there's no
+     * single canonical "the" owner for a User.
+     *
+     * @return HasMany<Owner, $this>
+     */
+    public function owners(): HasMany
+    {
+        return $this->hasMany(Owner::class);
+    }
+
+    /**
+     * Picks which portal a user lands on right after login when they hold
+     * more than one role. Admin wins first — it's the most capable role, and
+     * anyone who also holds Owner/Receiver/Tenant can still reach that
+     * portal from the sidebar (see AppSidebar.vue's portal nav items).
+     */
     public function homeRouteName(): string
     {
         return match (true) {
-            $this->hasRole(UserRole::Tenant) => UserRole::Tenant->homeRoute(),
+            $this->hasRole(UserRole::Admin) => UserRole::Admin->homeRoute(),
+            $this->hasRole(UserRole::Owner) => UserRole::Owner->homeRoute(),
             $this->hasRole(UserRole::Receiver) => UserRole::Receiver->homeRoute(),
+            $this->hasRole(UserRole::Tenant) => UserRole::Tenant->homeRoute(),
             default => UserRole::Admin->homeRoute(),
         };
     }

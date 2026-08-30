@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Enums\ContractStatus;
+use App\Enums\SignatureStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreContractRequest;
 use App\Http\Requests\Admin\UpdateContractRequest;
@@ -115,6 +116,15 @@ class ContractController extends Controller
     public function destroy(Contract $contract): RedirectResponse
     {
         $this->authorize('delete', $contract);
+
+        if ($contract->status !== ContractStatus::Draft || $contract->signature_status !== SignatureStatus::NotGenerated) {
+            Inertia::flash('toast', [
+                'type' => 'error',
+                'message' => 'Só é possível excluir contratos em rascunho, sem documento gerado ou assinado.',
+            ]);
+
+            return back();
+        }
 
         $contract->delete();
 

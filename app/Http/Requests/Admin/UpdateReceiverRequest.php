@@ -27,7 +27,7 @@ class UpdateReceiverRequest extends StoreReceiverRequest
 
         $emailRules = ['required', 'email', 'max:255'];
 
-        if (filled($this->input('password')) && ! $receiver?->user_id) {
+        if (filled($this->input('password')) && ! filled($this->input('existing_user_id')) && ! $receiver?->user_id) {
             $emailRules[] = Rule::unique('users', 'email');
         }
 

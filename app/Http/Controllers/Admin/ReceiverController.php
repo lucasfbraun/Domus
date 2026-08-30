@@ -7,14 +7,12 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreReceiverRequest;
 use App\Http\Requests\Admin\UpdateReceiverRequest;
 use App\Models\Receiver;
-use App\Models\Tenant;
-use App\Models\User;
 use App\Policies\ReceiverPolicy;
 use App\Services\MercadoPagoService;
+use App\Services\PortalAccountService;
 use App\Support\Pagination;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
@@ -23,9 +21,9 @@ use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
  * Manages Receiver records (payment recipients for charges) and their
  * Mercado Pago OAuth connection. See {@see ReceiverPolicy}:
  * admin-only — a receiver's own portal access (viewing their charges, etc.)
- * is governed elsewhere. Setting a password on store/update also creates
- * or updates a linked User with the Receiver role, so the receiver can log
- * in to their own portal.
+ * is governed elsewhere. A receiver's portal login can be a brand-new
+ * dedicated account, or an existing one (e.g. the same login already used
+ * as Admin) — see {@see PortalAccountService}.
  */
 class ReceiverController extends Controller
 {
@@ -42,66 +40,84 @@ class ReceiverController extends Controller
         ]);
     }
 
-    public function create(): Response
+    public function create(PortalAccountService $portalAccounts): Response
     {
         $this->authorize('create', Receiver::class);
 
         return Inertia::render('admin/receivers/Form', [
             'receiver' => null,
+            'users' => $portalAccounts->linkableUsers(),
         ]);
     }
 
-    public function store(StoreReceiverRequest $request): RedirectResponse
+    public function store(StoreReceiverRequest $request, PortalAccountService $portalAccounts): RedirectResponse
     {
         $this->authorize('create', Receiver::class);
 
-        $userId = null;
-        if ($request->filled('password')) {
-            $user = User::query()->create([
-                'name' => $request->string('name'),
-                'email' => $request->string('email'),
-                'password' => Hash::make($request->string('password')),
-            ]);
-            $user->assignRole(UserRole::Receiver);
-            $userId = $user->id;
-        }
-
-        Receiver::query()->create([
+        $receiver = Receiver::query()->create([
             ...$request->safe()->only(['name', 'document', 'email', 'mercado_pago_account', 'active']),
-            'user_id' => $userId,
+            'user_id' => null,
         ]);
+
+        $userId = $portalAccounts->sync(
+            role: UserRole::Receiver,
+            currentUserId: null,
+            existingUserId: $request->integer('existing_user_id') ?: null,
+            name: $receiver->name,
+            email: $receiver->email,
+            password: $request->string('password')->toString(),
+        );
+
+        if ($userId !== null) {
+            $receiver->update(['user_id' => $userId]);
+        }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Recebedor cadastrado.']);
 
         return to_route('admin.receivers.index');
     }
 
-    public function edit(Receiver $receiver): Response
+    public function edit(Receiver $receiver, PortalAccountService $portalAccounts): Response
     {
         $this->authorize('update', $receiver);
 
+        $receiver->load('user.roles');
+
         return Inertia::render('admin/receivers/Form', [
-            'receiver' => $receiver->load('user'),
+            'receiver' => [
+                ...$receiver->toArray(),
+                'user' => $receiver->user ? [
+                    'id' => $receiver->user->id,
+                    'name' => $receiver->user->name,
+                    'email' => $receiver->user->email,
+                    'roles' => $receiver->user->roles->pluck('name')->all(),
+                ] : null,
+            ],
+            'users' => $portalAccounts->linkableUsers(),
         ]);
     }
 
-    public function update(UpdateReceiverRequest $request, Receiver $receiver): RedirectResponse
+    public function update(UpdateReceiverRequest $request, Receiver $receiver, PortalAccountService $portalAccounts): RedirectResponse
     {
         $this->authorize('update', $receiver);
 
         $receiver->update($request->safe()->only(['name', 'document', 'email', 'mercado_pago_account', 'active']));
 
-        if ($request->filled('password')) {
-            if (! $receiver->user_id) {
-                $user = User::query()->create([
-                    'name' => $receiver->name,
-                    'email' => $receiver->email,
-                    'password' => Hash::make($request->string('password')),
-                ]);
-                $user->assignRole(UserRole::Receiver);
-                $receiver->update(['user_id' => $user->id]);
-            } else {
-                $receiver->user?->update(['password' => Hash::make($request->string('password'))]);
+        $oldUserId = $receiver->user_id;
+        $userId = $portalAccounts->sync(
+            role: UserRole::Receiver,
+            currentUserId: $oldUserId,
+            existingUserId: $request->integer('existing_user_id') ?: null,
+            name: $receiver->name,
+            email: $receiver->email,
+            password: $request->string('password')->toString(),
+        );
+
+        if ($userId !== $oldUserId) {
+            $receiver->update(['user_id' => $userId]);
+
+            if ($oldUserId !== null) {
+                $portalAccounts->detach($oldUserId, UserRole::Receiver);
             }
         }
 
@@ -110,7 +126,7 @@ class ReceiverController extends Controller
         return to_route('admin.receivers.index');
     }
 
-    public function destroy(Receiver $receiver): RedirectResponse
+    public function destroy(Receiver $receiver, PortalAccountService $portalAccounts): RedirectResponse
     {
         $this->authorize('delete', $receiver);
 
@@ -118,15 +134,8 @@ class ReceiverController extends Controller
 
         $receiver->delete();
 
-        // The linked User only exists to grant this receiver portal access —
-        // leaving it behind after deleting the receiver would silently block
-        // recreating a receiver with the same email later (unique constraint
-        // on users.email) with no visible link back to this deletion.
-        if ($userId
-            && ! Receiver::query()->where('user_id', $userId)->exists()
-            && ! Tenant::query()->where('user_id', $userId)->exists()
-        ) {
-            User::query()->find($userId)?->delete();
+        if ($userId !== null) {
+            $portalAccounts->detach($userId, UserRole::Receiver);
         }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Recebedor removido.']);

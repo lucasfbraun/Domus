@@ -1,0 +1,9 @@
+# A single login can hold more than one role, instead of one dedicated User per record
+
+**Status**: accepted
+
+Every Tenant/Receiver/Owner "portal access" flow used to work the same way: check a password field, and if present, `User::create()` a brand-new account and assign it that one role. In a small operation, the same real person is often more than one of these at once — the property owner is also the Admin running the system, or also the Receiver collecting their own rent — and that pattern had no way to express it. The only option was a second account with a second password, and if the admin tried to reuse the same email, the unique constraint on `users.email` failed with a raw SQLSTATE error instead of a validation message (see the Tenant/Receiver email-uniqueness fix earlier in this history).
+
+Owner records previously had no `user_id` at all — a deliberate choice at the time, on the assumption an owner never needed to log in. That assumption didn't hold once owners started asking for read access to their own properties and contracts.
+
+The fix: `App\Services\PortalAccountService` centralizes attaching/detaching a role on a User, and every Tenant/Receiver/Owner form can now either create a dedicated login (unchanged) or link to an *existing* User, which just gets the additional role via `assignRole()` — spatie/permission already supports multiple roles per user natively. `User::homeRouteName()` picks Admin first when a user holds several roles, since it's the most capable one; the others stay reachable from the sidebar. Deleting a Tenant/Receiver/Owner no longer blindly deletes its linked User: `PortalAccountService::detach()` only deletes the account if that role was its *only* purpose (no other role, no other Tenant/Receiver/Owner record pointing at it) — otherwise it just strips the role and leaves the shared login and whatever else it can do intact.
