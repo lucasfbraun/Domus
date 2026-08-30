@@ -28,13 +28,13 @@
     <div class="section">
         <div class="label">LOCATARIO (Inquilino)</div>
         <div>{{ $contract->tenant->name }}</div>
-        <div>{{ $contract->tenant->document }}</div>
+        <div>{{ \App\Support\BrazilianDocument::format($contract->tenant->document) }}</div>
     </div>
 
     <div class="section">
         <div class="label">LOCADOR (Recebedor)</div>
         <div>{{ $contract->receiver->name }}</div>
-        <div>{{ $contract->receiver->document }}</div>
+        <div>{{ \App\Support\BrazilianDocument::format($contract->receiver->document) }}</div>
     </div>
 
     <div class="section">

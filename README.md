@@ -275,18 +275,18 @@ Em **Admin → Modelos**, o texto do contrato é escrito num editor rico (TipTap
 | Grupo             | Variável                  | Descrição                                    |
 | ------------------ | -------------------------- | ---------------------------------------------- |
 | **Inquilino**       | `{{inquilino_nome}}`       | Nome do inquilino                              |
-|                     | `{{inquilino_documento}}`  | CPF/CNPJ do inquilino                          |
+|                     | `{{inquilino_documento}}`  | CPF/CNPJ do inquilino, formatado (`123.456.789-00`) |
 |                     | `{{inquilino_email}}`      | E-mail do inquilino                            |
-|                     | `{{inquilino_whatsapp}}`   | WhatsApp do inquilino                          |
+|                     | `{{inquilino_whatsapp}}`   | WhatsApp do inquilino, formatado sem o DDI (`(11) 99999-0000`) |
 | **Imóvel**          | `{{imovel_nome}}`          | Nome/identificação do imóvel                   |
 |                     | `{{imovel_endereco}}`      | Endereço do imóvel                             |
 |                     | `{{imovel_tipo}}`          | Tipo do imóvel (apartamento, casa, etc.)       |
 | **Proprietário**    | `{{proprietario_nome}}`    | Nome de **todos** os proprietários do imóvel, separados por vírgula |
-|                     | `{{proprietario_documento}}` | Documento (CPF/CNPJ) de **todos** os proprietários, separados por vírgula |
+|                     | `{{proprietario_documento}}` | Documento (CPF/CNPJ) de **todos** os proprietários, formatado, separados por vírgula |
 |                     | `{{proprietario_email}}`   | E-mail de **todos** os proprietários, separados por vírgula |
-|                     | `{{proprietario_telefone}}` | Telefone de **todos** os proprietários, separados por vírgula |
+|                     | `{{proprietario_telefone}}` | Telefone de **todos** os proprietários, formatado sem o DDI, separados por vírgula |
 | **Recebedor**       | `{{recebedor_nome}}`       | Nome do recebedor                              |
-|                     | `{{recebedor_documento}}`  | Documento do recebedor                         |
+|                     | `{{recebedor_documento}}`  | Documento do recebedor, formatado                |
 | **Contrato**        | `{{valor_aluguel}}`        | Valor do aluguel formatado (ex.: `R$ 900,00`)  |
 |                     | `{{dia_vencimento}}`       | Dia de vencimento mensal                       |
 |                     | `{{data_inicio}}`          | Data de início (`dd/mm/aaaa`)                  |
@@ -302,7 +302,7 @@ A lista completa e as labels exibidas no editor vêm de `App\Support\ContractTem
 
 1. **Editor (`TemplateEditor.vue`)** — cada variável inserida vira um "chip" visual no texto rico, internamente representado como `<span data-template-variable="chave">{{chave}}</span>`.
 2. **Ao salvar o modelo** (`StoreContractTemplateRequest`/`UpdateContractTemplateRequest`) — `ContractTemplateVariables::sanitizeHtml()` roda em `prepareForValidation()`: remove tags HTML não permitidas (mantém só `<p> <br> <strong> <b> <em> <i> <u> <h1-h3> <ul> <ol> <li>`) e normaliza os tokens reconhecidos. Uma chave que não existe no catálogo (erro de digitação, variável removida do código) vira texto literal `{{chave}}` e **não é substituída** na geração — não dá erro, só aparece do jeito que foi escrita.
-3. **Ao gerar o contrato** (`ContractDocumentService::generate()`) — `buildVariables()` monta o array `chave => valor` a partir do `Contract` (com `tenant`, `property.owners`, `receiver` carregados) e `renderTemplate()` substitui cada `{{chave}}` pelo valor (HTML-escapado) antes de virar PDF via dompdf. Se o conteúdo salvo não tiver nenhuma tag HTML (modelos antigos em texto puro), o texto é escapado e quebras de linha viram `<br>` automaticamente.
+3. **Ao gerar o contrato** (`ContractDocumentService::generate()`) — `buildVariables()` monta o array `chave => valor` a partir do `Contract` (com `tenant`, `property.owners`, `receiver` carregados) e `renderTemplate()` substitui cada `{{chave}}` pelo valor (HTML-escapado) antes de virar PDF via dompdf. Se o conteúdo salvo não tiver nenhuma tag HTML (modelos antigos em texto puro), o texto é escapado e quebras de linha viram `<br>` automaticamente. Documentos (`App\Support\BrazilianDocument::format()`) e telefones (`App\Support\BrazilianPhone::format()`) são formatados nessa etapa — no banco eles ficam só com dígitos, a pontuação é sempre calculada na hora de exibir.
 
 ### Adicionando uma nova variável
 

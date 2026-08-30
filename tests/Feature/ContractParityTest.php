@@ -124,9 +124,9 @@ test('generated document joins data from every owner of the property', function 
 
     expect($contract->contract_text)
         ->toContain('Joao Silva, Maria Silva')
-        ->toContain('11111111111, 22222222222')
+        ->toContain('111.111.111-11, 222.222.222-22')
         ->toContain('joao@example.com, maria@example.com')
-        ->toContain('5511999990001, 5511999990002');
+        ->toContain('(11) 99999-0001, (11) 99999-0002');
 });
 
 test('generated document leaves owner variables empty when property has no owner', function () {

@@ -6,6 +6,8 @@ use App\Enums\SignatureStatus;
 use App\Models\Charge;
 use App\Models\Contract;
 use App\Models\ContractTemplate;
+use App\Support\BrazilianDocument;
+use App\Support\BrazilianPhone;
 use App\Support\Money;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\UploadedFile;
@@ -148,18 +150,18 @@ class ContractDocumentService
     {
         return [
             'inquilino_nome' => $contract->tenant->name,
-            'inquilino_documento' => $contract->tenant->document,
+            'inquilino_documento' => BrazilianDocument::format($contract->tenant->document),
             'inquilino_email' => $contract->tenant->email,
-            'inquilino_whatsapp' => $contract->tenant->whatsapp ?? '',
+            'inquilino_whatsapp' => BrazilianPhone::format($contract->tenant->whatsapp),
             'imovel_nome' => $contract->property->name,
             'imovel_endereco' => $contract->property->address,
             'imovel_tipo' => $contract->property->type,
             'recebedor_nome' => $contract->receiver->name,
-            'recebedor_documento' => $contract->receiver->document,
+            'recebedor_documento' => BrazilianDocument::format($contract->receiver->document),
             'proprietario_nome' => $contract->property->owners->pluck('name')->implode(', '),
-            'proprietario_documento' => $contract->property->owners->pluck('document')->implode(', '),
+            'proprietario_documento' => $contract->property->owners->pluck('document')->map(fn ($document) => BrazilianDocument::format($document))->implode(', '),
             'proprietario_email' => $contract->property->owners->pluck('email')->filter()->implode(', '),
-            'proprietario_telefone' => $contract->property->owners->pluck('phone')->filter()->implode(', '),
+            'proprietario_telefone' => $contract->property->owners->pluck('phone')->filter()->map(fn ($phone) => BrazilianPhone::format($phone))->implode(', '),
             'valor_aluguel' => Money::format((float) $contract->monthly_rent),
             'dia_vencimento' => (string) $contract->due_day,
             'data_inicio' => $contract->starts_at->format('d/m/Y'),
