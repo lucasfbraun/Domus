@@ -541,12 +541,15 @@ Backups antigos não são removidos automaticamente — se for agendar backups d
 
 Tarefas agendadas (`routes/console.php`):
 
-| Horário (America/Sao_Paulo) | Job                         | Função                                                                         |
-| --------------------------- | --------------------------- | ------------------------------------------------------------------------------ |
-| 09:00                       | `GenerateMonthlyChargesJob` | Marca cobranças vencidas + gera cobranças mensais (5 dias antes do vencimento) |
-| 10:00                       | `RunReminderSweepJob`       | Envia lembretes de cobrança                                                    |
+| Horário (America/Sao_Paulo) | Job                          | Função                                                                         |
+| ---------------------------- | ----------------------------- | ------------------------------------------------------------------------------ |
+| 09:00                        | `GenerateMonthlyChargesJob`   | Marca cobranças vencidas + gera cobranças mensais (5 dias antes do vencimento) |
+| 10:00                        | `RunReminderSweepJob`         | Envia lembretes de cobrança                                                    |
+| A cada 2 minutos             | `SyncPendingPixPaymentsJob`   | Verifica na API do Mercado Pago se alguma Cobrança/Caução com Pix pendente já foi paga — substituto do webhook quando não há URL pública configurada (ex.: dev local). Idempotente, seguro rodar junto com um webhook real. |
 
-**Em desenvolvimento**, `composer dev` já sobe o queue worker. No Docker, o container `queue` já roda `php artisan queue:work` automaticamente — não precisa subir nada manualmente.
+**Em desenvolvimento via Docker**, o container `queue` já roda `php artisan queue:work` automaticamente, e o container `scheduler` roda `php artisan schedule:work` — sem eles rodando, **nenhum** job agendado acima dispara sozinho (nem os que já existiam antes do `SyncPendingPixPaymentsJob`). Rode `docker compose up -d` normalmente e os dois já sobem junto.
+
+**Sem Docker** (`composer dev`), o worker de fila já sobe junto, mas o scheduler não — `php artisan dev` não inclui `schedule:work` por padrão. Rode `php artisan schedule:work` num terminal separado se precisar dos jobs agendados rodando localmente fora do Docker.
 
 **Em produção**, configure o cron do servidor:
 
@@ -646,7 +649,11 @@ Testes de Mercado Pago usam `Http::fake()` — não chamam a API real.
 | **Admin**        | Painel completo: cadastros, contratos, cobranças, rateios, integrações |
 | **Inquilino**    | Portal: cobranças, Pix, contrato, ocorrências                          |
 | **Recebedor**    | Portal de leitura: cobranças e contratos vinculados                    |
-| **Proprietário** | Cadastro administrativo (sem login próprio). Um imóvel pode ter mais de um proprietário vinculado |
+| **Proprietário** | Portal de leitura: imóveis e contratos vinculados. Um imóvel pode ter mais de um proprietário |
+
+Um Recebedor ou Proprietário pode ter um login **dedicado** (criado no próprio cadastro) ou **compartilhado** com uma conta já existente (ex: o mesmo login do Admin) — nesse caso, o usuário acumula os papéis. Veja [`docs/adr/0006-shared-login-across-roles.md`](docs/adr/0006-shared-login-across-roles.md).
+
+> Ao adicionar o papel `owner` num banco já semeado antes desta versão, rode `php artisan db:seed --class=RolesAndPermissionsSeeder` (idempotente) para criar o papel que falta.
 
 ---
 
