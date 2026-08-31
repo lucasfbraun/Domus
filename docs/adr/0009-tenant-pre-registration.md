@@ -20,6 +20,8 @@ Only the five fields the admin listed (name, document, e-mail, WhatsApp, residen
 
 This is the same mechanism a future "admin resets a user's password" feature would want, so `must_change_password` is a plain column on `User`, not something specific to tenants or to pre-registration.
 
+**Addendum**: that future feature arrived — the Tenant create/edit form has an "Exigir troca de senha no próximo login" checkbox next to the password field. The setter was extracted from the inline query-builder update above into `PortalAccountService::forcePasswordChangeOnNextLogin()` (still a raw query builder call under the hood, for the same reason: the column stays off `User`'s Fillable list on purpose, so it can only ever be flipped from an explicit, reviewed call site, never through mass assignment) — `approve()` here now calls that shared method instead of duplicating the update. `TenantController` only calls it when a password was actually submitted alongside the checkbox; checking the box with no new password is a no-op, since there'd be no new password to force the tenant away from.
+
 ## Token storage: plain, not hashed
 
 The token is stored as-is (not hashed like Laravel's own password-reset tokens). A leaked pre-registration link only exposes the applicant's own self-reported, not-yet-reviewed data — nothing pre-existing, nothing another Tenant/User can already see — and every value it can produce still requires an explicit admin approval before it does anything. That's a low enough blast radius that hashing at rest wasn't worth the extra complexity here; revisit if a future version starts storing more sensitive intake data before review.

@@ -187,6 +187,14 @@ test('sync with nothing given and no current user stays null', function () {
     expect($userId)->toBeNull();
 });
 
+test('forcePasswordChangeOnNextLogin flags the user', function () {
+    $user = User::factory()->tenant()->create(['must_change_password' => false]);
+
+    app(PortalAccountService::class)->forcePasswordChangeOnNextLogin($user->id);
+
+    expect($user->fresh()->must_change_password)->toBeTrue();
+});
+
 test('detach does not delete a login that a tenant record still uses', function () {
     $user = User::factory()->receiver()->create();
     Tenant::factory()->create(['user_id' => $user->id]);

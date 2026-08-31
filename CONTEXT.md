@@ -32,7 +32,7 @@ Convite de auto-preenchimento enviado a um futuro Inquilino: o admin gera um lin
 _Avoid_: Convite (usar só como verbo, "convidar um inquilino"; o registro em si é sempre "pré-cadastro").
 
 **Troca obrigatória de senha (forced password change)**:
-Estado de um Usuário (`must_change_password`) que bloqueia qualquer tela — inclusive o próprio portal — até a senha ser trocada. Ativado quando o login é criado com uma senha temporária conhecida (hoje só no aceite de um Pré-cadastro); desativado automaticamente na primeira troca de senha bem-sucedida. Não é exclusivo de Inquilino — é um estado de Usuário, reutilizável por qualquer fluxo futuro que precise entregar uma senha temporária.
+Estado de um Usuário (`must_change_password`) que bloqueia qualquer tela — inclusive o próprio portal — até a senha ser trocada. Ativado ao aceitar um Pré-cadastro (senha temporária fixa) ou manualmente pelo admin ao criar/editar um Inquilino com a opção "Exigir troca de senha no próximo login" (só tem efeito junto de uma senha nova); desativado automaticamente na primeira troca de senha bem-sucedida. Não é exclusivo de Inquilino — é um estado de Usuário, reutilizável por qualquer fluxo futuro que precise entregar uma senha temporária. Ver `PortalAccountService::forcePasswordChangeOnNextLogin()`.
 
 ### Imóvel e contrato
 

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\UserRole;
+use App\Http\Middleware\EnsureUserHasChangedPassword;
 use App\Models\Owner;
 use App\Models\Receiver;
 use App\Models\Tenant;
@@ -114,6 +115,25 @@ class PortalAccountService
         }
 
         return $currentUserId;
+    }
+
+    /**
+     * Flags a user to be forced through a password change on their next
+     * request — see {@see User::$must_change_password} and
+     * {@see EnsureUserHasChangedPassword}. Originally
+     * only set when a Tenant Pre-cadastro is approved with a fixed
+     * temporary password (docs/adr/0009-tenant-pre-registration.md), and
+     * reusable from here by any flow — e.g. an admin setting a known
+     * password for a Tenant/Receiver/Owner from their edit form.
+     *
+     * A raw query builder update on purpose: `must_change_password` isn't
+     * in User's Fillable list, precisely so it can only ever be set from
+     * an explicit, reviewed call site like this one — never through mass
+     * assignment from arbitrary request input.
+     */
+    public function forcePasswordChangeOnNextLogin(int $userId): void
+    {
+        User::query()->whereKey($userId)->update(['must_change_password' => true]);
     }
 
     /**

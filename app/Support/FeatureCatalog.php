@@ -60,7 +60,7 @@ class FeatureCatalog
             [
                 'area' => 'Cadastros',
                 'name' => 'Inquilinos (CRUD + login + bloqueio de exclusão)',
-                'description' => 'Cadastro de inquilinos, criação/alteração da senha do portal (inclusive editando um inquilino que já tem login), e bloqueio de exclusão quando há contrato ativo.',
+                'description' => 'Cadastro de inquilinos, criação/alteração da senha do portal (inclusive editando um inquilino que já tem login) com opção de exigir troca no próximo login, e bloqueio de exclusão quando há contrato ativo.',
                 'source' => ['app/Http/Controllers/Admin/TenantController.php'],
                 'tests' => ['tests/Feature/TenantCrudTest.php', 'tests/Feature/TenantAccessTest.php', 'tests/Feature/PaginationTest.php'],
                 'note' => null,
@@ -116,9 +116,9 @@ class FeatureCatalog
             [
                 'area' => 'Cadastros',
                 'name' => 'Troca obrigatória de senha (login com senha temporária)',
-                'description' => 'Ao aceitar um pré-cadastro, o inquilino recebe uma senha temporária e é obrigado a trocá-la antes de acessar qualquer outra tela.',
-                'source' => ['app/Http/Middleware/EnsureUserHasChangedPassword.php', 'app/Http/Controllers/Settings/SecurityController.php'],
-                'tests' => ['tests/Feature/EnsureUserHasChangedPasswordTest.php'],
+                'description' => 'Bloqueia o usuário até trocar a senha: ativado ao aceitar um pré-cadastro (senha temporária fixa) ou pelo admin ao criar/editar um inquilino ("Exigir troca de senha no próximo login").',
+                'source' => ['app/Http/Middleware/EnsureUserHasChangedPassword.php', 'app/Http/Controllers/Settings/SecurityController.php', 'app/Services/PortalAccountService.php'],
+                'tests' => ['tests/Feature/EnsureUserHasChangedPasswordTest.php', 'tests/Feature/PortalAccountServiceTest.php', 'tests/Feature/TenantCrudTest.php'],
                 'note' => null,
             ],
 

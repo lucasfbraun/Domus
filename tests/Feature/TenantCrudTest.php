@@ -42,6 +42,49 @@ test('admin can create a tenant with portal password confirmation', function () 
         ->and(Hash::check('password', $user->password))->toBeTrue();
 });
 
+test('admin can force a password change on next login when creating a tenant', function () {
+    $admin = User::factory()->admin()->create();
+
+    $this->actingAs($admin)
+        ->post(route('admin.tenants.store'), [
+            'name' => 'Inquilino Forcado',
+            'document' => '52998224725',
+            'email' => 'tenant-forcado@example.com',
+            'whatsapp' => '5511999990000',
+            'status' => 'active',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+            'force_password_change' => '1',
+        ])
+        ->assertRedirect(route('admin.tenants.index'));
+
+    $tenant = Tenant::query()->where('email', 'tenant-forcado@example.com')->firstOrFail();
+    $user = User::query()->findOrFail($tenant->user_id);
+
+    expect($user->must_change_password)->toBeTrue();
+});
+
+test('checking force_password_change without a password is a no-op', function () {
+    $admin = User::factory()->admin()->create();
+
+    $this->actingAs($admin)
+        ->post(route('admin.tenants.store'), [
+            'name' => 'Inquilino Sem Senha',
+            'document' => '52998224725',
+            'email' => 'tenant-sem-senha@example.com',
+            'whatsapp' => '5511999990000',
+            'status' => 'active',
+            'force_password_change' => '1',
+        ])
+        ->assertRedirect(route('admin.tenants.index'));
+
+    $tenant = Tenant::query()->where('email', 'tenant-sem-senha@example.com')->firstOrFail();
+
+    // No password was submitted, so no login was created at all — nothing
+    // to force a change on.
+    expect($tenant->user_id)->toBeNull();
+});
+
 test('a tenant created by the admin can actually log in to their portal without an email verification wall', function () {
     $admin = User::factory()->admin()->create();
 
@@ -154,6 +197,46 @@ test('admin can set a password for an already portal-linked tenant without a fal
         ->assertSessionDoesntHaveErrors();
 
     expect(Hash::check('nova-senha-valida', $user->fresh()->password))->toBeTrue();
+});
+
+test('admin can force a password change when updating an already portal-linked tenant', function () {
+    $admin = User::factory()->admin()->create();
+    $user = User::factory()->create(['email' => 'inquilino-a-forcar@example.com']);
+    $user->assignRole(UserRole::Tenant);
+    $tenant = Tenant::factory()->create(['email' => 'inquilino-a-forcar@example.com', 'user_id' => $user->id]);
+
+    $this->actingAs($admin)
+        ->put(route('admin.tenants.update', $tenant), [
+            'name' => $tenant->name,
+            'document' => $tenant->document,
+            'email' => 'inquilino-a-forcar@example.com',
+            'status' => $tenant->status->value,
+            'password' => 'senha-temporaria',
+            'password_confirmation' => 'senha-temporaria',
+            'force_password_change' => '1',
+        ])
+        ->assertRedirect(route('admin.tenants.index'));
+
+    expect($user->fresh()->must_change_password)->toBeTrue();
+});
+
+test('checking force_password_change on update without a new password does not flip the flag', function () {
+    $admin = User::factory()->admin()->create();
+    $user = User::factory()->create(['email' => 'inquilino-so-editando@example.com']);
+    $user->assignRole(UserRole::Tenant);
+    $tenant = Tenant::factory()->create(['email' => 'inquilino-so-editando@example.com', 'user_id' => $user->id]);
+
+    $this->actingAs($admin)
+        ->put(route('admin.tenants.update', $tenant), [
+            'name' => 'Nome Atualizado',
+            'document' => $tenant->document,
+            'email' => 'inquilino-so-editando@example.com',
+            'status' => $tenant->status->value,
+            'force_password_change' => '1',
+        ])
+        ->assertRedirect(route('admin.tenants.index'));
+
+    expect($user->fresh()->must_change_password)->toBeFalse();
 });
 
 test('admin cannot update a tenant to a portal email already used by another account', function () {

@@ -200,6 +200,23 @@ defineOptions({
                     />
                     <InputError :message="errors.password_confirmation" />
                 </div>
+
+                <div class="flex items-center gap-2">
+                    <Checkbox
+                        id="force_password_change"
+                        name="force_password_change"
+                        value="1"
+                    />
+                    <Label for="force_password_change">
+                        Exigir troca de senha no próximo login
+                    </Label>
+                </div>
+                <p class="text-sm text-muted-foreground">
+                    Só tem efeito se uma senha for definida acima — o
+                    inquilino é obrigado a trocá-la antes de acessar
+                    qualquer outra tela do portal.
+                </p>
+                <InputError :message="errors.force_password_change" />
             </div>
 
             <div class="flex items-center gap-4">

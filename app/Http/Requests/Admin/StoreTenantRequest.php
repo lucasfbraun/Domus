@@ -46,6 +46,7 @@ class StoreTenantRequest extends FormRequest
             'status' => ['required', Rule::enum(TenantStatus::class)],
             'resident_count' => ['nullable', 'integer', 'min:1'],
             'password' => ['nullable', 'confirmed', Password::defaults()],
+            'force_password_change' => ['boolean'],
         ];
     }
 

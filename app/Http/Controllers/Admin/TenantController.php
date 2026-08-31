@@ -22,6 +22,10 @@ use Inertia\Response;
  * tenant — see {@see PortalAccountService}. Unlike Owner/Receiver, this form
  * doesn't offer linking to an *existing* user; tenants aren't expected to
  * double as Admin/Receiver/Owner, so there's no such account to link to.
+ *
+ * `force_password_change` only takes effect alongside an actual password —
+ * checking it with no password typed is a no-op, there'd be nothing new to
+ * force the tenant away from.
  */
 class TenantController extends Controller
 {
@@ -51,14 +55,20 @@ class TenantController extends Controller
     {
         $this->authorize('create', Tenant::class);
 
+        $password = $request->string('password')->toString();
+
         $userId = $portalAccounts->sync(
             role: UserRole::Tenant,
             currentUserId: null,
             existingUserId: null,
             name: $request->string('name')->toString(),
             email: $request->string('email')->toString(),
-            password: $request->string('password')->toString(),
+            password: $password,
         );
+
+        if ($userId !== null && filled($password) && $request->boolean('force_password_change')) {
+            $portalAccounts->forcePasswordChangeOnNextLogin($userId);
+        }
 
         Tenant::query()->create([
             ...$request->safe()->only(['name', 'document', 'email', 'whatsapp', 'status', 'resident_count']),
@@ -85,17 +95,23 @@ class TenantController extends Controller
 
         $tenant->update($request->safe()->only(['name', 'document', 'email', 'whatsapp', 'status', 'resident_count']));
 
+        $password = $request->string('password')->toString();
+
         $userId = $portalAccounts->sync(
             role: UserRole::Tenant,
             currentUserId: $tenant->user_id,
             existingUserId: null,
             name: $tenant->name,
             email: $tenant->email,
-            password: $request->string('password')->toString(),
+            password: $password,
         );
 
         if ($userId !== $tenant->user_id) {
             $tenant->update(['user_id' => $userId]);
+        }
+
+        if ($userId !== null && filled($password) && $request->boolean('force_password_change')) {
+            $portalAccounts->forcePasswordChangeOnNextLogin($userId);
         }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Inquilino atualizado.']);

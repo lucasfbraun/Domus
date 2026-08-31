@@ -75,7 +75,7 @@ class TenantPreRegistrationService
                 password: self::TEMPORARY_PASSWORD,
             );
 
-            User::query()->whereKey($userId)->update(['must_change_password' => true]);
+            $this->portalAccounts->forcePasswordChangeOnNextLogin($userId);
 
             $tenant = Tenant::query()->create([
                 'user_id' => $userId,
