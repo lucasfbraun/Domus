@@ -94,7 +94,7 @@ Configuração única do sistema (não por Contrato) que define a partir de qual
 ### Configuração de backup
 
 **Periodicidade de backup (Backup frequency)**:
-Configuração única do sistema (`BackupSetting`) que liga/desliga a geração automática de backup do banco (desativado por padrão) e escolhe o intervalo — diário, semanal ou mensal — mais o horário do dia em que ele roda (`run_at_hour`, padrão 3h). Um job checa a cada hora se é a hora configurada e se já passou do prazo desde o último backup automático; se os dois, gera um novo. Ver [ADR 0012](docs/adr/0012-configurable-backup-schedule.md).
+Configuração única do sistema (`BackupSetting`) que liga/desliga a geração automática de backup do banco (desativado por padrão) e escolhe o intervalo — diário, semanal ou mensal — mais o horário do dia em que ele roda (`run_at_hour`, padrão 3h). Um job checa a cada hora se é a hora configurada e se já passou do prazo desde o último backup automático; se os dois, gera um novo. Configurar um horário que já passou no dia não gera o backup na hora — ele espera até esse horário no dia seguinte; a tela mostra "Próximo backup automático" para deixar isso claro. Ver [ADR 0012](docs/adr/0012-configurable-backup-schedule.md).
 
 **Retenção de backup (Backup retention)**:
 Quantidade máxima de backups mantidos ao mesmo tempo, também em `BackupSetting`. Ao ultrapassar o limite, os mais antigos são apagados — vale pra qualquer backup (automático, manual pela tela de Backups, ou importado), não só os gerados pela periodicidade.

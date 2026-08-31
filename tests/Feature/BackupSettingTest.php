@@ -24,7 +24,21 @@ test('admin sees the default backup schedule when none was configured yet', func
             ->where('backup_frequency', BackupFrequency::Disabled->value)
             ->where('backup_retention_count', BackupSetting::DEFAULT_RETENTION_COUNT)
             ->where('backup_run_at_hour', BackupSetting::DEFAULT_RUN_AT_HOUR)
-            ->where('backup_last_run_at', null));
+            ->where('backup_last_run_at', null)
+            // Disabled by default, so there is no next run to show either.
+            ->where('backup_next_run_at', null));
+});
+
+test('admin sees when the next automatic backup is due once a frequency is configured', function () {
+    $admin = User::factory()->admin()->create();
+    $this->travelTo('2026-01-01 10:00:00');
+    BackupSetting::current()->update(['frequency' => BackupFrequency::Daily, 'run_at_hour' => 16]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.billing-settings.edit'))
+        ->assertSuccessful()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('backup_next_run_at', now()->setTime(16, 0)->toIso8601String()));
 });
 
 test('admin can update the backup frequency, retention count and hour', function () {

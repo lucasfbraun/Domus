@@ -92,9 +92,9 @@ class FeatureCatalog
             [
                 'area' => 'Cadastros',
                 'name' => 'Login compartilhado entre papéis',
-                'description' => 'Serviço central que permite um Recebedor/Proprietário usar um login já existente em vez de criar um novo, acumulando papéis. Quando o login é exclusivo de um Inquilino/Recebedor/Proprietário, editar o nome/e-mail do cadastro sincroniza o login também.',
-                'source' => ['app/Services/PortalAccountService.php'],
-                'tests' => ['tests/Feature/PortalAccountServiceTest.php', 'tests/Feature/TenantCrudTest.php', 'tests/Feature/ReceiverCrudTest.php', 'tests/Feature/OwnerCrudTest.php'],
+                'description' => 'Serviço central que permite um Recebedor/Proprietário usar um login já existente em vez de criar um novo, acumulando papéis. Quando o login é exclusivo de um Inquilino/Recebedor/Proprietário, editar o nome/e-mail do cadastro sincroniza o login também — `php artisan portal-accounts:sync-logins` corrige de uma vez os registros editados antes dessa correção existir.',
+                'source' => ['app/Services/PortalAccountService.php', 'routes/console.php'],
+                'tests' => ['tests/Feature/PortalAccountServiceTest.php', 'tests/Feature/TenantCrudTest.php', 'tests/Feature/ReceiverCrudTest.php', 'tests/Feature/OwnerCrudTest.php', 'tests/Feature/SyncPortalLoginsCommandTest.php'],
                 'note' => null,
             ],
             [
@@ -436,7 +436,7 @@ class FeatureCatalog
             [
                 'area' => 'Backup',
                 'name' => 'Periodicidade e retenção de backup (Configurações)',
-                'description' => 'Tela de Configurações que liga/desliga o backup automático (diário/semanal/mensal) e define quantos backups ficam guardados — os mais antigos são apagados ao passar do limite, seja o backup automático, manual ou importado.',
+                'description' => 'Tela de Configurações que liga/desliga o backup automático (diário/semanal/mensal) e define quantos backups ficam guardados — os mais antigos são apagados ao passar do limite, seja o backup automático, manual ou importado. Mostra também "Próximo backup automático", para deixar claro quando ele realmente vai rodar.',
                 'source' => ['app/Http/Controllers/Admin/BackupSettingController.php', 'app/Models/BackupSetting.php', 'app/Services/BackupScheduleService.php', 'app/Jobs/RunScheduledBackupJob.php'],
                 'tests' => ['tests/Feature/BackupSettingTest.php', 'tests/Feature/BackupScheduleServiceTest.php', 'tests/Feature/RunScheduledBackupJobTest.php', 'tests/Feature/DatabaseBackupServiceTest.php'],
                 'note' => null,

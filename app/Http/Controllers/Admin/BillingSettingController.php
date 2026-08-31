@@ -7,6 +7,7 @@ use App\Http\Requests\Admin\UpdateBillingSettingRequest;
 use App\Models\BackupSetting;
 use App\Models\BillingSetting;
 use App\Models\PixSyncSetting;
+use App\Services\BackupScheduleService;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -21,7 +22,7 @@ use Inertia\Response;
  */
 class BillingSettingController extends Controller
 {
-    public function edit(): Response
+    public function edit(BackupScheduleService $backupSchedule): Response
     {
         $backupSetting = BackupSetting::current();
         $pixSyncSetting = PixSyncSetting::current();
@@ -32,6 +33,7 @@ class BillingSettingController extends Controller
             'backup_retention_count' => $backupSetting->retention_count,
             'backup_run_at_hour' => $backupSetting->run_at_hour,
             'backup_last_run_at' => $backupSetting->last_run_at?->toIso8601String(),
+            'backup_next_run_at' => $backupSchedule->nextRunAt()?->toIso8601String(),
             'pix_sync_enabled' => $pixSyncSetting->enabled,
             'pix_sync_interval_value' => $pixSyncSetting->interval_value,
             'pix_sync_interval_unit' => $pixSyncSetting->interval_unit->value,

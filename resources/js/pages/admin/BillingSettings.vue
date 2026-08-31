@@ -21,6 +21,7 @@ defineProps<{
     backup_retention_count: number;
     backup_run_at_hour: number;
     backup_last_run_at: string | null;
+    backup_next_run_at: string | null;
     pix_sync_enabled: boolean;
     pix_sync_interval_value: number;
     pix_sync_interval_unit: 'minutes' | 'hours';
@@ -182,6 +183,14 @@ const pixSyncIntervalUnitOptions = [
                     >
                         Último backup automático:
                         {{ formatDateTime(backup_last_run_at) }}
+                    </p>
+                    <p
+                        v-if="backup_next_run_at"
+                        class="text-sm text-muted-foreground"
+                    >
+                        Próximo backup automático:
+                        {{ formatDateTime(backup_next_run_at) }} — se essa hora
+                        já passou hoje, ele roda amanhã no mesmo horário.
                     </p>
 
                     <div class="flex items-center gap-4">

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\BackupFrequency;
 use App\Jobs\RunScheduledBackupJob;
 use App\Models\BackupSetting;
+use Carbon\CarbonInterface;
 
 /**
  * Decides whether an automatic backup is due right now and, if so, runs
@@ -43,6 +44,41 @@ class BackupScheduleService
         $setting->update(['last_run_at' => now()]);
 
         return true;
+    }
+
+    /**
+     * When the next automatic backup will actually run, for display on
+     * Admin -> Configurações — purely informational, {@see isDue()} is
+     * still what decides in real time. Null when disabled.
+     *
+     * Setting an hour that has already passed today (whether this is the
+     * very first run or the frequency's next due date lands on today)
+     * doesn't run immediately — {@see isDue()} only ever fires during the
+     * configured hour's window, so the next opportunity is that same hour
+     * tomorrow. This exists so that isn't read as "nothing happened, is it
+     * broken?" — the admin can see exactly when to expect it instead.
+     */
+    public function nextRunAt(): ?CarbonInterface
+    {
+        $setting = BackupSetting::current();
+
+        if ($setting->frequency === BackupFrequency::Disabled) {
+            return null;
+        }
+
+        $today = now()->startOfDay();
+
+        $dueDate = $setting->last_run_at === null
+            ? $today
+            : $setting->frequency->nextDueAt($setting->last_run_at);
+
+        if ($dueDate->lessThan($today)) {
+            $dueDate = $today;
+        }
+
+        $candidate = $dueDate->setTime($setting->run_at_hour, 0);
+
+        return $candidate->isPast() ? $candidate->addDay() : $candidate;
     }
 
     private function isDue(BackupSetting $setting): bool

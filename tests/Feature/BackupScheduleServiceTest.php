@@ -118,6 +118,70 @@ test('monthly frequency from the 31st clamps instead of overflowing into the mon
     expect(app(BackupScheduleService::class)->runIfDue())->toBeTrue();
 });
 
+test('nextRunAt is null when disabled', function () {
+    BackupSetting::current()->update(['frequency' => BackupFrequency::Disabled]);
+
+    expect(app(BackupScheduleService::class)->nextRunAt())->toBeNull();
+});
+
+test('nextRunAt for a never-run schedule is today at the configured hour, if that hour has not passed yet', function () {
+    $this->travelTo('2026-01-01 10:00:00');
+    BackupSetting::current()->update([
+        'frequency' => BackupFrequency::Daily,
+        'run_at_hour' => 16,
+        'last_run_at' => null,
+    ]);
+
+    expect(app(BackupScheduleService::class)->nextRunAt()->toDateTimeString())->toBe('2026-01-01 16:00:00');
+});
+
+test('nextRunAt for a never-run schedule rolls to tomorrow once the configured hour has already passed today', function () {
+    // Mirrors the reported case: an admin configuring "16:00" at 18:00
+    // must not be left thinking nothing happened — this is when the next
+    // run actually lands.
+    $this->travelTo('2026-01-01 18:00:00');
+    BackupSetting::current()->update([
+        'frequency' => BackupFrequency::Daily,
+        'run_at_hour' => 16,
+        'last_run_at' => null,
+    ]);
+
+    expect(app(BackupScheduleService::class)->nextRunAt()->toDateTimeString())->toBe('2026-01-02 16:00:00');
+});
+
+test('nextRunAt for a daily schedule already due today is today at the configured hour', function () {
+    $this->travelTo('2026-01-02 10:00:00');
+    BackupSetting::current()->update([
+        'frequency' => BackupFrequency::Daily,
+        'run_at_hour' => 16,
+        'last_run_at' => '2026-01-01 16:00:00',
+    ]);
+
+    expect(app(BackupScheduleService::class)->nextRunAt()->toDateTimeString())->toBe('2026-01-02 16:00:00');
+});
+
+test('nextRunAt for a daily schedule that already ran today is tomorrow at the configured hour', function () {
+    $this->travelTo('2026-01-01 16:30:00');
+    BackupSetting::current()->update([
+        'frequency' => BackupFrequency::Daily,
+        'run_at_hour' => 16,
+        'last_run_at' => '2026-01-01 16:00:00',
+    ]);
+
+    expect(app(BackupScheduleService::class)->nextRunAt()->toDateTimeString())->toBe('2026-01-02 16:00:00');
+});
+
+test('nextRunAt for a weekly schedule is the due calendar day at the configured hour', function () {
+    $this->travelTo('2026-01-01 10:00:00');
+    BackupSetting::current()->update([
+        'frequency' => BackupFrequency::Weekly,
+        'run_at_hour' => 3,
+        'last_run_at' => '2026-01-01 03:00:00',
+    ]);
+
+    expect(app(BackupScheduleService::class)->nextRunAt()->toDateTimeString())->toBe('2026-01-08 03:00:00');
+});
+
 test('runIfDue prunes down to the configured retention count', function () {
     Storage::fake('local');
     $this->travelTo('2026-01-04 03:00:00');
