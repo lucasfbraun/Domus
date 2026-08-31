@@ -47,7 +47,7 @@ class PaymentConfirmedNotification extends Notification implements ShouldQueue
         return new WhatsAppMessage(
             app(WhatsAppClient::class)->buildReminderText([
                 'event' => 'payment_confirmed',
-                'tenantName' => $this->charge->contract?->tenant?->name ?? $notifiable->name ?? '',
+                'tenantName' => $this->charge->contract?->tenant->name ?? $notifiable->name ?? '',
                 'amount' => $this->amountDue(),
                 'dueDate' => $this->charge->due_date->timezone('America/Sao_Paulo')->format('d/m/Y'),
                 'paymentUrl' => rtrim((string) config('services.app_base_url'), '/').'/portal/tenant',
@@ -60,7 +60,7 @@ class PaymentConfirmedNotification extends Notification implements ShouldQueue
     {
         $this->charge->loadMissing('contract.property');
 
-        return $this->charge->contract?->property?->name ?? 'imovel';
+        return $this->charge->contract?->property->name ?? 'imovel';
     }
 
     private function amountDue(): float

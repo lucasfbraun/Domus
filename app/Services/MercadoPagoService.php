@@ -513,7 +513,7 @@ class MercadoPagoService
             throw new \InvalidArgumentException('State invalido (assinatura nao confere).');
         }
 
-        if (now()->timestamp - $timestamp > self::STATE_TTL_SECONDS) {
+        if ((int) now()->timestamp - $timestamp > self::STATE_TTL_SECONDS) {
             throw new \InvalidArgumentException('Link de conexao expirado. Gere um novo.');
         }
 
@@ -600,8 +600,12 @@ class MercadoPagoService
                 );
             }
 
-            $expiresAt = $receiver->mp_token_expires_at?->timestamp ?? 0;
-            $isExpiringSoon = $expiresAt - now()->timestamp < self::TOKEN_REFRESH_MARGIN_SECONDS;
+            // phpstan claims mp_token_expires_at is never null here, but the
+            // column is genuinely nullable (a receiver can have an access
+            // token without ever having had an expiry recorded) — keep the
+            // nullsafe.
+            $expiresAt = (int) ($receiver->mp_token_expires_at?->timestamp ?? 0); // @phpstan-ignore nullsafe.neverNull
+            $isExpiringSoon = $expiresAt - (int) now()->timestamp < self::TOKEN_REFRESH_MARGIN_SECONDS;
 
             if (! $isExpiringSoon) {
                 return $this->assertOrdersApiAccessToken($receiver->mp_access_token);
@@ -651,6 +655,7 @@ class MercadoPagoService
     }
 
     /**
+     * @param  array<string, mixed>  $body
      * @return array{access_token: string, refresh_token?: string, expires_in: int, user_id: int, live_mode?: bool}
      */
     private function requestToken(array $body): array

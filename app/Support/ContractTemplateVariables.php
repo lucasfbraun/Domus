@@ -94,7 +94,12 @@ class ContractTemplateVariables
         $withTokens = preg_replace_callback(
             '/<span[^>]*\bdata-template-variable=["\'](\w+)["\'][^>]*>.*?<\/span>|\{\{\s*(\w+)\s*\}\}/us',
             function (array $matches) use (&$tokens, &$index, $keys): string {
-                $key = ($matches[1] ?? '') !== '' ? $matches[1] : ($matches[2] ?? '');
+                // phpstan's regex-shape inference for this two-branch
+                // alternation isn't sound (it infers group 1 as always
+                // '' and group 2 as always present, which isn't true —
+                // either branch can match) and flags contradictory things
+                // depending on how this is written; kept defensive.
+                $key = ($matches[1] ?? '') !== '' ? $matches[1] : ($matches[2] ?? ''); // @phpstan-ignore nullCoalesce.offset
 
                 if ($key === '' || ! in_array($key, $keys, true)) {
                     return $matches[0];

@@ -48,8 +48,8 @@ class OwnerPortalController extends Controller
                     'id' => $property->id,
                     'name' => $property->name,
                     'address' => $property->address,
-                    'type_label' => $property->type?->label(),
-                    'status' => $property->status?->value,
+                    'type_label' => $property->type->label(),
+                    'status' => $property->status->value,
                 ]),
             'contracts' => Contract::query()
                 ->with(['property', 'tenant'])
@@ -59,10 +59,10 @@ class OwnerPortalController extends Controller
                 ->withQueryString()
                 ->through(fn (Contract $contract) => [
                     'id' => $contract->id,
-                    'status' => $contract->status?->value,
+                    'status' => $contract->status->value,
                     'monthly_rent' => (float) $contract->monthly_rent,
-                    'starts_at' => $contract->starts_at?->toDateString(),
-                    'ends_at' => $contract->ends_at?->toDateString(),
+                    'starts_at' => $contract->starts_at->toDateString(),
+                    'ends_at' => $contract->ends_at->toDateString(),
                     'property' => $contract->property ? [
                         'id' => $contract->property->id,
                         'name' => $contract->property->name,

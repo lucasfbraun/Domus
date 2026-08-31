@@ -51,7 +51,8 @@ class BillingCycle
 
     public static function formatReference(string $dueDateIso): string
     {
-        $date = Carbon::parse($dueDateIso.'T12:00:00-03:00')->locale('pt_BR');
+        $date = Carbon::parse($dueDateIso.'T12:00:00-03:00');
+        $date->locale('pt_BR');
         $monthName = $date->translatedFormat('F');
         $capitalized = mb_strtoupper(mb_substr($monthName, 0, 1)).mb_substr($monthName, 1);
 

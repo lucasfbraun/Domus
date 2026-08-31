@@ -29,7 +29,7 @@ class TenantPortalController extends Controller
         abort_unless($user instanceof User, 403);
 
         $tenant = $user->tenant;
-        abort_unless($tenant, 403);
+        abort_unless($tenant !== null, 403);
 
         return Inertia::render('portal/Tenant', [
             'contracts' => Contract::query()
@@ -40,11 +40,11 @@ class TenantPortalController extends Controller
                 ->withQueryString()
                 ->through(fn (Contract $contract) => [
                     'id' => $contract->id,
-                    'status' => $contract->status?->value,
-                    'signature_status' => $contract->signature_status?->value,
+                    'status' => $contract->status->value,
+                    'signature_status' => $contract->signature_status->value,
                     'monthly_rent' => (float) $contract->monthly_rent,
-                    'starts_at' => $contract->starts_at?->toDateString(),
-                    'ends_at' => $contract->ends_at?->toDateString(),
+                    'starts_at' => $contract->starts_at->toDateString(),
+                    'ends_at' => $contract->ends_at->toDateString(),
                     'property' => $contract->property ? [
                         'id' => $contract->property->id,
                         'name' => $contract->property->name,
@@ -67,8 +67,8 @@ class TenantPortalController extends Controller
                         'amount_due' => $amountDue,
                         'has_penalties' => $amountDue > $originalAmount,
                         'rateio_amount' => (float) ($charge->rateio_amount ?? 0),
-                        'status' => $charge->status?->value ?? $charge->status,
-                        'due_date' => $charge->due_date?->toDateString(),
+                        'status' => $charge->status->value,
+                        'due_date' => $charge->due_date->toDateString(),
                         'is_paid' => $charge->status === ChargeStatus::Paid,
                         'property' => $charge->contract?->property?->name,
                         'pix_qr_code' => $charge->pix_qr_code,
@@ -87,8 +87,8 @@ class TenantPortalController extends Controller
                     'id' => $deposit->id,
                     'description' => $deposit->description,
                     'amount' => (float) $deposit->amount,
-                    'status' => $deposit->status?->value ?? $deposit->status,
-                    'due_date' => $deposit->due_date?->toDateString(),
+                    'status' => $deposit->status->value,
+                    'due_date' => $deposit->due_date->toDateString(),
                     'is_paid' => $deposit->status === DepositStatus::Paid,
                     'is_refunded' => $deposit->status === DepositStatus::Refunded,
                     'refunded_at' => $deposit->refunded_at?->toDateString(),

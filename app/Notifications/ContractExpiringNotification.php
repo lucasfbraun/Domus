@@ -29,7 +29,7 @@ class ContractExpiringNotification extends Notification implements ShouldQueue
     public function toMail(object $notifiable): MailMessage
     {
         $this->contract->loadMissing(['tenant', 'property']);
-        $propertyName = $this->contract->property?->name ?? 'imovel';
+        $propertyName = $this->contract->property->name ?? 'imovel';
         $dueDate = $this->contract->ends_at->timezone('America/Sao_Paulo')->format('d/m/Y');
 
         return (new MailMessage)
@@ -46,7 +46,7 @@ class ContractExpiringNotification extends Notification implements ShouldQueue
         return new WhatsAppMessage(
             app(WhatsAppClient::class)->buildReminderText([
                 'event' => 'contract_expiring',
-                'tenantName' => $this->contract->tenant?->name ?? '',
+                'tenantName' => $this->contract->tenant->name ?? '',
                 'amount' => 0,
                 'dueDate' => $this->contract->ends_at->timezone('America/Sao_Paulo')->format('d/m/Y'),
                 'paymentUrl' => rtrim((string) config('services.app_base_url'), '/').'/portal/tenant',

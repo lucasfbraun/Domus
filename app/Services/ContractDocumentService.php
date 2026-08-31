@@ -177,7 +177,7 @@ class ContractDocumentService
             'inquilino_whatsapp' => BrazilianPhone::format($contract->tenant->whatsapp),
             'imovel_nome' => $contract->property->name,
             'imovel_endereco' => $contract->property->address,
-            'imovel_tipo' => $contract->property->type,
+            'imovel_tipo' => $contract->property->type->label(),
             'recebedor_nome' => $contract->receiver->name,
             'recebedor_documento' => BrazilianDocument::format($contract->receiver->document),
             'proprietario_nome' => $contract->property->owners->pluck('name')->implode(', '),

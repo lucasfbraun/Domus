@@ -11,3 +11,48 @@ parameters:
         - routes/
 
     level: 7
+
+    # Every model in this app declares casts via the `casts(): array`
+    # method (Laravel 11+ style), not the legacy `protected $casts`
+    # property — Larastan only reads the method form when this is on.
+    # Without it, every casted property (dates, enums, decimals...)
+    # resolves as an untyped string/mixed everywhere in app/, which is
+    # what was producing ~220 false positives across unrelated files.
+    parseModelCastsMethod: true
+
+    # Each entry below is a verified false positive, not a suppressed
+    # bug — checked against the actual schema/runtime behavior before
+    # being added. Prefer an inline `// @phpstan-ignore` comment over
+    # adding here when an error is specific to one line; these are here
+    # because they're either project-wide patterns or third-party stubs
+    # we don't control.
+    ignoreErrors:
+        -
+            # Seeder::$command (Laravel core) is genuinely nullable: it's
+            # only set when the seeder runs through an artisan `db:seed`
+            # command. Calling a seeder's run() directly (e.g. from
+            # tinker, or one seeder composing another without ->call())
+            # leaves it null — hit this exact case locally this session.
+            # Larastan infers it as non-null from setCommand()'s param
+            # type, which is wrong for how this file actually gets used.
+            message: '#Using nullsafe method call on non-nullable type Illuminate\\Console\\Command#'
+            path: database/seeders/DemoSeeder.php
+        -
+            # Custom notification channels (WhatsAppChannel) and the
+            # channelsFor() trait they share receive $notifiable typed as
+            # `object` — Laravel's notification pipeline has no public
+            # interface for "routable" notifiables, so routeNotificationFor()
+            # is always called on a loosely-typed object. It exists at
+            # runtime via every notifiable model's Notifiable trait; this
+            # is the same untyped pattern Laravel's own channels use.
+            message: '#Call to an undefined method object::routeNotificationFor\(\)#'
+            path: app/Notifications
+        -
+            # Spatie Media Library's own published config references its
+            # paid Pro package's TemporaryUpload model unconditionally.
+            # This app only uses the free Media Library (see ADR 0002)
+            # and never installs media-library-pro, so the class
+            # genuinely doesn't exist — that's expected, not a bug to fix
+            # in vendor-shaped config.
+            message: '#Class Spatie\\MediaLibraryPro\\Models\\TemporaryUpload not found#'
+            path: config/media-library.php

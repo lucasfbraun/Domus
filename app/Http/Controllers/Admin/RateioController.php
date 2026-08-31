@@ -80,7 +80,7 @@ class RateioController extends Controller
     {
         $this->authorize('view', $rateio);
 
-        abort_unless($rateio->invoice_path, 404);
+        abort_unless($rateio->invoice_path !== null, 404);
 
         return response()->download(
             Storage::disk('local')->path($rateio->invoice_path),

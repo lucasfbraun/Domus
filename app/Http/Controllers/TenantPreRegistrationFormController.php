@@ -34,9 +34,16 @@ class TenantPreRegistrationFormController extends Controller
     public function store(string $token, StoreTenantPreRegistrationSubmissionRequest $request, TenantPreRegistrationService $service): RedirectResponse
     {
         $preRegistration = $this->findByToken($token);
+        $validated = $request->validated();
 
         try {
-            $service->submit($preRegistration, $request->validated());
+            $service->submit($preRegistration, [
+                'name' => (string) $validated['name'],
+                'document' => (string) $validated['document'],
+                'email' => (string) $validated['email'],
+                'whatsapp' => (string) $validated['whatsapp'],
+                'resident_count' => (int) $validated['resident_count'],
+            ]);
         } catch (InvalidArgumentException $exception) {
             throw ValidationException::withMessages(['form' => $exception->getMessage()]);
         }

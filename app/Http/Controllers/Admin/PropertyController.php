@@ -94,12 +94,12 @@ class PropertyController extends Controller
      * @return array{
      *     id: int,
      *     name: string,
-     *     address: string|null,
-     *     type: string|null,
-     *     type_label: string|null,
-     *     status: string|null,
+     *     address: string,
+     *     type: string,
+     *     type_label: string,
+     *     status: string,
      *     cover_url: string|null,
-     *     owners: list<array{id: int, name: string}>
+     *     owners: array<int, array{id: int, name: string}>
      * }
      */
     private function propertyPayload(Property $property): array
@@ -108,9 +108,9 @@ class PropertyController extends Controller
             'id' => $property->id,
             'name' => $property->name,
             'address' => $property->address,
-            'type' => $property->type?->value,
-            'type_label' => $property->type?->label(),
-            'status' => $property->status?->value,
+            'type' => $property->type->value,
+            'type_label' => $property->type->label(),
+            'status' => $property->status->value,
             'cover_url' => $property->coverUrl(),
             'owners' => $property->owners
                 ->map(fn (Owner $owner) => [

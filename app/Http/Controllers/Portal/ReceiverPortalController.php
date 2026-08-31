@@ -24,7 +24,7 @@ class ReceiverPortalController extends Controller
         abort_unless($user instanceof User, 403);
 
         $receiver = $user->receiver;
-        abort_unless($receiver, 403);
+        abort_unless($receiver !== null, 403);
 
         return Inertia::render('portal/Receiver', [
             'contracts' => Contract::query()
@@ -35,7 +35,7 @@ class ReceiverPortalController extends Controller
                 ->withQueryString()
                 ->through(fn (Contract $contract) => [
                     'id' => $contract->id,
-                    'status' => $contract->status?->value,
+                    'status' => $contract->status->value,
                     'monthly_rent' => (float) $contract->monthly_rent,
                     'property' => $contract->property ? [
                         'id' => $contract->property->id,
@@ -57,8 +57,8 @@ class ReceiverPortalController extends Controller
                     'description' => $charge->reference,
                     'amount' => (float) $charge->original_amount,
                     'rateio_amount' => (float) ($charge->rateio_amount ?? 0),
-                    'status' => $charge->status?->value ?? $charge->status,
-                    'due_date' => $charge->due_date?->toDateString(),
+                    'status' => $charge->status->value,
+                    'due_date' => $charge->due_date->toDateString(),
                     'is_paid' => $charge->status === ChargeStatus::Paid,
                     'tenant' => $charge->contract?->tenant?->name,
                     'property' => $charge->contract?->property?->name,

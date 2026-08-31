@@ -43,8 +43,8 @@ class ChargeController extends Controller
                     'description' => $charge->reference,
                     'amount' => (float) $charge->original_amount,
                     'rateio_amount' => (float) ($charge->rateio_amount ?? 0),
-                    'status' => $charge->status?->value ?? $charge->status,
-                    'due_date' => $charge->due_date?->toDateString(),
+                    'status' => $charge->status->value,
+                    'due_date' => $charge->due_date->toDateString(),
                     'tenant' => $charge->contract?->tenant
                         ? ['name' => $charge->contract->tenant->name]
                         : null,
@@ -101,11 +101,11 @@ class ChargeController extends Controller
 
         if ($request->expectsJson() || $request->header('X-Inertia-HTTP') || $request->wantsJson()) {
             return response()->json([
-                'qr_code' => $result['qrCode'] ?? $charge->fresh()->pix_qr_code,
-                'copy_paste' => $result['qrCode'] ?? $charge->fresh()->pix_qr_code,
-                'qr_code_base64' => $result['qrCodeBase64'] ?? $charge->fresh()->pix_qr_code_base64,
-                'expires_at' => $result['expiresAt'] ?? $charge->fresh()->pix_expires_at,
-                'order_id' => $result['orderId'] ?? $charge->fresh()->mercado_pago_order_id,
+                'qr_code' => $result['qrCode'],
+                'copy_paste' => $result['qrCode'],
+                'qr_code_base64' => $result['qrCodeBase64'],
+                'expires_at' => $result['expiresAt'],
+                'order_id' => $result['orderId'],
                 'transaction_id' => $result['transactionId'] ?? $charge->fresh()->mercado_pago_transaction_id,
                 'ticket_url' => $result['ticketUrl'] ?? $charge->fresh()->payment_url,
                 'amount_due' => $mercadoPago->computeCurrentAmountDue($charge->fresh(['contract'])),

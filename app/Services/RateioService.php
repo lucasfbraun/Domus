@@ -35,7 +35,7 @@ class RateioService
     public const MAX_INVOICE_BYTES = 8 * 1024 * 1024;
 
     /**
-     * @param  list<int>  $propertyIds
+     * @param  array<string, mixed>  $input
      * @return array{rateio: Rateio, appliedCount: int, pendingCount: int, amountsByProperty: array<int, float>}
      */
     public function create(array $input, ?UploadedFile $invoice = null): array
@@ -58,7 +58,7 @@ class RateioService
     }
 
     /**
-     * @param  list<int>  $propertyIds
+     * @param  array<string, mixed>  $input
      * @return array{rateio: Rateio, appliedCount: int, pendingCount: int, amountsByProperty: array<int, float>}
      */
     public function update(Rateio $rateio, array $input, ?UploadedFile $invoice = null): array
@@ -151,7 +151,14 @@ class RateioService
             RateioAllocation::query()->create([
                 'rateio_id' => $rateio->id,
                 'property_id' => $propertyId,
-                'amount' => $amountsByProperty[(string) $propertyId] ?? 0,
+                // phpstan flags this fallback as dead (it can prove the
+                // key exists here, tracing the same $propertyIds this
+                // array was just built from) but not a line below, where
+                // the flow correlation is lost and it reports the
+                // opposite — Finance::splitByWeights()'s declared return
+                // type is only array<string, float>, not shaped to these
+                // specific keys, so keep the defensive fallback.
+                'amount' => $amountsByProperty[(string) $propertyId] ?? 0, // @phpstan-ignore nullCoalesce.offset
             ]);
 
             if ($this->tryApplyAllocation($propertyId, $rateio->reference)) {
@@ -163,8 +170,10 @@ class RateioService
             'rateio' => $rateio->load('allocations.property'),
             'appliedCount' => $appliedCount,
             'pendingCount' => count($propertyIds) - $appliedCount,
+            // Same key set as the loop above: $propertyIds is what
+            // $amountsByProperty was built from, so every key exists.
             'amountsByProperty' => array_map(
-                fn ($id) => $amountsByProperty[(string) $id] ?? 0,
+                fn ($id) => $amountsByProperty[(string) $id], // @phpstan-ignore offsetAccess.notFound
                 $propertyIds,
             ),
         ];
@@ -286,6 +295,7 @@ class RateioService
     }
 
     /**
+     * @param  array<string, mixed>  $input
      * @param  list<int>  $propertyIds
      */
     private function validateInput(array $input, array $propertyIds): void
@@ -340,7 +350,7 @@ class RateioService
         $path = $invoice->store('rateios', 'local');
 
         return [
-            'invoice_path' => $path,
+            'invoice_path' => $path !== false ? $path : null,
             'invoice_content_type' => $invoice->getMimeType(),
             'invoice_file_name' => $invoice->getClientOriginalName(),
         ];

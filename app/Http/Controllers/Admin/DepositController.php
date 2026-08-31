@@ -40,8 +40,8 @@ class DepositController extends Controller
                     'id' => $deposit->id,
                     'description' => $deposit->description,
                     'amount' => (float) $deposit->amount,
-                    'status' => $deposit->status?->value ?? $deposit->status,
-                    'due_date' => $deposit->due_date?->toDateString(),
+                    'status' => $deposit->status->value,
+                    'due_date' => $deposit->due_date->toDateString(),
                     'paid_at' => $deposit->paid_at?->toDateString(),
                     'refunded_at' => $deposit->refunded_at?->toDateString(),
                     'refunded_amount' => $deposit->refunded_amount !== null ? (float) $deposit->refunded_amount : null,
@@ -62,7 +62,7 @@ class DepositController extends Controller
                 ->get()
                 ->map(fn (Contract $contract) => [
                     'id' => $contract->id,
-                    'label' => trim(($contract->tenant?->name ?? 'Sem inquilino').' — '.($contract->property?->name ?? 'Sem imovel')),
+                    'label' => trim(($contract->tenant->name ?? 'Sem inquilino').' — '.($contract->property->name ?? 'Sem imovel')),
                 ]),
             'receivers' => Receiver::query()->orderBy('name')->get(['id', 'name']),
         ]);
@@ -163,11 +163,11 @@ class DepositController extends Controller
 
         if ($request->expectsJson() || $request->header('X-Inertia-HTTP') || $request->wantsJson()) {
             return response()->json([
-                'qr_code' => $result['qrCode'] ?? $deposit->fresh()->pix_qr_code,
-                'copy_paste' => $result['qrCode'] ?? $deposit->fresh()->pix_qr_code,
-                'qr_code_base64' => $result['qrCodeBase64'] ?? $deposit->fresh()->pix_qr_code_base64,
-                'expires_at' => $result['expiresAt'] ?? $deposit->fresh()->pix_expires_at,
-                'order_id' => $result['orderId'] ?? $deposit->fresh()->mercado_pago_order_id,
+                'qr_code' => $result['qrCode'],
+                'copy_paste' => $result['qrCode'],
+                'qr_code_base64' => $result['qrCodeBase64'],
+                'expires_at' => $result['expiresAt'],
+                'order_id' => $result['orderId'],
                 'transaction_id' => $result['transactionId'] ?? $deposit->fresh()->mercado_pago_transaction_id,
                 'ticket_url' => $result['ticketUrl'] ?? $deposit->fresh()->payment_url,
             ]);

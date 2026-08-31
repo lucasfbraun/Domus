@@ -16,6 +16,7 @@ use App\Models\User;
 use App\Support\Pagination;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
@@ -45,8 +46,8 @@ class ContractOccurrenceController extends Controller
                 ->through(fn (ContractOccurrence $occurrence) => [
                     'id' => $occurrence->id,
                     'description' => $occurrence->description,
-                    'status' => $occurrence->status?->value,
-                    'status_label' => $occurrence->status?->label(),
+                    'status' => $occurrence->status->value,
+                    'status_label' => $occurrence->status->label(),
                     'resolution_note' => $occurrence->resolution_note,
                     'resolved_at' => $occurrence->resolved_at?->toIso8601String(),
                     'created_at' => $occurrence->created_at?->toIso8601String(),
@@ -73,7 +74,7 @@ class ContractOccurrenceController extends Controller
         abort_unless($user instanceof User, 403);
 
         $tenant = $user->tenant;
-        abort_unless($tenant, 403);
+        abort_unless($tenant !== null, 403);
 
         $contract = Contract::query()->findOrFail($request->integer('contract_id'));
         abort_unless($contract->tenant_id === $tenant->id, 403);
@@ -85,7 +86,7 @@ class ContractOccurrenceController extends Controller
             'status' => OccurrenceStatus::Open,
         ]);
 
-        $photos = $request->file('photos', []);
+        $photos = Arr::wrap($request->file('photos', []));
         foreach ($photos as $photo) {
             $path = $photo->store("occurrences/{$occurrence->id}", 'local');
 
@@ -103,7 +104,7 @@ class ContractOccurrenceController extends Controller
         if ($adminEmails !== []) {
             Mail::to($adminEmails)->send(new OccurrenceReportedMail(
                 tenantName: $tenant->name,
-                propertyName: $contract->property?->name ?? 'imovel',
+                propertyName: $contract->property->name ?? 'imovel',
                 description: $request->string('description')->toString(),
                 photoCount: count($photos),
             ));
@@ -132,7 +133,7 @@ class ContractOccurrenceController extends Controller
 
         if ($occurrence->tenant?->email) {
             Mail::to($occurrence->tenant->email)->send(new OccurrenceUpdatedMail(
-                propertyName: $occurrence->contract?->property?->name ?? 'imovel',
+                propertyName: $occurrence->contract?->property->name ?? 'imovel',
                 statusLabel: $status->label(),
                 resolutionNote: $request->input('resolution_note'),
             ));

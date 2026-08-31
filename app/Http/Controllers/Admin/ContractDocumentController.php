@@ -113,7 +113,7 @@ class ContractDocumentController extends Controller
 
         if ($recipients !== []) {
             Mail::to($recipients)->send(new ContractDocumentReviewedMail(
-                propertyName: $contract->property?->name ?? 'imovel',
+                propertyName: $contract->property->name ?? 'imovel',
                 approved: $approved,
                 reviewNote: $request->input('review_note'),
             ));
@@ -125,7 +125,7 @@ class ContractDocumentController extends Controller
     public function downloadGenerated(Contract $contract): BinaryFileResponse
     {
         $this->authorize('view', $contract);
-        abort_unless($contract->generated_document_path, 404);
+        abort_unless($contract->generated_document_path !== null, 404);
 
         return response()->download(
             Storage::disk('local')->path($contract->generated_document_path),
@@ -136,7 +136,7 @@ class ContractDocumentController extends Controller
     public function downloadSigned(Contract $contract): BinaryFileResponse
     {
         $this->authorize('view', $contract);
-        abort_unless($contract->signed_document_path, 404);
+        abort_unless($contract->signed_document_path !== null, 404);
 
         return response()->download(
             Storage::disk('local')->path($contract->signed_document_path),
@@ -147,7 +147,7 @@ class ContractDocumentController extends Controller
     public function downloadOwnerSigned(Contract $contract): BinaryFileResponse
     {
         $this->authorize('view', $contract);
-        abort_unless($contract->owner_signed_document_path, 404);
+        abort_unless($contract->owner_signed_document_path !== null, 404);
 
         return response()->download(
             Storage::disk('local')->path($contract->owner_signed_document_path),

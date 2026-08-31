@@ -38,13 +38,13 @@ class DashboardController extends Controller
             $amountDue = Finance::computeAmountDue([
                 'originalAmount' => (float) $charge->original_amount,
                 'dueDate' => $charge->due_date->format('Y-m-d'),
-                'status' => $charge->status?->value ?? (string) $charge->status,
-                'graceDays' => (int) ($charge->contract?->grace_days ?? 0),
-                'fineRate' => (float) ($charge->contract?->fine_rate ?? 0),
-                'monthlyInterestRate' => (float) ($charge->contract?->monthly_interest_rate ?? 0),
+                'status' => $charge->status->value,
+                'graceDays' => (int) ($charge->contract->grace_days ?? 0),
+                'fineRate' => (float) ($charge->contract->fine_rate ?? 0),
+                'monthlyInterestRate' => (float) ($charge->contract->monthly_interest_rate ?? 0),
             ]);
 
-            $receiverName = $charge->receiver?->name ?? $charge->contract?->receiver?->name ?? 'Sem recebedor';
+            $receiverName = $charge->receiver->name ?? $charge->contract->receiver->name ?? 'Sem recebedor';
             $byReceiver[$receiverName] ??= ['expected' => 0.0, 'received' => 0.0, 'open' => 0.0];
 
             $expected += $amountDue;
@@ -93,12 +93,12 @@ class DashboardController extends Controller
                     'id' => $charge->id,
                     'description' => $charge->reference,
                     'amount' => (float) $charge->original_amount,
-                    'status' => $charge->status?->value ?? $charge->status,
-                    'due_date' => $charge->due_date?->toDateString(),
-                    'tenant' => $charge->contract?->tenant
+                    'status' => $charge->status->value,
+                    'due_date' => $charge->due_date->toDateString(),
+                    'tenant' => $charge->contract->tenant
                         ? ['name' => $charge->contract->tenant->name]
                         : null,
-                    'property' => $charge->contract?->property
+                    'property' => $charge->contract->property
                         ? ['name' => $charge->contract->property->name]
                         : null,
                 ]),
@@ -110,7 +110,7 @@ class DashboardController extends Controller
                 ->get()
                 ->map(fn (Contract $contract) => [
                     'id' => $contract->id,
-                    'status' => $contract->status?->value,
+                    'status' => $contract->status->value,
                     'monthly_rent' => (float) $contract->monthly_rent,
                     'property' => $contract->property?->name,
                     'tenant' => $contract->tenant?->name,

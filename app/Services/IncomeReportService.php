@@ -109,7 +109,7 @@ class IncomeReportService
             'net_amount' => (float) $payment->net_amount,
             'amount_paid' => (float) $payment->amount_paid,
             'fees' => (float) $payment->fees,
-            'method' => $payment->method?->value,
+            'method' => $payment->method->value,
             'reference' => $charge?->reference,
             'tenant' => $charge?->contract?->tenant?->name,
             'property' => $charge?->contract?->property?->name,

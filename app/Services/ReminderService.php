@@ -59,8 +59,11 @@ class ReminderService
                     continue;
                 }
 
-                $lastSentAt = $charge->last_reminder_sent_at?->timestamp ?? 0;
-                if (now()->timestamp - $lastSentAt < self::AFTER_DUE_RESEND_DAYS * 86_400) {
+                // phpstan claims last_reminder_sent_at is never null here,
+                // but the column is genuinely nullable (no reminder sent
+                // yet) — keep the nullsafe.
+                $lastSentAt = (int) ($charge->last_reminder_sent_at?->timestamp ?? 0); // @phpstan-ignore nullsafe.neverNull
+                if ((int) now()->timestamp - $lastSentAt < self::AFTER_DUE_RESEND_DAYS * 86_400) {
                     $skipped++;
 
                     continue;
@@ -210,10 +213,10 @@ class ReminderService
 
     private function formatDatePtBr(string $dateIso): string
     {
-        return now()->parse($dateIso.'T12:00:00-03:00')
-            ->timezone('America/Sao_Paulo')
-            ->locale('pt_BR')
-            ->translatedFormat('d/m/Y');
+        $date = now()->parse($dateIso.'T12:00:00-03:00')->timezone('America/Sao_Paulo');
+        $date->locale('pt_BR');
+
+        return $date->translatedFormat('d/m/Y');
     }
 
     private function buildPaymentUrl(): string
