@@ -21,5 +21,8 @@ Schedule::job(new RunScheduledBackupJob)->hourly();
 
 // Stand-in for a Mercado Pago webhook: polls pending Pix orders instead of
 // waiting for a push notification. Safe to keep running alongside a real
-// webhook too (it's idempotent — see SyncPendingPixPaymentsJob).
-Schedule::job(new SyncPendingPixPaymentsJob)->everyTwoMinutes();
+// webhook too (it's idempotent — see SyncPendingPixPaymentsJob). Ticks
+// every minute but only actually polls Mercado Pago when the admin-
+// configured interval on PixSyncSetting is due — see
+// PixSyncScheduleService::isDue() and Admin -> Configurações.
+Schedule::job(new SyncPendingPixPaymentsJob)->everyMinute();

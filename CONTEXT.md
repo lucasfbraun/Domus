@@ -98,3 +98,8 @@ Configuração única do sistema (`BackupSetting`) que liga/desliga a geração 
 
 **Retenção de backup (Backup retention)**:
 Quantidade máxima de backups mantidos ao mesmo tempo, também em `BackupSetting`. Ao ultrapassar o limite, os mais antigos são apagados — vale pra qualquer backup (automático, manual pela tela de Backups, ou importado), não só os gerados pela periodicidade.
+
+### Sincronização automática com o Mercado Pago
+
+**Sincronização de Pix (Pix sync)**:
+Configuração única do sistema (`PixSyncSetting`) que liga/desliga a verificação automática de cobranças e cauções com Pix pendente contra o Mercado Pago, e escolhe o intervalo entre uma verificação e outra (`interval_value` + `interval_unit`, em minutos ou horas). Reforça — ou substitui — a notificação automática (webhook) do Mercado Pago: se o webhook falhar ou não estiver configurado, essa sincronização periódica ainda pega o pagamento. Ver [ADR 0013](docs/adr/0013-configurable-pix-sync-schedule.md).

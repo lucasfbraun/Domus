@@ -6,10 +6,12 @@ use App\Jobs\SyncPendingPixPaymentsJob;
 use App\Models\Charge;
 use App\Models\Contract;
 use App\Models\Deposit;
+use App\Models\PixSyncSetting;
 use App\Models\Receiver;
 use App\Models\Tenant;
 use App\Notifications\PaymentConfirmedNotification;
 use App\Services\MercadoPagoService;
+use App\Services\PixSyncScheduleService;
 use App\Services\ReminderService;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Support\Facades\Http;
@@ -73,7 +75,7 @@ test('marks a waiting-payment charge as paid when its order is processed', funct
         ),
     ]);
 
-    (new SyncPendingPixPaymentsJob)->handle(app(MercadoPagoService::class), app(ReminderService::class));
+    (new SyncPendingPixPaymentsJob)->handle(app(MercadoPagoService::class), app(ReminderService::class), app(PixSyncScheduleService::class));
 
     expect($charge->fresh()->status)->toBe(ChargeStatus::Paid);
     Notification::assertSentTo($charge->fresh()->contract->tenant, PaymentConfirmedNotification::class);
@@ -89,7 +91,7 @@ test('also syncs an overdue charge whose pix has not expired yet', function () {
         ),
     ]);
 
-    (new SyncPendingPixPaymentsJob)->handle(app(MercadoPagoService::class), app(ReminderService::class));
+    (new SyncPendingPixPaymentsJob)->handle(app(MercadoPagoService::class), app(ReminderService::class), app(PixSyncScheduleService::class));
 
     expect($charge->fresh()->status)->toBe(ChargeStatus::Paid);
 });
@@ -100,7 +102,7 @@ test('skips a charge whose pix already expired, without calling the api', functi
 
     Http::fake();
 
-    (new SyncPendingPixPaymentsJob)->handle(app(MercadoPagoService::class), app(ReminderService::class));
+    (new SyncPendingPixPaymentsJob)->handle(app(MercadoPagoService::class), app(ReminderService::class), app(PixSyncScheduleService::class));
 
     Http::assertNothingSent();
     expect($charge->fresh()->status)->toBe(ChargeStatus::WaitingPayment);
@@ -117,7 +119,7 @@ test('skips a charge with no pix order at all', function () {
 
     Http::fake();
 
-    (new SyncPendingPixPaymentsJob)->handle(app(MercadoPagoService::class), app(ReminderService::class));
+    (new SyncPendingPixPaymentsJob)->handle(app(MercadoPagoService::class), app(ReminderService::class), app(PixSyncScheduleService::class));
 
     Http::assertNothingSent();
 });
@@ -134,10 +136,40 @@ test('one charge failing to sync does not stop the rest of the batch', function 
         ),
     ]);
 
-    (new SyncPendingPixPaymentsJob)->handle(app(MercadoPagoService::class), app(ReminderService::class));
+    (new SyncPendingPixPaymentsJob)->handle(app(MercadoPagoService::class), app(ReminderService::class), app(PixSyncScheduleService::class));
 
     expect($failing->fresh()->status)->toBe(ChargeStatus::WaitingPayment)
         ->and($succeeding->fresh()->status)->toBe(ChargeStatus::Paid);
+});
+
+test('does nothing and never calls the api when sync is disabled in settings', function () {
+    PixSyncSetting::current()->update(['enabled' => false]);
+    $charge = pendingChargeWithOrder('ORD-DISABLED');
+
+    Http::fake();
+
+    (new SyncPendingPixPaymentsJob)->handle(app(MercadoPagoService::class), app(ReminderService::class), app(PixSyncScheduleService::class));
+
+    Http::assertNothingSent();
+    expect($charge->fresh()->status)->toBe(ChargeStatus::WaitingPayment)
+        ->and(PixSyncSetting::current()->last_run_at)->toBeNull();
+});
+
+test('stamps last_run_at once the sync actually runs', function () {
+    Notification::fake();
+    $charge = pendingChargeWithOrder('ORD-STAMP');
+
+    Http::fake([
+        'https://api.mercadopago.com/v1/orders/ORD-STAMP' => Http::response(
+            processedOrderResponse('ORD-STAMP', (string) $charge->id, 1500.50),
+        ),
+    ]);
+
+    expect(PixSyncSetting::current()->last_run_at)->toBeNull();
+
+    (new SyncPendingPixPaymentsJob)->handle(app(MercadoPagoService::class), app(ReminderService::class), app(PixSyncScheduleService::class));
+
+    expect(PixSyncSetting::current()->last_run_at)->not->toBeNull();
 });
 
 test('also marks a waiting-payment deposit as paid when its order is processed', function () {
@@ -157,7 +189,7 @@ test('also marks a waiting-payment deposit as paid when its order is processed',
         ),
     ]);
 
-    (new SyncPendingPixPaymentsJob)->handle(app(MercadoPagoService::class), app(ReminderService::class));
+    (new SyncPendingPixPaymentsJob)->handle(app(MercadoPagoService::class), app(ReminderService::class), app(PixSyncScheduleService::class));
 
     expect($deposit->fresh()->status)->toBe(DepositStatus::Paid);
 });

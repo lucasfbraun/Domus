@@ -17,6 +17,7 @@ use App\Http\Controllers\Admin\HelpController;
 use App\Http\Controllers\Admin\IncomeReportController;
 use App\Http\Controllers\Admin\IntegrationController;
 use App\Http\Controllers\Admin\OwnerController;
+use App\Http\Controllers\Admin\PixSyncSettingController;
 use App\Http\Controllers\Admin\PropertyController;
 use App\Http\Controllers\Admin\RateioController;
 use App\Http\Controllers\Admin\ReceiverController;
@@ -98,6 +99,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('configuracoes/cobranca', [BillingSettingController::class, 'edit'])->name('billing-settings.edit');
         Route::put('configuracoes/cobranca', [BillingSettingController::class, 'update'])->name('billing-settings.update');
         Route::put('configuracoes/backup', [BackupSettingController::class, 'update'])->name('backup-settings.update');
+        Route::put('configuracoes/sincronizacao-pix', [PixSyncSettingController::class, 'update'])->name('pix-sync-settings.update');
         Route::get('backups', [BackupController::class, 'index'])->name('backups.index');
         Route::post('backups', [BackupController::class, 'store'])->name('backups.store');
         Route::post('backups/import', [BackupController::class, 'import'])->name('backups.import');

@@ -354,9 +354,9 @@ class FeatureCatalog
             [
                 'area' => 'Integrações',
                 'name' => 'Sincronismo automático de pagamentos Pix',
-                'description' => 'Job agendado que verifica cobranças/cauções com Pix pendente, sem depender de webhook.',
-                'source' => ['app/Jobs/SyncPendingPixPaymentsJob.php'],
-                'tests' => ['tests/Feature/SyncPendingPixPaymentsJobTest.php'],
+                'description' => 'Job agendado que verifica cobranças/cauções com Pix pendente, sem depender de webhook. Liga/desliga e o intervalo (minutos ou horas) são configuráveis em Admin -> Configurações.',
+                'source' => ['app/Jobs/SyncPendingPixPaymentsJob.php', 'app/Services/PixSyncScheduleService.php', 'app/Models/PixSyncSetting.php', 'app/Http/Controllers/Admin/PixSyncSettingController.php'],
+                'tests' => ['tests/Feature/SyncPendingPixPaymentsJobTest.php', 'tests/Feature/PixSyncScheduleServiceTest.php', 'tests/Feature/PixSyncSettingTest.php'],
                 'note' => null,
             ],
             [
