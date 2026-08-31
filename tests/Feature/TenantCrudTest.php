@@ -109,6 +109,32 @@ test('creating a tenant without a password never checks users table email unique
         ->and($tenant->user_id)->toBeNull();
 });
 
+test('the edit page exposes the linked portal user so the form can offer a password change', function () {
+    $admin = User::factory()->admin()->create();
+    $user = User::factory()->create(['email' => 'inquilino-com-portal@example.com']);
+    $user->assignRole(UserRole::Tenant);
+    $tenant = Tenant::factory()->create(['user_id' => $user->id]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.tenants.edit', $tenant))
+        ->assertSuccessful()
+        ->assertInertia(fn ($page) => $page
+            ->component('admin/tenants/Form')
+            ->where('tenant.user.email', 'inquilino-com-portal@example.com'));
+});
+
+test('the edit page has no linked user for a tenant without portal access', function () {
+    $admin = User::factory()->admin()->create();
+    $tenant = Tenant::factory()->create(['user_id' => null]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.tenants.edit', $tenant))
+        ->assertSuccessful()
+        ->assertInertia(fn ($page) => $page
+            ->component('admin/tenants/Form')
+            ->where('tenant.user', null));
+});
+
 test('admin can set a password for an already portal-linked tenant without a false unique conflict', function () {
     $admin = User::factory()->admin()->create();
     $user = User::factory()->create(['email' => 'inquilino-existente@example.com']);

@@ -60,7 +60,7 @@ class FeatureCatalog
             [
                 'area' => 'Cadastros',
                 'name' => 'Inquilinos (CRUD + login + bloqueio de exclusão)',
-                'description' => 'Cadastro de inquilinos, login do portal, e bloqueio de exclusão quando há contrato ativo.',
+                'description' => 'Cadastro de inquilinos, criação/alteração da senha do portal (inclusive editando um inquilino que já tem login), e bloqueio de exclusão quando há contrato ativo.',
                 'source' => ['app/Http/Controllers/Admin/TenantController.php'],
                 'tests' => ['tests/Feature/TenantCrudTest.php', 'tests/Feature/TenantAccessTest.php', 'tests/Feature/PaginationTest.php'],
                 'note' => null,

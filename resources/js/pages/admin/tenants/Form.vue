@@ -13,7 +13,16 @@ import { dashboard } from '@/routes';
 import { create, index, store, update } from '@/routes/admin/tenants';
 
 const props = defineProps<{
-    tenant?: any | null;
+    tenant?: {
+        id: number;
+        name?: string;
+        document?: string;
+        email?: string;
+        whatsapp?: string;
+        status?: string;
+        resident_count?: number;
+        user?: { id: number; email: string } | null;
+    } | null;
 }>();
 
 const isEditing = computed(() => !!props.tenant?.id);
@@ -134,23 +143,49 @@ defineOptions({
             </div>
 
             <div
-                v-if="!isEditing"
                 class="space-y-4 rounded-xl border border-border/80 bg-muted/30 p-5"
             >
-                <div class="flex items-center gap-2">
+                <div v-if="!isEditing" class="flex items-center gap-2">
                     <Checkbox id="create_portal" name="create_portal" value="1" />
                     <Label for="create_portal">Criar acesso ao portal</Label>
                 </div>
 
+                <div
+                    v-if="isEditing && tenant?.user"
+                    class="rounded-lg border border-dashed border-border/80 bg-background px-3 py-2 text-sm text-muted-foreground"
+                >
+                    Login atual:
+                    <span class="font-medium text-foreground">{{
+                        tenant.user.email
+                    }}</span>
+                </div>
+
                 <div class="grid gap-2">
-                    <Label for="password">Senha do portal</Label>
+                    <Label for="password">
+                        {{
+                            isEditing
+                                ? 'Alterar senha do portal'
+                                : 'Senha do portal'
+                        }}
+                    </Label>
                     <Input
                         id="password"
                         type="password"
                         name="password"
                         autocomplete="new-password"
-                        placeholder="Senha para acesso ao portal"
+                        :placeholder="
+                            isEditing
+                                ? 'Deixe em branco para manter a senha atual'
+                                : 'Senha para acesso ao portal'
+                        "
                     />
+                    <p
+                        v-if="isEditing && !tenant?.user"
+                        class="text-sm text-muted-foreground"
+                    >
+                        Este inquilino ainda não tem acesso ao portal.
+                        Preencha para criar um login.
+                    </p>
                     <InputError :message="errors.password" />
                 </div>
 
