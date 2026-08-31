@@ -140,11 +140,21 @@ TEXT,
             'signature_status' => SignatureStatus::Approved,
         ]);
 
+        // Ancora em startOfMonth antes de somar/subtrair meses: partindo de um dia
+        // que não existe no mês de destino (ex.: 31 de um mês de 31 dias menos 2
+        // meses para um mês de 30 dias), o Carbon transborda para o mês seguinte,
+        // o que pode fazer duas referências caírem no mesmo mês e colidir na
+        // unique constraint (contract_id, reference).
+        $twoMonthsAgo = now()->startOfMonth()->subMonths(2);
+        $oneMonthAgo = now()->startOfMonth()->subMonth();
+        $currentMonth = now()->startOfMonth();
+        $nextMonth = now()->startOfMonth()->addMonth();
+
         $paidCharge = Charge::create([
             'contract_id' => $contract->id,
             'receiver_id' => $receiver->id,
-            'reference' => now()->subMonths(2)->format('Y-m'),
-            'due_date' => now()->subMonths(2)->day(10),
+            'reference' => $twoMonthsAgo->format('Y-m'),
+            'due_date' => $twoMonthsAgo->copy()->day(10),
             'original_amount' => $contract->monthly_rent,
             'status' => ChargeStatus::Paid,
         ]);
@@ -156,15 +166,15 @@ TEXT,
             'fees' => round((float) $contract->monthly_rent * 0.01, 2),
             'method' => PaymentMethod::Pix,
             'status' => PaymentStatus::Approved,
-            'paid_at' => now()->subMonths(2)->day(9),
+            'paid_at' => $twoMonthsAgo->copy()->day(9),
             'external_id' => 'demo-paid-'.Str::uuid(),
         ]);
 
         Charge::create([
             'contract_id' => $contract->id,
             'receiver_id' => $receiver->id,
-            'reference' => now()->subMonth()->format('Y-m'),
-            'due_date' => now()->subMonth()->day(10),
+            'reference' => $oneMonthAgo->format('Y-m'),
+            'due_date' => $oneMonthAgo->copy()->day(10),
             'original_amount' => $contract->monthly_rent,
             'status' => ChargeStatus::Overdue,
         ]);
@@ -172,8 +182,8 @@ TEXT,
         $currentCharge = Charge::create([
             'contract_id' => $contract->id,
             'receiver_id' => $receiver->id,
-            'reference' => now()->format('Y-m'),
-            'due_date' => now()->day(min(10, now()->daysInMonth)),
+            'reference' => $currentMonth->format('Y-m'),
+            'due_date' => $currentMonth->copy()->day(min(10, $currentMonth->daysInMonth)),
             'original_amount' => $contract->monthly_rent,
             'status' => ChargeStatus::Open,
         ]);
@@ -181,8 +191,8 @@ TEXT,
         Charge::create([
             'contract_id' => $contract->id,
             'receiver_id' => $receiver->id,
-            'reference' => now()->addMonth()->format('Y-m'),
-            'due_date' => now()->addMonth()->day(10),
+            'reference' => $nextMonth->format('Y-m'),
+            'due_date' => $nextMonth->copy()->day(10),
             'original_amount' => $contract->monthly_rent,
             'status' => ChargeStatus::Open,
         ]);
