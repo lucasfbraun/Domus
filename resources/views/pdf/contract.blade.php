@@ -13,23 +13,19 @@
         li { margin: 2px 0; }
         strong, b { font-weight: bold; }
         em, i { font-style: italic; }
-        .photo { margin-bottom: 16px; page-break-inside: avoid; }
-        .photo img { max-width: 100%; height: auto; }
-        .caption { font-size: 10px; color: #555; margin-top: 4px; }
+        /* .photo/.caption podem ser inseridos como <span> (quando a
+           variavel fotos_vistoria e substituida dentro do <span
+           data-template-variable> salvo pelo editor) ou como <div> (banner
+           automatico no topo, fora de qualquer elemento inline) — por isso
+           forcam display:block independente da tag. */
+        .photo { display: block; margin-bottom: 16px; page-break-inside: avoid; }
+        .photo img { display: block; max-width: 100%; height: auto; }
+        .caption { display: block; font-size: 10px; color: #555; margin-top: 4px; }
         .contract-text { margin-top: 24px; }
     </style>
 </head>
 <body>
-    @foreach ($photos as $photo)
-        <div class="photo">
-            @if (file_exists(storage_path('app/'.$photo->storage_path)))
-                <img src="{{ storage_path('app/'.$photo->storage_path) }}" alt="{{ $photo->caption }}">
-            @endif
-            @if ($photo->caption || $photo->room)
-                <div class="caption">{{ $photo->room }} {{ $photo->caption }}</div>
-            @endif
-        </div>
-    @endforeach
+    {!! $photosHtml !!}
 
     <div class="contract-text">{!! $contractText !!}</div>
 </body>

@@ -5,6 +5,17 @@ namespace App\Support;
 class ContractTemplateVariables
 {
     /**
+     * Chaves cujo valor substituido e HTML confiavel, gerado pelo servidor
+     * (nunca a partir de conteudo autorado pelo admin) — ver ADR 0003. Ao
+     * contrario das demais variaveis (texto simples, sempre escapado),
+     * essas tem a substituicao inserida sem escape e sobrevivem ao
+     * strip_tags de render em ContractDocumentService::renderTemplate().
+     *
+     * @var list<string>
+     */
+    private const array HTML_KEYS = ['fotos_vistoria'];
+
+    /**
      * @return list<array{key: string, label: string, group: string}>
      */
     public static function catalog(): array
@@ -31,6 +42,7 @@ class ContractTemplateVariables
             ['key' => 'juros_percentual', 'label' => 'Juros (%)', 'group' => 'Contrato'],
             ['key' => 'carencia_dias', 'label' => 'Carência (dias)', 'group' => 'Contrato'],
             ['key' => 'data_geracao', 'label' => 'Data de geração', 'group' => 'Sistema'],
+            ['key' => 'fotos_vistoria', 'label' => 'Fotos da vistoria (galeria com legendas)', 'group' => 'Vistoria'],
         ];
     }
 
@@ -40,6 +52,30 @@ class ContractTemplateVariables
     public static function keys(): array
     {
         return array_column(self::catalog(), 'key');
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function htmlKeys(): array
+    {
+        return self::HTML_KEYS;
+    }
+
+    public static function isHtmlKey(string $key): bool
+    {
+        return in_array($key, self::HTML_KEYS, true);
+    }
+
+    /**
+     * Se o token {{$key}} aparece literalmente no conteudo do modelo —
+     * usado para decidir se um fallback automatico (ex. galeria de fotos
+     * no topo do PDF) deve ceder lugar ao ponto em que o admin colocou a
+     * variavel manualmente, evitando duplicar o conteudo.
+     */
+    public static function isReferenced(string $content, string $key): bool
+    {
+        return str_contains($content, '{{'.$key.'}}');
     }
 
     public static function isBlank(string $html): bool

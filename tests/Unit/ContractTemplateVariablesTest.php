@@ -36,3 +36,14 @@ test('catalog keys are unique', function () {
     expect($keys)->not->toBeEmpty()
         ->and($keys)->toHaveCount(count(array_unique($keys)));
 });
+
+test('fotos_vistoria is a known catalog key marked as html', function () {
+    expect(ContractTemplateVariables::keys())->toContain('fotos_vistoria')
+        ->and(ContractTemplateVariables::isHtmlKey('fotos_vistoria'))->toBeTrue()
+        ->and(ContractTemplateVariables::isHtmlKey('inquilino_nome'))->toBeFalse();
+});
+
+test('isReferenced detects the literal token in template content', function () {
+    expect(ContractTemplateVariables::isReferenced('<p>{{fotos_vistoria}}</p>', 'fotos_vistoria'))->toBeTrue()
+        ->and(ContractTemplateVariables::isReferenced('<p>Sem fotos aqui</p>', 'fotos_vistoria'))->toBeFalse();
+});

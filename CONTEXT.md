@@ -72,7 +72,7 @@ Registro de que uma Cobrança ou uma Caução foi efetivamente paga: valor líqu
 ### Vistoria e ocorrência
 
 **Vistoria (Inspection)**:
-Registro fotográfico do estado do Imóvel, anexado a um Contrato. As fotos entram automaticamente no documento gerado do contrato, antes do texto contratual — precisam existir antes da geração para aparecerem no documento assinado.
+Registro fotográfico do estado do Imóvel, anexado a um Contrato — precisa existir antes da geração do documento para aparecer nele. O admin controla onde as fotos aparecem no PDF inserindo a variável `{{fotos_vistoria}}` (galeria com cômodo + legenda de cada foto) em qualquer ponto do modelo de contrato, ex. numa cláusula própria antes da assinatura (ver [ADR 0003](docs/adr/0003-restricted-token-substitution-for-contract-templates.md)). Modelos que não usam essa variável caem no comportamento antigo: as fotos entram automaticamente antes de todo o texto contratual.
 
 **Ocorrência (Occurrence)**:
 Incidente ou solicitação (ex. manutenção) reportado durante a vigência de um Contrato, com fotos próprias e ciclo de status: aberta, em análise, resolvida ou fechada.

@@ -4,6 +4,7 @@ use App\Enums\ContractStatus;
 use App\Enums\SignatureStatus;
 use App\Mail\ContractDocumentReviewedMail;
 use App\Models\Contract;
+use App\Models\ContractInspectionPhoto;
 use App\Models\ContractTemplate;
 use App\Models\Owner;
 use App\Models\Property;
@@ -140,4 +141,46 @@ test('generated document leaves owner variables empty when property has no owner
     $contract = $service->generate($contract, $template);
 
     expect($contract->contract_text)->toContain('Proprietario: []');
+});
+
+test('fotos_vistoria variable embeds the inspection photo gallery at the token position', function () {
+    $contract = Contract::factory()->active()->create();
+    $path = UploadedFile::fake()->image('sala.jpg')->store("contracts/{$contract->id}/inspection", 'local');
+    ContractInspectionPhoto::factory()->for($contract)->create([
+        'storage_path' => $path,
+        'room' => 'Sala',
+        'caption' => 'Antes da entrega',
+    ]);
+
+    $template = ContractTemplate::factory()->create([
+        'content' => '<p>Antes</p><p>{{fotos_vistoria}}</p><p>Depois, assinatura</p>',
+    ]);
+
+    $service = app(ContractDocumentService::class);
+    $contract = $service->generate($contract, $template);
+
+    expect($contract->contract_text)
+        ->toContain('<img src="'.Storage::disk('local')->path($path).'"')
+        ->toContain('Sala — Antes da entrega')
+        ->toContain('Antes')
+        ->toContain('Depois, assinatura');
+
+    // A galeria aparece exatamente onde o token foi colocado: antes do
+    // paragrafo seguinte, depois do anterior.
+    expect(strpos($contract->contract_text, '<img'))
+        ->toBeGreaterThan(strpos($contract->contract_text, 'Antes'))
+        ->and(strpos($contract->contract_text, '<img'))
+        ->toBeLessThan(strpos($contract->contract_text, 'Depois, assinatura'));
+});
+
+test('fotos_vistoria renders empty when the contract has no inspection photos', function () {
+    $contract = Contract::factory()->active()->create();
+    $template = ContractTemplate::factory()->create([
+        'content' => '<p>[{{fotos_vistoria}}]</p>',
+    ]);
+
+    $service = app(ContractDocumentService::class);
+    $contract = $service->generate($contract, $template);
+
+    expect($contract->contract_text)->toContain('<p>[]</p>');
 });

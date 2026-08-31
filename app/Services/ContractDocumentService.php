@@ -5,11 +5,14 @@ namespace App\Services;
 use App\Enums\SignatureStatus;
 use App\Models\Charge;
 use App\Models\Contract;
+use App\Models\ContractInspectionPhoto;
 use App\Models\ContractTemplate;
 use App\Support\BrazilianDocument;
 use App\Support\BrazilianPhone;
+use App\Support\ContractTemplateVariables;
 use App\Support\Money;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
@@ -33,7 +36,14 @@ class ContractDocumentService
     {
         $contract->loadMissing(['tenant', 'property.owners', 'receiver', 'inspectionPhotos']);
 
-        $contractText = $this->renderTemplate($template->content, $this->buildVariables($contract));
+        $variables = $this->buildVariables($contract);
+        $contractText = $this->renderTemplate($template->content, $variables);
+
+        // Se o admin colocou {{fotos_vistoria}} no proprio texto do modelo,
+        // as fotos ja foram inseridas ali por renderTemplate() — nao
+        // duplica com o banner automatico no topo do PDF (fallback para
+        // modelos antigos que nao usam a variavel).
+        $hasInlinePhotos = ContractTemplateVariables::isReferenced($template->content, 'fotos_vistoria');
 
         if ($contract->generated_document_path) {
             Storage::disk('local')->delete($contract->generated_document_path);
@@ -42,7 +52,7 @@ class ContractDocumentService
         $path = "contracts/{$contract->id}/generated-".now()->timestamp.'.pdf';
         $pdf = Pdf::loadView('pdf.contract', [
             'contractText' => $contractText,
-            'photos' => $contract->inspectionPhotos,
+            'photosHtml' => $hasInlinePhotos ? '' : $variables['fotos_vistoria'],
         ]);
         Storage::disk('local')->put($path, $pdf->output());
 
@@ -182,6 +192,7 @@ class ContractDocumentService
             'juros_percentual' => number_format((float) $contract->monthly_interest_rate * 100, 0),
             'carencia_dias' => (string) $contract->grace_days,
             'data_geracao' => now()->timezone('America/Sao_Paulo')->format('d/m/Y'),
+            'fotos_vistoria' => $this->buildInspectionPhotosHtml($contract->inspectionPhotos),
         ];
     }
 
@@ -199,6 +210,10 @@ class ContractDocumentService
                     return $matches[0];
                 }
 
+                if ($isHtml && ContractTemplateVariables::isHtmlKey($matches[1])) {
+                    return $variables[$matches[1]];
+                }
+
                 return $isHtml
                     ? e($variables[$matches[1]])
                     : $variables[$matches[1]];
@@ -212,7 +227,46 @@ class ContractDocumentService
 
         return strip_tags(
             $rendered,
-            '<p><br><strong><b><em><i><u><h1><h2><h3><ul><ol><li><span>',
+            '<p><br><strong><b><em><i><u><h1><h2><h3><ul><ol><li><span><img>',
         );
+    }
+
+    /**
+     * Galeria HTML das fotos de vistoria do contrato: usada tanto como
+     * valor da variavel {{fotos_vistoria}} quanto no banner automatico de
+     * fallback (topo do PDF) para modelos que nao usam a variavel — uma
+     * unica fonte de verdade para o markup, ver docs/adr/0002 sobre a
+     * excecao de storage bruto para essas fotos.
+     *
+     * Usa apenas <span>/<img> (com display:block via CSS), nunca <div>: o
+     * token {{fotos_vistoria}} e salvo dentro de um <span
+     * data-template-variable> pelo editor, e um <div> ali dentro seria HTML
+     * bloco aninhado em inline — o strip_tags de renderTemplate() so
+     * permite tags inline por isso.
+     *
+     * @param  Collection<int, ContractInspectionPhoto>  $photos
+     */
+    private function buildInspectionPhotosHtml(Collection $photos): string
+    {
+        $html = '';
+
+        foreach ($photos as $photo) {
+            if (! $photo->storage_path || ! Storage::disk('local')->exists($photo->storage_path)) {
+                continue;
+            }
+
+            $caption = trim(collect([$photo->room, $photo->caption])->filter()->implode(' — '));
+            $src = Storage::disk('local')->path($photo->storage_path);
+
+            $html .= '<span class="photo"><img src="'.e($src).'" alt="'.e($caption).'">';
+
+            if ($caption !== '') {
+                $html .= '<span class="caption">'.e($caption).'</span>';
+            }
+
+            $html .= '</span>';
+        }
+
+        return $html;
     }
 }

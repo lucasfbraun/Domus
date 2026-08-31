@@ -45,6 +45,9 @@ class StandardLeaseContractTemplate
 <p>O descumprimento de qualquer cláusula deste contrato por qualquer das partes poderá ensejar a sua rescisão, sem prejuízo das penalidades e do ressarcimento de perdas e danos cabíveis, nos termos da legislação aplicável.</p>
 <h2>Cláusula 9ª — Do foro</h2>
 <p>Fica eleito o foro da comarca de localização do imóvel para dirimir quaisquer dúvidas ou litígios oriundos deste contrato, com renúncia expressa a qualquer outro, por mais privilegiado que seja.</p>
+<h2>Cláusula 10ª — Da vistoria de entrada</h2>
+<p>Segue registro fotográfico do estado do imóvel no ato da vistoria de entrada, parte integrante deste contrato:</p>
+<p><span data-template-variable="fotos_vistoria">{{fotos_vistoria}}</span></p>
 <p>E, por estarem justos e contratados, as partes assinam o presente instrumento em duas vias de igual teor.</p>
 <p>Documento gerado em <span data-template-variable="data_geracao">{{data_geracao}}</span>.</p>
 <p>_____________________________________<br>LOCADOR(A): <span data-template-variable="proprietario_nome">{{proprietario_nome}}</span></p>
