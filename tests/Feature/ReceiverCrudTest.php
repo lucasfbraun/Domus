@@ -117,6 +117,50 @@ test('admin can set a password for an already portal-linked receiver without a f
     expect(Hash::check('nova-senha-valida', $user->fresh()->password))->toBeTrue();
 });
 
+test('updating a receiver with a dedicated login syncs its name and email onto the login', function () {
+    $admin = User::factory()->admin()->create();
+    // ->receiver() syncs roles down to exactly [Receiver] — a bare create()
+    // would also carry Admin (see UserFactory::configure()), making the
+    // login look shared and hiding the very sync this test checks for.
+    $user = User::factory()->receiver()->create(['name' => 'Nome Antigo', 'email' => 'recebedor-antigo@example.com']);
+    $receiver = Receiver::factory()->create(['name' => 'Nome Antigo', 'email' => 'recebedor-antigo@example.com', 'user_id' => $user->id]);
+
+    $this->actingAs($admin)
+        ->put(route('admin.receivers.update', $receiver), [
+            'name' => 'Nome Novo',
+            'document' => $receiver->document,
+            'email' => 'recebedor-novo@example.com',
+            'active' => '1',
+        ])
+        ->assertRedirect(route('admin.receivers.index'))
+        ->assertSessionDoesntHaveErrors();
+
+    $fresh = $user->fresh();
+
+    expect($fresh->name)->toBe('Nome Novo')
+        ->and($fresh->email)->toBe('recebedor-novo@example.com');
+});
+
+test('updating a receiver whose login is shared with another role does not overwrite that login email', function () {
+    $admin = User::factory()->admin()->create();
+    $sharedUser = User::factory()->admin()->create(['email' => 'admin-compartilhado-recebedor@example.com']);
+    $sharedUser->assignRole(UserRole::Receiver);
+    $receiver = Receiver::factory()->create(['email' => 'recebedor-com-login-compartilhado@example.com', 'user_id' => $sharedUser->id]);
+
+    $this->actingAs($admin)
+        ->put(route('admin.receivers.update', $receiver), [
+            'name' => $receiver->name,
+            'document' => $receiver->document,
+            'email' => 'novo-email-do-recebedor@example.com',
+            'active' => '1',
+        ])
+        ->assertRedirect(route('admin.receivers.index'))
+        ->assertSessionDoesntHaveErrors();
+
+    expect($receiver->fresh()->email)->toBe('novo-email-do-recebedor@example.com')
+        ->and($sharedUser->fresh()->email)->toBe('admin-compartilhado-recebedor@example.com');
+});
+
 test('admin cannot update a receiver to a portal email already used by another account', function () {
     $admin = User::factory()->admin()->create();
     User::factory()->create(['email' => 'ja-existe-update@example.com']);

@@ -158,19 +158,51 @@ test('the documented sync-then-persist-then-detach sequence correctly frees an e
         ->and($owner->fresh()->user_id)->toBe($newUser->id);
 });
 
-test('sync with a password and an existing linked user just updates that password', function () {
+test('sync with a password and an exclusive linked user updates password, name and email', function () {
+    // ->owner() syncs roles down to exactly [Owner]; the Owner row below is
+    // the one record pointing at this login (mirroring the real controller
+    // flow, where the domain record's user_id is already set to
+    // $currentUserId by the time sync() runs) — nothing else shares it.
     $user = User::factory()->owner()->create();
-    $originalEmail = $user->email;
+    Owner::factory()->create(['user_id' => $user->id]);
 
     $userId = app(PortalAccountService::class)->sync(
-        UserRole::Owner, $user->id, null, 'ignored', 'ignored@example.com', 'nova-senha-valida',
+        UserRole::Owner, $user->id, null, 'Novo Nome', 'novo-email@example.com', 'nova-senha-valida',
     );
 
     $fresh = $user->fresh();
 
     expect($userId)->toBe($user->id)
+        ->and($fresh->name)->toBe('Novo Nome')
+        ->and($fresh->email)->toBe('novo-email@example.com')
+        ->and(Hash::check('nova-senha-valida', $fresh->password))->toBeTrue();
+});
+
+test('sync into a shared login updates the password but leaves name and email alone', function () {
+    // A single login shared between Admin and Owner — not exclusive to either.
+    $user = User::factory()->admin()->create();
+    $user->assignRole(UserRole::Owner);
+    $originalName = $user->name;
+    $originalEmail = $user->email;
+
+    $userId = app(PortalAccountService::class)->sync(
+        UserRole::Owner, $user->id, null, 'Nome do Proprietario', 'email-do-proprietario@example.com', 'nova-senha-valida',
+    );
+
+    $fresh = $user->fresh();
+
+    expect($userId)->toBe($user->id)
+        ->and($fresh->name)->toBe($originalName)
         ->and($fresh->email)->toBe($originalEmail)
         ->and(Hash::check('nova-senha-valida', $fresh->password))->toBeTrue();
+});
+
+test('isExclusiveLogin is false once another domain record also points at the same user', function () {
+    $user = User::factory()->owner()->create();
+    Owner::factory()->create(['user_id' => $user->id]);
+    Owner::factory()->create(['user_id' => $user->id]);
+
+    expect(app(PortalAccountService::class)->isExclusiveLogin($user->id, UserRole::Owner))->toBeFalse();
 });
 
 test('sync with nothing given leaves the current user id untouched', function () {

@@ -80,13 +80,19 @@ class PortalAccountService
      *     }
      *
      * - `$existingUserId` set and different from `$currentUserId`: links to
-     *   that user, granting the role.
+     *   that user, granting the role — `$name`/`$email` are NOT synced,
+     *   since the login is (by definition, having just been linked) shared
+     *   with whatever other role already used it.
+     * - There IS a current user and its login is *exclusive* to this one
+     *   role/record (see {@see isExclusiveLogin()}): `$name`/`$email` are
+     *   synced onto it whenever given, and `$password` updates it too when
+     *   given. If the login is shared instead, `$name`/`$email` are left
+     *   alone — this record's own contact info shouldn't silently overwrite
+     *   the login another role is also using — but `$password` still
+     *   updates it, since changing the one shared password is unambiguous.
      * - `$password` given and there's no current user: creates a brand-new
      *   dedicated login.
-     * - `$password` given and there IS a current user: just updates that
-     *   user's password — email/role are already correct, nothing to sync.
-     * - Neither given: no change (also the correct behavior for "just
-     *   editing other fields, leave portal access as it is").
+     * - Neither given and there's no current user: no change.
      */
     public function sync(
         UserRole $role,
@@ -100,21 +106,62 @@ class PortalAccountService
             return $this->attach($role, ['name' => '', 'email' => '', 'password' => ''], $existingUserId);
         }
 
-        if (filled($password)) {
-            if ($currentUserId === null) {
-                return $this->attach($role, [
-                    'name' => (string) $name,
-                    'email' => (string) $email,
-                    'password' => $password,
-                ], null);
+        if ($currentUserId !== null) {
+            $updates = [];
+
+            if ($this->isExclusiveLogin($currentUserId, $role)) {
+                if (filled($name)) {
+                    $updates['name'] = $name;
+                }
+
+                if (filled($email)) {
+                    $updates['email'] = $email;
+                }
             }
 
-            User::query()->whereKey($currentUserId)->update(['password' => Hash::make($password)]);
+            if (filled($password)) {
+                $updates['password'] = Hash::make($password);
+            }
+
+            if ($updates !== []) {
+                User::query()->whereKey($currentUserId)->update($updates);
+            }
 
             return $currentUserId;
         }
 
-        return $currentUserId;
+        if (filled($password)) {
+            return $this->attach($role, [
+                'name' => (string) $name,
+                'email' => (string) $email,
+                'password' => $password,
+            ], null);
+        }
+
+        return null;
+    }
+
+    /**
+     * Whether `$userId`'s login serves only `$role` — held only that one
+     * role, and no other Tenant/Receiver/Owner record points at it either.
+     * Used by {@see sync()} to decide whether a record's own name/email may
+     * be written onto its linked login: safe when the login is dedicated to
+     * it, wrong when the login is shared (e.g. the same account also used
+     * as Admin, or by another Receiver) — one of several identities
+     * shouldn't get to silently overwrite the login's shared name/email.
+     */
+    public function isExclusiveLogin(int $userId, UserRole $role): bool
+    {
+        $user = User::query()->with('roles')->find($userId);
+
+        if ($user === null) {
+            return false;
+        }
+
+        return $user->roles->pluck('name')->all() === [$role->value]
+            && Tenant::query()->where('user_id', $userId)->count()
+                + Receiver::query()->where('user_id', $userId)->count()
+                + Owner::query()->where('user_id', $userId)->count() === 1;
     }
 
     /**

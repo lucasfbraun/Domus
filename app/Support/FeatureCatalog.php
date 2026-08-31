@@ -92,9 +92,9 @@ class FeatureCatalog
             [
                 'area' => 'Cadastros',
                 'name' => 'Login compartilhado entre papéis',
-                'description' => 'Serviço central que permite um Recebedor/Proprietário usar um login já existente em vez de criar um novo, acumulando papéis.',
+                'description' => 'Serviço central que permite um Recebedor/Proprietário usar um login já existente em vez de criar um novo, acumulando papéis. Quando o login é exclusivo de um Inquilino/Recebedor/Proprietário, editar o nome/e-mail do cadastro sincroniza o login também.',
                 'source' => ['app/Services/PortalAccountService.php'],
-                'tests' => ['tests/Feature/PortalAccountServiceTest.php'],
+                'tests' => ['tests/Feature/PortalAccountServiceTest.php', 'tests/Feature/TenantCrudTest.php', 'tests/Feature/ReceiverCrudTest.php', 'tests/Feature/OwnerCrudTest.php'],
                 'note' => null,
             ],
             [

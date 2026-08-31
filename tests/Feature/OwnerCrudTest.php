@@ -126,6 +126,45 @@ test('admin can switch an owner from one linked user to another', function () {
         ->and(User::query()->find($oldUser->id))->toBeNull();
 });
 
+test('updating an owner with a dedicated login syncs its name and email onto the login', function () {
+    $admin = User::factory()->admin()->create();
+    $user = User::factory()->owner()->create(['name' => 'Nome Antigo', 'email' => 'proprietario-antigo@example.com']);
+    $owner = Owner::factory()->create(['name' => 'Nome Antigo', 'email' => 'proprietario-antigo@example.com', 'user_id' => $user->id]);
+
+    $this->actingAs($admin)
+        ->put(route('admin.owners.update', $owner), [
+            'name' => 'Nome Novo',
+            'document' => $owner->document,
+            'email' => 'proprietario-novo@example.com',
+        ])
+        ->assertRedirect(route('admin.owners.index'))
+        ->assertSessionDoesntHaveErrors();
+
+    $fresh = $user->fresh();
+
+    expect($fresh->name)->toBe('Nome Novo')
+        ->and($fresh->email)->toBe('proprietario-novo@example.com');
+});
+
+test('updating an owner whose login is shared with another role does not overwrite that login email', function () {
+    $admin = User::factory()->admin()->create();
+    $sharedUser = User::factory()->admin()->create(['email' => 'admin-compartilhado-proprietario@example.com']);
+    $sharedUser->assignRole(UserRole::Owner);
+    $owner = Owner::factory()->create(['email' => 'proprietario-com-login-compartilhado@example.com', 'user_id' => $sharedUser->id]);
+
+    $this->actingAs($admin)
+        ->put(route('admin.owners.update', $owner), [
+            'name' => $owner->name,
+            'document' => $owner->document,
+            'email' => 'novo-email-do-proprietario@example.com',
+        ])
+        ->assertRedirect(route('admin.owners.index'))
+        ->assertSessionDoesntHaveErrors();
+
+    expect($owner->fresh()->email)->toBe('novo-email-do-proprietario@example.com')
+        ->and($sharedUser->fresh()->email)->toBe('admin-compartilhado-proprietario@example.com');
+});
+
 test('deleting an owner with a shared login only removes the owner role, keeping the login intact', function () {
     $admin = User::factory()->admin()->create();
     $owner = Owner::factory()->create(['user_id' => $admin->id]);

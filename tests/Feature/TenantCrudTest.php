@@ -239,6 +239,30 @@ test('checking force_password_change on update without a new password does not f
     expect($user->fresh()->must_change_password)->toBeFalse();
 });
 
+test('updating a tenant syncs its email onto the linked login, so the login email does not go stale', function () {
+    $admin = User::factory()->admin()->create();
+    // ->tenant() syncs roles down to exactly [Tenant] — a bare create()
+    // would also carry Admin (see UserFactory::configure()), making the
+    // login look shared and hiding the very sync this test checks for.
+    $user = User::factory()->tenant()->create(['name' => 'Nome Antigo', 'email' => 'email-antigo@example.com']);
+    $tenant = Tenant::factory()->create(['name' => 'Nome Antigo', 'email' => 'email-antigo@example.com', 'user_id' => $user->id]);
+
+    $this->actingAs($admin)
+        ->put(route('admin.tenants.update', $tenant), [
+            'name' => 'Nome Novo',
+            'document' => $tenant->document,
+            'email' => 'email-novo@example.com',
+            'status' => $tenant->status->value,
+        ])
+        ->assertRedirect(route('admin.tenants.index'))
+        ->assertSessionDoesntHaveErrors();
+
+    $fresh = $user->fresh();
+
+    expect($fresh->name)->toBe('Nome Novo')
+        ->and($fresh->email)->toBe('email-novo@example.com');
+});
+
 test('admin cannot update a tenant to a portal email already used by another account', function () {
     $admin = User::factory()->admin()->create();
     User::factory()->create(['email' => 'ja-existe-update@example.com']);
