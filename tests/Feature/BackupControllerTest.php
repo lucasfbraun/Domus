@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\BackupSetting;
 use App\Models\Owner;
 use App\Models\User;
 use App\Services\DatabaseBackupService;
@@ -42,6 +43,22 @@ test('admin can trigger a backup', function () {
         ->assertRedirect();
 
     expect(app(DatabaseBackupService::class)->list())->toHaveCount(1);
+});
+
+test('triggering a manual backup prunes down to the configured retention count', function () {
+    Storage::fake('local');
+    Storage::disk('local')->put('backups/domus-backup-2020-01-01_000000_000000.sql.gz', 'old');
+    BackupSetting::current()->update(['retention_count' => 1]);
+
+    $admin = User::factory()->admin()->create();
+
+    $this->actingAs($admin)
+        ->post(route('admin.backups.store'))
+        ->assertRedirect();
+
+    $names = collect(app(DatabaseBackupService::class)->list())->pluck('name');
+    expect($names)->toHaveCount(1)
+        ->and($names)->not->toContain('domus-backup-2020-01-01_000000_000000.sql.gz');
 });
 
 test('non admin cannot trigger a backup', function () {
@@ -141,6 +158,27 @@ test('admin can import a valid backup file', function () {
         ->assertRedirect();
 
     expect(app(DatabaseBackupService::class)->list())->toHaveCount(1);
+});
+
+test('importing a backup also prunes down to the configured retention count', function () {
+    Storage::fake('local');
+    Storage::disk('local')->put('backups/domus-backup-2020-01-01_000000_000000.sql.gz', 'old');
+    BackupSetting::current()->update(['retention_count' => 1]);
+
+    $admin = User::factory()->admin()->create();
+
+    $this->actingAs($admin)
+        ->post(route('admin.backups.import'), [
+            'file' => UploadedFile::fake()->createWithContent(
+                'meu-backup-de-outro-servidor.sql.gz',
+                (string) gzencode('CREATE TABLE imported_marker (id INTEGER);'),
+            ),
+        ])
+        ->assertRedirect();
+
+    $names = collect(app(DatabaseBackupService::class)->list())->pluck('name');
+    expect($names)->toHaveCount(1)
+        ->and($names)->not->toContain('domus-backup-2020-01-01_000000_000000.sql.gz');
 });
 
 test('admin cannot import a file that is not a valid gzip', function () {

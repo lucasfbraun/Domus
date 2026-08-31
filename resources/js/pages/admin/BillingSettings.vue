@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
+import BackupSettingController from '@/actions/App/Http/Controllers/Admin/BackupSettingController';
 import BillingSettingController from '@/actions/App/Http/Controllers/Admin/BillingSettingController';
+import FormSelect from '@/components/FormSelect.vue';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
@@ -12,35 +14,52 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { formatDateTime } from '@/lib/dates';
 import { dashboard } from '@/routes';
 import { edit } from '@/routes/admin/billing-settings';
 
 defineProps<{
     generation_day: number;
+    backup_frequency: 'disabled' | 'daily' | 'weekly' | 'monthly';
+    backup_retention_count: number;
+    backup_run_at_hour: number;
+    backup_last_run_at: string | null;
 }>();
 
 defineOptions({
     layout: {
         breadcrumbs: [
             { title: 'Painel', href: dashboard() },
-            { title: 'Configurações de cobrança', href: edit() },
+            { title: 'Configurações', href: edit() },
         ],
     },
 });
+
+const backupFrequencyOptions = [
+    { value: 'disabled', label: 'Desativado' },
+    { value: 'daily', label: 'Diário' },
+    { value: 'weekly', label: 'Semanal' },
+    { value: 'monthly', label: 'Mensal' },
+];
+
+const backupHourOptions = Array.from({ length: 24 }, (_, hour) => ({
+    value: hour,
+    label: String(hour).padStart(2, '0') + ':00',
+}));
 </script>
 
 <template>
-    <Head title="Configurações de cobrança" />
+    <Head title="Configurações" />
 
     <div class="flex flex-col gap-8">
         <Heading
-            title="Configurações de cobrança"
-            description="Defina quando as cobranças mensais são geradas automaticamente"
+            title="Configurações"
+            description="Cobrança automática e backup do banco de dados"
         />
 
         <Card class="max-w-xl border-border/80 shadow-sm">
             <CardHeader>
-                <CardTitle>Geração automática</CardTitle>
+                <CardTitle>Geração automática de cobrança</CardTitle>
             </CardHeader>
             <CardContent>
                 <Form
@@ -71,6 +90,94 @@ defineOptions({
                         </p>
                         <InputError :message="errors.generation_day" />
                     </div>
+
+                    <div class="flex items-center gap-4">
+                        <Button :disabled="processing">Salvar</Button>
+                    </div>
+                </Form>
+            </CardContent>
+        </Card>
+
+        <Card class="max-w-xl border-border/80 shadow-sm">
+            <CardHeader>
+                <CardTitle>Backup automático</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <Form
+                    v-bind="BackupSettingController.update.form()"
+                    class="space-y-6"
+                    v-slot="{ errors, processing }"
+                >
+                    <div class="grid gap-2">
+                        <Label for="backup_frequency">Periodicidade</Label>
+                        <div class="max-w-48">
+                            <FormSelect
+                                id="backup_frequency"
+                                name="frequency"
+                                :options="backupFrequencyOptions"
+                                :default-value="backup_frequency"
+                                required
+                            />
+                        </div>
+                        <p class="text-sm text-muted-foreground">
+                            Com que frequência um backup é gerado
+                            automaticamente. "Desativado" mantém só os
+                            backups manuais (Admin → Backups).
+                        </p>
+                        <InputError :message="errors.frequency" />
+                    </div>
+
+                    <div class="grid gap-2">
+                        <Label for="run_at_hour">Horário do backup</Label>
+                        <div class="max-w-48">
+                            <FormSelect
+                                id="run_at_hour"
+                                name="run_at_hour"
+                                :options="backupHourOptions"
+                                :default-value="backup_run_at_hour"
+                                required
+                            />
+                        </div>
+                        <p class="text-sm text-muted-foreground">
+                            Em que hora do dia o backup automático roda,
+                            quando chega a vez dele conforme a periodicidade
+                            acima. O padrão (03:00) evita concorrer com os
+                            horários de geração de cobrança e lembretes.
+                        </p>
+                        <InputError :message="errors.run_at_hour" />
+                    </div>
+
+                    <div class="grid gap-2">
+                        <Label for="retention_count">
+                            Quantidade máxima de backups mantidos
+                        </Label>
+                        <Input
+                            id="retention_count"
+                            type="number"
+                            min="1"
+                            max="90"
+                            class="max-w-32"
+                            name="retention_count"
+                            :default-value="backup_retention_count"
+                            required
+                        />
+                        <p class="text-sm text-muted-foreground">
+                            Ao ultrapassar esse número, os backups mais
+                            antigos são apagados automaticamente — vale para
+                            qualquer backup (automático, manual ou
+                            importado), não só os gerados pela periodicidade
+                            acima.
+                        </p>
+                        <InputError :message="errors.retention_count" />
+                    </div>
+
+                    <p
+                        v-if="backup_last_run_at"
+                        class="text-sm text-muted-foreground"
+                    >
+                        Último backup automático:
+                        {{ formatDateTime(backup_last_run_at) }}
+                    </p>
 
                     <div class="flex items-center gap-4">
                         <Button :disabled="processing">Salvar</Button>

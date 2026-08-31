@@ -90,3 +90,31 @@ test('restore refuses a backup file that is not a valid gzip', function () {
 
     app(DatabaseBackupService::class)->restore('domus-backup-2020-01-01_000000_000000.sql.gz');
 })->throws(RuntimeException::class);
+
+test('prune deletes the oldest backups beyond the keep count', function () {
+    Storage::fake('local');
+    $service = app(DatabaseBackupService::class);
+
+    Storage::disk('local')->put('backups/domus-backup-2020-01-01_000000_000000.sql.gz', 'a');
+    Storage::disk('local')->put('backups/domus-backup-2020-01-02_000000_000000.sql.gz', 'b');
+    Storage::disk('local')->put('backups/domus-backup-2020-01-03_000000_000000.sql.gz', 'c');
+
+    $deleted = $service->prune(2);
+
+    expect($deleted)->toBe(['domus-backup-2020-01-01_000000_000000.sql.gz']);
+
+    $remaining = collect($service->list())->pluck('name');
+    expect($remaining)->toHaveCount(2)
+        ->and($remaining)->toContain('domus-backup-2020-01-03_000000_000000.sql.gz')
+        ->and($remaining)->toContain('domus-backup-2020-01-02_000000_000000.sql.gz');
+});
+
+test('prune does nothing when the backup count is already within the limit', function () {
+    Storage::fake('local');
+    $service = app(DatabaseBackupService::class);
+
+    Storage::disk('local')->put('backups/domus-backup-2020-01-01_000000_000000.sql.gz', 'a');
+
+    expect($service->prune(5))->toBe([]);
+    expect($service->list())->toHaveCount(1);
+});

@@ -428,9 +428,17 @@ class FeatureCatalog
             [
                 'area' => 'Backup',
                 'name' => 'Backup agendado (job opcional)',
-                'description' => 'Job pronto para agendar backup automático diário — não roda por padrão, é um wrapper de uma linha para quando alguém quiser ligar.',
+                'description' => 'Job pronto pra criar um backup avulso sob demanda — não roda por padrão, é um wrapper de uma linha pra quando alguém quiser disparar um backup manualmente por código/tinker.',
                 'source' => ['app/Jobs/CreateDatabaseBackupJob.php'],
                 'tests' => ['tests/Feature/CreateDatabaseBackupJobTest.php'],
+                'note' => null,
+            ],
+            [
+                'area' => 'Backup',
+                'name' => 'Periodicidade e retenção de backup (Configurações)',
+                'description' => 'Tela de Configurações que liga/desliga o backup automático (diário/semanal/mensal) e define quantos backups ficam guardados — os mais antigos são apagados ao passar do limite, seja o backup automático, manual ou importado.',
+                'source' => ['app/Http/Controllers/Admin/BackupSettingController.php', 'app/Models/BackupSetting.php', 'app/Services/BackupScheduleService.php', 'app/Jobs/RunScheduledBackupJob.php'],
+                'tests' => ['tests/Feature/BackupSettingTest.php', 'tests/Feature/BackupScheduleServiceTest.php', 'tests/Feature/RunScheduledBackupJobTest.php', 'tests/Feature/DatabaseBackupServiceTest.php'],
                 'note' => null,
             ],
 

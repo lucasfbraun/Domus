@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\BackupSetting;
+use App\Services\BackupScheduleService;
 use App\Services\DatabaseBackupService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -17,6 +19,11 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
  * restore requires the admin to type a literal confirmation phrase — see
  * {@see restore()}. Only the sqlite driver is supported; see
  * {@see DatabaseBackupService} and docs/adr/0005-sqlite-only-database-backup.md.
+ *
+ * `store()`/`import()` both prune down to the configured
+ * {@see BackupSetting::$retention_count} afterward — the cap applies to
+ * every backup regardless of how it was made, not just ones the
+ * automatic schedule ({@see BackupScheduleService}) creates.
  */
 class BackupController extends Controller
 {
@@ -35,6 +42,7 @@ class BackupController extends Controller
     {
         try {
             $backups->create();
+            $backups->prune(BackupSetting::current()->retention_count);
         } catch (RuntimeException $exception) {
             return back()->withErrors(['backup' => $exception->getMessage()]);
         }
@@ -57,6 +65,7 @@ class BackupController extends Controller
 
         try {
             $filename = $backups->import($request->file('file'));
+            $backups->prune(BackupSetting::current()->retention_count);
         } catch (RuntimeException $exception) {
             return back()->withErrors(['file' => $exception->getMessage()]);
         }

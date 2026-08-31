@@ -184,6 +184,27 @@ class DatabaseBackupService
     }
 
     /**
+     * Deletes the oldest backups beyond the newest $keep, applied
+     * regardless of how each one was produced (manual, imported, or
+     * automatic) — the retention setting is a cap on the whole pool, not
+     * just backups the scheduler made. Called after every backup-creating
+     * action; see {@see BackupScheduleService} and BackupController.
+     *
+     * @return list<string> filenames deleted
+     */
+    public function prune(int $keep): array
+    {
+        $deleted = [];
+
+        foreach (array_slice($this->list(), max($keep, 0)) as $backup) {
+            $this->delete($backup['name']);
+            $deleted[] = $backup['name'];
+        }
+
+        return $deleted;
+    }
+
+    /**
      * Runs `sqlite3 <db> .dump` against the live database and returns the
      * SQL text. A dump is a consistent point-in-time snapshot even with a
      * concurrent writer, because sqlite3 takes its own read transaction —
