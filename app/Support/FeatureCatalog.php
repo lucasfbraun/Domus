@@ -319,6 +319,14 @@ class FeatureCatalog
             ],
             [
                 'area' => 'Cobrança',
+                'name' => 'Informe de Rendimentos (filtro por ano/mês, proprietário/recebedor + PDF)',
+                'description' => 'Rendimento líquido efetivamente recebido por mês, filtrável por ano (obrigatório), mês, proprietário ou recebedor, com exportação em PDF. Só considera aluguel — cauções não entram.',
+                'source' => ['app/Services/IncomeReportService.php', 'app/Http/Controllers/Admin/IncomeReportController.php', 'resources/views/pdf/income-report.blade.php'],
+                'tests' => ['tests/Feature/IncomeReportTest.php'],
+                'note' => null,
+            ],
+            [
+                'area' => 'Cobrança',
                 'name' => 'Painel (dashboard) com indicadores',
                 'description' => 'Resumo de cobranças, valores em aberto e vencidos no painel admin.',
                 'source' => ['app/Http/Controllers/Admin/DashboardController.php'],

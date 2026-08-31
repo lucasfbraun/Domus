@@ -13,6 +13,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DepositController;
 use App\Http\Controllers\Admin\FeatureCheckController;
 use App\Http\Controllers\Admin\HelpController;
+use App\Http\Controllers\Admin\IncomeReportController;
 use App\Http\Controllers\Admin\IntegrationController;
 use App\Http\Controllers\Admin\OwnerController;
 use App\Http\Controllers\Admin\PropertyController;
@@ -90,6 +91,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::put('rateios/{rateio}', [RateioController::class, 'update'])->name('rateios.update');
         Route::delete('rateios/{rateio}', [RateioController::class, 'destroy'])->name('rateios.destroy');
         Route::get('rateios/{rateio}/invoice', [RateioController::class, 'invoice'])->name('rateios.invoice');
+        Route::get('informe-rendimentos', [IncomeReportController::class, 'index'])->name('income-report.index');
+        Route::get('informe-rendimentos/pdf', [IncomeReportController::class, 'pdf'])->name('income-report.pdf');
         Route::get('integracoes', [IntegrationController::class, 'index'])->name('integrations.index');
         Route::get('configuracoes/cobranca', [BillingSettingController::class, 'edit'])->name('billing-settings.edit');
         Route::put('configuracoes/cobranca', [BillingSettingController::class, 'update'])->name('billing-settings.update');

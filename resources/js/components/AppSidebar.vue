@@ -14,6 +14,7 @@ import {
     Settings,
     Shield,
     ShieldCheck,
+    TrendingUp,
     UserCircle,
     UserPlus,
     Users,
@@ -37,6 +38,7 @@ import { index as charges } from '@/routes/admin/charges';
 import { index as contracts } from '@/routes/admin/contracts';
 import { index as deposits } from '@/routes/admin/deposits';
 import { index as featureChecks } from '@/routes/admin/feature-checks';
+import { index as incomeReport } from '@/routes/admin/income-report';
 import { index as integrations } from '@/routes/admin/integrations';
 import { index as occurrences } from '@/routes/admin/occurrences';
 import { index as owners } from '@/routes/admin/owners';
@@ -139,6 +141,11 @@ const adminOperationsNavItems = computed<NavItem[]>(() => [
         title: 'Rateios',
         href: rateios(),
         icon: PieChart,
+    },
+    {
+        title: 'Informe de Rendimentos',
+        href: incomeReport(),
+        icon: TrendingUp,
     },
     {
         title: 'Integrações',

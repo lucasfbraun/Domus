@@ -1,5 +1,8 @@
 <?php
 
+use App\Enums\PaymentStatus;
+use App\Models\Charge;
+use App\Models\Payment;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
@@ -52,6 +55,40 @@ expect()->extend('toBeOne', function () {
 function something()
 {
     // ..
+}
+
+/**
+ * Creates a Charge + an Approved Payment for it (a rent payment, as
+ * opposed to a Deposit/Caução payment) — the unit IncomeReportTest builds
+ * its fixtures out of, since almost every case there is "an approved rent
+ * payment on this date/amount/receiver/contract".
+ *
+ * @param  array<string, mixed>  $chargeOverrides
+ * @param  array<string, mixed>  $paymentOverrides
+ */
+function createApprovedRentPayment(array $chargeOverrides = [], array $paymentOverrides = []): Payment
+{
+    $charge = Charge::factory()->create($chargeOverrides);
+
+    return Payment::factory()->for($charge)->create([
+        'status' => PaymentStatus::Approved,
+        'net_amount' => 950.00,
+        'amount_paid' => 1000.00,
+        'fees' => 50.00,
+        ...$paymentOverrides,
+    ]);
+}
+
+/**
+ * Inertia responses round-trip through JSON, and PHP's json_encode drops
+ * the ".0" off a whole-number float — so e.g. a 900.0 total comes back
+ * from assertInertia() as an int 900, failing a strict
+ * ->where('x', 900.0) comparison. Compare as float instead of guessing
+ * the wire type.
+ */
+function amountEquals(float $expected): Closure
+{
+    return fn ($value) => (float) $value === $expected;
 }
 
 /**

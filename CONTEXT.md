@@ -69,6 +69,9 @@ _Avoid_: Depósito (nome da classe/tabela no código; o termo de negócio usado 
 **Pagamento (Payment)**:
 Registro de que uma Cobrança ou uma Caução foi efetivamente paga: valor líquido, taxas e método (ex. Pix).
 
+**Informe de Rendimentos (Income report)**:
+Relatório admin (não é uma entidade persistida) do rendimento líquido efetivamente recebido por mês — soma de `Payment.net_amount` dos Pagamentos aprovados de Cobrança, filtrável por ano (traz todos os meses quando o mês não é informado), mês, Proprietário ou Recebedor, com exportação em PDF. Só conta Cobrança (aluguel/rateio); Pagamento de Caução não entra, porque caução é um valor reembolsável, não é rendimento.
+
 ### Vistoria e ocorrência
 
 **Vistoria (Inspection)**:
