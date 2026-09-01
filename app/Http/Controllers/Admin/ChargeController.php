@@ -46,7 +46,10 @@ class ChargeController extends Controller
                     'status' => $charge->status->value,
                     'due_date' => $charge->due_date->toDateString(),
                     'tenant' => $charge->contract?->tenant
-                        ? ['name' => $charge->contract->tenant->name]
+                        ? [
+                            'name' => $charge->contract->tenant->name,
+                            'whatsapp' => $charge->contract->tenant->whatsapp,
+                        ]
                         : null,
                     'property' => $charge->contract?->property
                         ? ['name' => $charge->contract->property->name]

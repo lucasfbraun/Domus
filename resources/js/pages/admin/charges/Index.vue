@@ -22,6 +22,7 @@ import {
     DataTableRow,
 } from '@/components/ui/data-table';
 import { formatDate } from '@/lib/dates';
+import { formatPhone } from '@/lib/brazilian-masks';
 import { useMoney } from '@/composables/useMoney';
 import { dashboard } from '@/routes';
 import { index, reminder } from '@/routes/admin/charges';
@@ -124,6 +125,7 @@ function syncPayment(charge: { id: number }): void {
                         <DataTableRow variant="header">
                             <DataTableHeadCell>Descrição</DataTableHeadCell>
                             <DataTableHeadCell>Inquilino</DataTableHeadCell>
+                            <DataTableHeadCell>WhatsApp</DataTableHeadCell>
                             <DataTableHeadCell>Valor</DataTableHeadCell>
                             <DataTableHeadCell>Vencimento</DataTableHeadCell>
                             <DataTableHeadCell>Status</DataTableHeadCell>
@@ -140,6 +142,13 @@ function syncPayment(charge: { id: number }): void {
                             </DataTableCell>
                             <DataTableCell>
                                 {{ charge.tenant?.name ?? '—' }}
+                            </DataTableCell>
+                            <DataTableCell>
+                                {{
+                                    charge.tenant?.whatsapp
+                                        ? formatPhone(charge.tenant.whatsapp)
+                                        : '—'
+                                }}
                             </DataTableCell>
                             <DataTableCell class="tabular-nums">
                                 {{ formatCurrency(charge.amount) }}
